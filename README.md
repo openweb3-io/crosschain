@@ -28,9 +28,8 @@ Available Commands:
   tx-input    Check inputs for a new transaction.
 
 Flags:
-      --api-key string    Api key to use for client (may set CORDIAL_API_KEY).
       --chain string      Chain to use. Required.
-      --config string     Path to treasury.toml configuration file.
+      --config string     Path to config.yaml configuration file.
   -h, --help              help for xc
       --not-mainnet       Do not use mainnets, instead use a test or dev network.
       --provider string   Provider to use for chain client.  Only valid for BTC chains.
