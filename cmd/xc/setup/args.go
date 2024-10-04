@@ -44,10 +44,26 @@ func CreateContext(xcFactory *factory.Factory, chain *types.ChainConfig) context
 
 type RpcArgs struct {
 	Chain string
+	Rpc   string
+}
+
+func AddRpcArgs(cmd *cobra.Command) {
+	cmd.PersistentFlags().String("rpc", "", "RPC url to use. Optional.")
+	cmd.PersistentFlags().String("chain", "", "Chain to use. Required.")
+
 }
 
 func RpcArgsFromCmd(cmd *cobra.Command) (*RpcArgs, error) {
-	return &RpcArgs{}, nil
+	chain, _ := cmd.Flags().GetString("chain")
+	rpc, _ := cmd.Flags().GetString("rpc")
+	if chain == "" {
+		return nil, fmt.Errorf("--chain required")
+	}
+
+	return &RpcArgs{
+		Chain: chain,
+		Rpc:   rpc,
+	}, nil
 }
 
 func LoadFactory(rcpArgs *RpcArgs) (*factory.Factory, error) {
@@ -89,14 +105,10 @@ func LoadChain(xcFactory *factory.Factory, chain string) (*types.ChainConfig, er
 		return nil, fmt.Errorf("invalid chain: %s\noptions: %v", chain, types.NativeAssetList)
 	}
 
-	return &types.ChainConfig{}, nil
-
-	/* TODO
 	chainConfig, err := xcFactory.GetAssetConfig("", nativeAsset)
 	if err != nil {
 		return nil, err
 	}
-	chainCfg := chainConfig.(*xc.ChainConfig)
+	chainCfg := chainConfig.(*types.ChainConfig)
 	return chainCfg, nil
-	*/
 }

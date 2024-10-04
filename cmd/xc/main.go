@@ -41,6 +41,8 @@ func main() {
 		},
 	}
 
+	setup.AddRpcArgs(cmd)
+
 	cmd.AddCommand(CmdTxInput())
 	cmd.AddCommand(CmdChains())
 

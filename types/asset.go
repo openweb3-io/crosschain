@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // NativeAsset is an asset on a blockchain used to pay gas fees.
 // In Crosschain, for simplicity, a NativeAsset represents a chain.
@@ -127,6 +130,10 @@ type ChainConfig struct {
 	AuthSecret string `yaml:"-"`
 }
 
+func (asset *ChainConfig) ID() AssetID {
+	return GetAssetIDFromAsset("", asset.Chain)
+}
+
 func (asset *ChainConfig) GetDecimals() int32 {
 	return asset.Decimals
 }
@@ -142,7 +149,7 @@ func (native *ChainConfig) GetContract() string {
 type AssetID string
 
 type IAsset interface {
-	// ID() AssetID
+	ID() AssetID
 	GetContract() string
 	GetDecimals() int32
 	GetChain() *ChainConfig
@@ -150,6 +157,7 @@ type IAsset interface {
 
 type TokenAssetConfig struct {
 	Asset       string       `yaml:"asset,omitempty"`
+	Chain       NativeAsset  `yaml:"chain,omitempty"`
 	Decimals    int32        `yaml:"decimals,omitempty"`
 	Contract    string       `yaml:"contract,omitempty"`
 	ChainConfig *ChainConfig `yaml:"-"`
@@ -157,8 +165,8 @@ type TokenAssetConfig struct {
 
 func (c *TokenAssetConfig) String() string {
 	return fmt.Sprintf(
-		"TokenAssetConfig(asset=%s chain=%v decimals=%d contract=%s)",
-		// c.ID(),
+		"TokenAssetConfig(id=%s, asset=%s chain=%v decimals=%d contract=%s)",
+		c.ID(),
 		c.Asset,
 		c.ChainConfig,
 		c.Decimals,
@@ -166,11 +174,9 @@ func (c *TokenAssetConfig) String() string {
 	)
 }
 
-/*
 func (asset *TokenAssetConfig) ID() AssetID {
 	return AssetID("not impl")
 }
-*/
 
 func (asset *TokenAssetConfig) GetDecimals() int32 {
 	return asset.Decimals
@@ -182,4 +188,57 @@ func (asset *TokenAssetConfig) GetContract() string {
 
 func (asset *TokenAssetConfig) GetChain() *ChainConfig {
 	return asset.ChainConfig
+}
+
+func LegacyParseAssetAndNativeAsset(asset string, nativeAsset string) (string, NativeAsset) {
+	if asset == "" && nativeAsset == "" {
+		return "", ""
+	}
+	if asset == "" && nativeAsset != "" {
+		asset = nativeAsset
+	}
+
+	assetSplit := strings.Split(asset, ".")
+	if len(assetSplit) == 2 && NativeAsset(assetSplit[1]).IsValid() {
+		asset = assetSplit[0]
+		if nativeAsset == "" {
+			nativeAsset = assetSplit[1]
+		}
+	}
+	validNative := NativeAsset(asset).IsValid()
+
+	if nativeAsset == "" {
+		if validNative {
+			nativeAsset = asset
+		} else {
+			nativeAsset = "ETH"
+		}
+	}
+
+	return asset, NativeAsset(nativeAsset)
+}
+
+// GetAssetIDFromAsset return the canonical AssetID given two input strings asset, nativeAsset.
+// Input can come from user input.
+// Examples:
+// - GetAssetIDFromAsset("USDC", "") -> "USDC.ETH"
+// - GetAssetIDFromAsset("USDC", "ETH") -> "USDC.ETH"
+// - GetAssetIDFromAsset("USDC", "SOL") -> "USDC.SOL"
+// - GetAssetIDFromAsset("USDC.SOL", "") -> "USDC.SOL"
+// See tests for more examples.
+func GetAssetIDFromAsset(asset string, nativeAsset NativeAsset) AssetID {
+	// id is SYMBOL for ERC20 and SYMBOL.CHAIN for others
+	// e.g. BTC, ETH, USDC, SOL, USDC.SOL
+	asset, nativeAsset = LegacyParseAssetAndNativeAsset(asset, string(nativeAsset))
+	validNative := NativeAsset(asset).IsValid()
+
+	// native asset, e.g. BTC, ETH, SOL
+	if asset == string(nativeAsset) {
+		return AssetID(asset)
+	}
+	if nativeAsset == "ETH" && !validNative {
+		return AssetID(asset + ".ETH")
+	}
+	// token, e.g. USDC, USDC.SOL
+	return AssetID(asset + "." + string(nativeAsset))
 }
