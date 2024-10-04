@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/jetton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -16,25 +15,22 @@ import (
 var Zero = types.NewBigIntFromInt64(0)
 
 type TxBuilder struct {
-	lclient ton.APIClientWrapped
 }
 
-func NewTxBuilder(lclient ton.APIClientWrapped) *TxBuilder {
-	return &TxBuilder{
-		lclient,
-	}
+func NewTxBuilder() *TxBuilder {
+	return &TxBuilder{}
 }
 
 func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
 
-	toAddr, err := address.ParseAddr(txInput.To)
+	toAddr, err := address.ParseAddr(string(txInput.To))
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid TON to address: %s", txInput.To)
 	}
 	// TODO 应该在外部传入地址的时候决定 bounce
 	toAddr = toAddr.Bounce(false)
-	fromAddr, err := address.ParseAddr(txInput.From)
+	fromAddr, err := address.ParseAddr(string(txInput.From))
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid TON address %s", txInput.From)
 	}
@@ -73,7 +69,11 @@ func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (
 		}
 	}
 
-	w, err := wallet.FromAddress(ctx, b.lclient, fromAddr, wallet.V4R2)
+	seqnoFetcher := func(ctx context.Context, subWallet uint32) (uint32, error) {
+		return txInput.Seq, nil
+	}
+
+	w, err := wallet.FromAddress(ctx, seqnoFetcher, fromAddr, wallet.V4R2)
 	if err != nil {
 		return nil, err
 	}

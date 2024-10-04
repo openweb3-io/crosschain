@@ -45,14 +45,14 @@ func NewClient(cfg string) (*Client, error) {
 
 func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArgs) (types.TxInput, error) {
 	acc, err := a.client.GetAccount(ctx, tonapi.GetAccountParams{
-		AccountID: args.From,
+		AccountID: string(args.From),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	seq, err := a.client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
-		AccountID: args.From,
+		AccountID: string(args.From),
 	})
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArg
 		Timestamp:       333,
 		AccountStatus:   acc.Status,
 		TonBalance:      types.NewBigIntFromInt64(acc.GetBalance()),
-		Seq:             uint64(seq.Seqno),
+		Seq:             uint32(seq.Seqno),
 		EstimatedMaxFee: types.NewBigIntFromInt64(0), // TODO
 		From:            args.From,
 		To:              args.To,
@@ -73,9 +73,9 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArg
 	}
 
 	if input.ContractAddress != nil {
-		fromAddr, _ := address.ParseAddr(args.From)
-		toAddr, _ := address.ParseAddr(args.To)
-		contractAddr, _ := address.ParseAddr(*input.ContractAddress)
+		fromAddr, _ := address.ParseAddr(string(args.From))
+		toAddr, _ := address.ParseAddr(string(args.To))
+		contractAddr, _ := address.ParseAddr(string(*args.ContractAddress))
 		amountTlb, _ := tlb.FromNano(big.NewInt(1), int(args.TokenDecimals))
 
 		token := jetton.NewJettonMasterClient(a.lclient, contractAddr)
@@ -99,7 +99,11 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArg
 			return nil, err
 		}
 
-		w, err := wallet.FromAddress(ctx, a.lclient, fromAddr, wallet.V4R2)
+		seqnoFetcher := func(ctx context.Context, subWallet uint32) (uint32, error) {
+			return input.Seq, nil
+		}
+
+		w, err := wallet.FromAddress(ctx, seqnoFetcher, fromAddr, wallet.V4R2)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +145,7 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArg
 			Boc: base64.StdEncoding.EncodeToString(b),
 			Params: []tonapi.EmulateMessageToWalletReqParamsItem{
 				{
-					Address: args.From,
+					Address: string(args.From),
 				},
 			},
 		}, tonapi.EmulateMessageToWalletParams{})

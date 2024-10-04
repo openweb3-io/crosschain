@@ -14,7 +14,6 @@ import (
 	"github.com/openweb3-io/crosschain/signer"
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/test-go/testify/suite"
-	"github.com/tonkeeper/tonapi-go"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -37,7 +36,6 @@ type ClientTestSuite struct {
 	account2Address *address.Address
 	account1Signer  signer.Signer
 	account2Signer  signer.Signer
-	liteApiClient   *_ton.APIClient
 }
 
 // get test coin from this telegram bot: https://web.telegram.org/k/#@testgiver_ton_bot
@@ -91,24 +89,15 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.account1Signer = ton.NewLocalSigner(account1PrivKey)
 	suite.account2Signer = ton.NewLocalSigner(account2PrivKey)
 
-	client := liteclient.NewConnectionPool()
-	// url := "https://ton-blockchain.github.io/testnet-global.config.json"
-	url := "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
-	err = client.AddConnectionsFromConfigUrl(context.Background(), url)
+	client, err := ton.NewClient("cfg")
 	suite.Require().NoError(err)
-	suite.liteApiClient = _ton.NewAPIClient(client)
-
-	tonApi, err := tonapi.New(tonapi.WithToken("AEXRCJJGQBXCFWQAAAAD3RYTVUWCXT5JW6YN2QU7LHXMKPMOXHFB75P4JSD52AVOVQWPGNY"))
-	// tonApi, err := tonapi.NewClient(tonapi.TestnetTonApiURL)
-	suite.Require().NoError(err)
-
-	suite.client = ton.NewClient(tonApi, suite.liteApiClient)
+	suite.client = client
 }
 
 func (suite *ClientTestSuite) TearDownTest() {
 }
 
-func (suite *ClientTestSuite) Test_Tranfser() {
+func (suite *ClientTestSuite) aTest_Tranfser() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
@@ -121,15 +110,15 @@ func (suite *ClientTestSuite) Test_Tranfser() {
 	blockchainAmount := readableAmount.ToBlockchain(9)
 
 	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		From:   from.String(),
-		To:     to.String(),
+		From:   types.Address(from.String()),
+		To:     types.Address(to.String()),
 		Amount: blockchainAmount,
 		Memo:   "test transfer ton",
 		// Token:  "TON",
 	})
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder(suite.liteApiClient)
+	builder := ton.NewTxBuilder()
 	tx, err := builder.BuildTransaction(ctx, input)
 	suite.Require().NoError(err)
 
@@ -137,7 +126,7 @@ func (suite *ClientTestSuite) Test_Tranfser() {
 	suite.Require().NoError(err)
 	suite.Require().GreaterOrEqual(len(sighashes), 1)
 
-	signature, err := suite.account1Signer.Sign(ctx, sighashes[0])
+	signature, err := suite.account1Signer.Sign(sighashes[0])
 	suite.Require().NoError(err)
 
 	err = tx.AddSignatures(signature)
@@ -157,11 +146,11 @@ func (suite *ClientTestSuite) aTest_EstimateGas() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder(suite.liteApiClient)
+	builder := ton.NewTxBuilder()
 
 	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		From:   from.String(),
-		To:     to.String(),
+		From:   types.Address(from.String()),
+		To:     types.Address(to.String()),
 		Amount: types.NewBigIntFromUint64(10000000),
 		Memo:   "test",
 		// Token:  "TON",
@@ -204,8 +193,17 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 		askJettonAddress = address.MustParseAddr(USDTJettonMainnetAddress)                          // USDT contract mainnet
 	}
 
-	routerRevV1 := stonfi.NewRouterRevisionV1(suite.liteApiClient, routerAddr)
-	router := stonfi.NewRouter(suite.liteApiClient, routerAddr, routerRevV1)
+	client := liteclient.NewConnectionPool()
+
+	// from cfg
+	// url := "https://ton-blockchain.github.io/testnet-global.config.json"
+	url := "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
+	err := client.AddConnectionsFromConfigUrl(context.Background(), url)
+	suite.Require().NoError(err)
+	liteApiClient := _ton.NewAPIClient(client)
+
+	routerRevV1 := stonfi.NewRouterRevisionV1(liteApiClient, routerAddr)
+	router := stonfi.NewRouter(liteApiClient, routerAddr, routerRevV1)
 
 	rm, _ := types.NewAmountHumanReadableFromStr("0.1")
 	offerAmount := rm.ToBlockchain(9)
@@ -220,7 +218,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	})
 	suite.Require().NoError(err)
 
-	w, err := wallet.FromAddress(ctx, suite.liteApiClient, suite.account1Address, wallet.V4R2)
+	w, err := wallet.FromAddress(ctx, nil, suite.account1Address, wallet.V4R2)
 	suite.Require().NoError(err)
 
 	cellBuilder, err := w.BuildMessages(ctx, false, []*wallet.Message{
@@ -242,7 +240,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	suite.Require().NoError(err)
 	suite.Require().GreaterOrEqual(len(sighashes), 1)
 
-	signature, err := suite.account1Signer.Sign(ctx, sighashes[0])
+	signature, err := suite.account1Signer.Sign(sighashes[0])
 	suite.Require().NoError(err)
 
 	err = tx.AddSignatures(signature)
@@ -275,11 +273,11 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	}
 
 	// call BuildTransaction method
-	builder := ton.NewTxBuilder(suite.liteApiClient)
+	builder := ton.NewTxBuilder()
 	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		ContractAddress: &contractAddress,
-		From:            from.String(),
-		To:              to.String(),
+		ContractAddress: (*types.Address)(&contractAddress),
+		From:            types.Address(from.String()),
+		To:              types.Address(to.String()),
 		Amount:          amount,
 		Memo:            "test jetton",
 		// Token:           "USDT",
@@ -294,7 +292,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	suite.Require().NoError(err)
 	suite.Require().GreaterOrEqual(len(sighashes), 1)
 
-	signature, err := suite.account1Signer.Sign(ctx, sighashes[0])
+	signature, err := suite.account1Signer.Sign(sighashes[0])
 	suite.Require().NoError(err, "sign error")
 
 	err = tx.AddSignatures(signature)

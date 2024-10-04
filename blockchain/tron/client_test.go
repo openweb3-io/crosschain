@@ -65,7 +65,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	priv := crypto.ToECDSAUnsafe(pkBytes)
 
 	signer := tron.NewLocalSigner(priv)
-	signature, err := signer.Sign(ctx, sighashes[0])
+	signature, err := signer.Sign(sighashes[0])
 	suite.Require().NoError(err)
 
 	err = tx.AddSignatures(signature)

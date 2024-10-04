@@ -139,9 +139,11 @@ type Message struct {
 type SeqnoFetcher func(ctx context.Context, subWallet uint32) (uint32, error)
 
 type Wallet struct {
-	publicKey ed25519.PublicKey
-	addr      *address.Address
-	ver       VersionConfig
+	// api TonAPI
+	key ed25519.PrivateKey
+	// signer signer.Signer
+	addr *address.Address
+	ver  VersionConfig
 
 	// Can be used to operate multiple wallets with the same key and version.
 	// use GetSubwallet if you need it.
@@ -152,7 +154,8 @@ type Wallet struct {
 	seqnoFetcher SeqnoFetcher
 }
 
-func FromAddress(ctx context.Context, seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig) (*Wallet, error) {
+/*
+func FromSigner(ctx context.Context, api TonAPI, signer signer.Signer, version VersionConfig) (*Wallet, error) {
 	var subwallet uint32 = DefaultSubwallet
 
 	// default subwallet depends on wallet type
@@ -161,10 +164,40 @@ func FromAddress(ctx context.Context, seqnoFetcher SeqnoFetcher, addr *address.A
 		subwallet = 0
 	}
 
-	if seqnoFetcher == nil {
-		seqnoFetcher = func(ctx context.Context, subWallet uint32) (uint32, error) {
-			return 0, nil
-		}
+	publicKey, err := signer.PublicKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := AddressFromPubKey(publicKey, version, subwallet)
+	if err != nil {
+		return nil, err
+	}
+
+	w := &Wallet{
+		api:       api,
+		signer:    signer,
+		addr:      addr,
+		ver:       version,
+		subwallet: subwallet,
+	}
+
+	w.spec, err = getSpec(w)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+*/
+
+func FromAddress(ctx context.Context, seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig) (*Wallet, error) {
+	var subwallet uint32 = DefaultSubwallet
+
+	// default subwallet depends on wallet type
+	switch version.(type) {
+	case ConfigV5R1:
+		subwallet = 0
 	}
 
 	w := &Wallet{
@@ -184,7 +217,7 @@ func FromAddress(ctx context.Context, seqnoFetcher SeqnoFetcher, addr *address.A
 	return w, nil
 }
 
-func FromPublicKey(api TonAPI, publicKey ed25519.PublicKey, version VersionConfig) (*Wallet, error) {
+func FromPublicKey(api TonAPI, pubkey ed25519.PublicKey, version VersionConfig) (*Wallet, error) {
 	var subwallet uint32 = DefaultSubwallet
 
 	// default subwallet depends on wallet type
@@ -193,14 +226,13 @@ func FromPublicKey(api TonAPI, publicKey ed25519.PublicKey, version VersionConfi
 		subwallet = 0
 	}
 
-	addr, err := AddressFromPubKey(publicKey, version, subwallet)
+	addr, err := AddressFromPubKey(pubkey, version, subwallet)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &Wallet{
 		// api:       api,
-		publicKey: publicKey,
 		addr:      addr,
 		ver:       version,
 		subwallet: subwallet,
@@ -213,6 +245,38 @@ func FromPublicKey(api TonAPI, publicKey ed25519.PublicKey, version VersionConfi
 
 	return w, nil
 }
+
+/*
+func FromPrivateKey(api TonAPI, key ed25519.PrivateKey, version VersionConfig) (*Wallet, error) {
+	var subwallet uint32 = DefaultSubwallet
+
+	// default subwallet depends on wallet type
+	switch version.(type) {
+	case ConfigV5R1:
+		subwallet = 0
+	}
+
+	addr, err := AddressFromPubKey(key.Public().(ed25519.PublicKey), version, subwallet)
+	if err != nil {
+		return nil, err
+	}
+
+	w := &Wallet{
+		api:       api,
+		key:       key,
+		addr:      addr,
+		ver:       version,
+		subwallet: subwallet,
+	}
+
+	w.spec, err = getSpec(w)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+*/
 
 func getSpec(w *Wallet) (any, error) {
 	switch v := w.ver.(type) {
@@ -284,12 +348,19 @@ func (w *Wallet) WalletAddress() *address.Address {
 }
 
 func (w *Wallet) GetSubwallet(ctx context.Context, subwallet uint32) (*Wallet, error) {
-	addr, err := AddressFromPubKey(w.publicKey, w.ver, subwallet)
+	publicKey, err := w.signer.PublicKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := AddressFromPubKey(publicKey, w.ver, subwallet)
 	if err != nil {
 		return nil, err
 	}
 
 	sub := &Wallet{
+		api:       w.api,
+		signer:    w.signer,
 		addr:      addr,
 		ver:       w.ver,
 		subwallet: subwallet,
@@ -303,10 +374,53 @@ func (w *Wallet) GetSubwallet(ctx context.Context, subwallet uint32) (*Wallet, e
 	return sub, nil
 }
 
+/*
+func (w *Wallet) GetBalance(ctx context.Context, block *ton.BlockIDExt) (tlb.Coins, error) {
+	acc, err := w.api.WaitForBlock(block.SeqNo).GetAccount(ctx, block, w.addr)
+	if err != nil {
+		return tlb.Coins{}, fmt.Errorf("failed to get account state: %w", err)
+	}
+
+	if !acc.IsActive {
+		return tlb.Coins{}, nil
+	}
+
+	return acc.State.Balance, nil
+}
+*/
+
 func (w *Wallet) GetSpec() any {
 	return w.spec
 }
 
+/*
+func (w *Wallet) BuildExternalMessage(ctx context.Context, message *Message) (*tlb.ExternalMessage, error) {
+	return w.BuildExternalMessageForMany(ctx, []*Message{message})
+}
+
+// Deprecated: use BuildExternalMessageForMany
+func (w *Wallet) BuildMessageForMany(ctx context.Context, messages []*Message) (*tlb.ExternalMessage, error) {
+	return w.BuildExternalMessageForMany(ctx, messages)
+}
+
+func (w *Wallet) BuildExternalMessageForMany(ctx context.Context, messages []*Message) (*tlb.ExternalMessage, error) {
+	block, err := w.api.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block: %w", err)
+	}
+
+	acc, err := w.api.WaitForBlock(block.SeqNo).GetAccount(ctx, block, w.addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account state: %w", err)
+	}
+
+	initialized := acc.IsActive && acc.State.Status == tlb.AccountStatusActive
+	return w.PrepareExternalMessageForMany(ctx, !initialized, messages)
+}
+*/
+
+// PrepareExternalMessageForMany - Prepares external message for wallet
+// can be used directly for offline signing but custom fetchers should be defined in this case
 func (w *Wallet) BuildMessages(ctx context.Context, withStateInit bool, messages []*Message) (_ *cell.Builder, err error) {
 	/*
 		var stateInit *tlb.StateInit
@@ -385,6 +499,226 @@ func (w *Wallet) BuildTransfer(to *address.Address, amount tlb.Coins, bounce boo
 		},
 	}, nil
 }
+
+func (w *Wallet) BuildTransferEncrypted(ctx context.Context, to *address.Address, amount tlb.Coins, bounce bool, comment string) (_ *Message, err error) {
+	var body *cell.Cell
+	if comment != "" {
+		key, err := GetPublicKey(ctx, w.api, to)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get destination contract (wallet) public key")
+		}
+
+		body, err = CreateEncryptedCommentCell(ctx, comment, w.WalletAddress(), w.signer, key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Message{
+		Mode: PayGasSeparately + IgnoreErrors,
+		InternalMessage: &tlb.InternalMessage{
+			IHRDisabled: true,
+			Bounce:      bounce,
+			DstAddr:     to,
+			Amount:      amount,
+			Body:        body,
+		},
+	}, nil
+}
+
+/*
+func (w *Wallet) Send(ctx context.Context, message *Message, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	return w.SendMany(ctx, []*Message{message}, waitConfirmation...)
+}
+*/
+
+/*
+func (w *Wallet) SendMany(ctx context.Context, messages []*Message, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	return w.sendMany(ctx, messages, waitConfirmation...)
+}
+*/
+
+// SendManyGetInMsgHash returns hash of external incoming message payload.
+/*
+func (w *Wallet) SendManyGetInMsgHash(ctx context.Context, messages []*Message, waitConfirmation ...bool) ([]byte, error) {
+	_, _, inMsgHash, err := w.sendMany(ctx, messages, waitConfirmation...)
+	return inMsgHash, err
+}
+*/
+
+// SendManyWaitTxHash always waits for tx block confirmation and returns found tx hash in block.
+/*
+func (w *Wallet) SendManyWaitTxHash(ctx context.Context, messages []*Message) ([]byte, error) {
+	tx, _, _, err := w.sendMany(ctx, messages, true)
+	if err != nil {
+		return nil, err
+	}
+	return tx.Hash, err
+}
+*/
+
+// SendManyWaitTransaction always waits for tx block confirmation and returns found tx.
+/*
+func (w *Wallet) SendManyWaitTransaction(ctx context.Context, messages []*Message) (*tlb.Transaction, *ton.BlockIDExt, error) {
+	tx, block, _, err := w.sendMany(ctx, messages, true)
+	return tx, block, err
+}
+*/
+
+// SendWaitTransaction always waits for tx block confirmation and returns found tx.
+/*
+func (w *Wallet) SendWaitTransaction(ctx context.Context, message *Message) (*tlb.Transaction, *ton.BlockIDExt, error) {
+	return w.SendManyWaitTransaction(ctx, []*Message{message})
+}
+*/
+
+/*
+func (w *Wallet) sendMany(ctx context.Context, messages []*Message, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	block, err = w.api.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get block: %w", err)
+	}
+
+	acc, err := w.api.WaitForBlock(block.SeqNo).GetAccount(ctx, block, w.addr)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get account state: %w", err)
+	}
+
+	ext, err := w.BuildExternalMessageForMany(ctx, messages)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	inMsgHash = ext.Body.Hash()
+
+	if err = w.api.SendExternalMessage(ctx, ext); err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to send message: %w", err)
+	}
+
+	if len(waitConfirmation) > 0 && waitConfirmation[0] {
+		tx, block, err = w.waitConfirmation(ctx, block, acc, ext)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return tx, block, inMsgHash, nil
+}
+*/
+
+func (w *Wallet) waitConfirmation(ctx context.Context, block *ton.BlockIDExt, acc *tlb.Account, ext *tlb.ExternalMessage) (*tlb.Transaction, *ton.BlockIDExt, error) {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		// fallback timeout to not stuck forever with background context
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), 180*time.Second)
+		defer cancel()
+	}
+	till, _ := ctx.Deadline()
+
+	ctx = w.api.Client().StickyContext(ctx)
+
+	for time.Now().Before(till) {
+		blockNew, err := w.api.WaitForBlock(block.SeqNo + 1).GetMasterchainInfo(ctx)
+		if err != nil {
+			continue
+		}
+
+		accNew, err := w.api.WaitForBlock(blockNew.SeqNo).GetAccount(ctx, blockNew, w.addr)
+		if err != nil {
+			continue
+		}
+		block = blockNew
+
+		if accNew.LastTxLT == acc.LastTxLT {
+			// if not in block, maybe LS lost our message, send it again
+			if err = w.api.SendExternalMessage(ctx, ext); err != nil {
+				continue
+			}
+
+			continue
+		}
+
+		lastLt, lastHash := accNew.LastTxLT, accNew.LastTxHash
+
+		// it is possible that > 5 new not related transactions will happen, and we should not lose our scan offset,
+		// to prevent this we will scan till we reach last seen offset.
+		for time.Now().Before(till) {
+			// we try to get last 5 transactions, and check if we have our new there.
+			txList, err := w.api.WaitForBlock(block.SeqNo).ListTransactions(ctx, w.addr, 5, lastLt, lastHash)
+			if err != nil {
+				continue
+			}
+
+			sawLastTx := false
+			for i, transaction := range txList {
+				if i == 0 {
+					// get previous of the oldest tx, in case if we need to scan deeper
+					lastLt, lastHash = txList[0].PrevTxLT, txList[0].PrevTxHash
+				}
+
+				if !sawLastTx && transaction.PrevTxLT == acc.LastTxLT &&
+					bytes.Equal(transaction.PrevTxHash, acc.LastTxHash) {
+					sawLastTx = true
+				}
+
+				if transaction.IO.In != nil && transaction.IO.In.MsgType == tlb.MsgTypeExternalIn {
+					extIn := transaction.IO.In.AsExternalIn()
+					if ext.StateInit != nil {
+						if extIn.StateInit == nil {
+							continue
+						}
+
+						if !bytes.Equal(ext.StateInit.Data.Hash(), extIn.StateInit.Data.Hash()) {
+							continue
+						}
+
+						if !bytes.Equal(ext.StateInit.Code.Hash(), extIn.StateInit.Code.Hash()) {
+							continue
+						}
+					}
+
+					if !bytes.Equal(extIn.Body.Hash(), ext.Body.Hash()) {
+						continue
+					}
+
+					return transaction, block, nil
+				}
+			}
+
+			if sawLastTx {
+				break
+			}
+		}
+		acc = accNew
+	}
+
+	return nil, nil, ErrTxWasNotConfirmed
+}
+
+// TransferNoBounce - can be used to transfer TON to not yet initialized contract/wallet
+/*
+func (w *Wallet) TransferNoBounce(ctx context.Context, to *address.Address, amount tlb.Coins, comment string, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	return w.transfer(ctx, to, amount, comment, false, waitConfirmation...)
+}
+*/
+
+// Transfer - safe transfer, in case of error on smart contract side, you will get coins back,
+// cannot be used to transfer TON to not yet initialized contract/wallet
+/*
+func (w *Wallet) Transfer(ctx context.Context, to *address.Address, amount tlb.Coins, comment string, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	return w.transfer(ctx, to, amount, comment, true, waitConfirmation...)
+}
+*/
+
+// TransferWithEncryptedComment - same as Transfer but encrypts comment, throws error if target contract (address) has no get_public_key method.
+/*
+func (w *Wallet) TransferWithEncryptedComment(ctx context.Context, to *address.Address, amount tlb.Coins, comment string, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	transfer, err := w.BuildTransferEncrypted(ctx, to, amount, true, comment)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return w.Send(ctx, transfer, waitConfirmation...)
+}
+*/
 
 func CreateCommentCell(text string) (*cell.Cell, error) {
 	// comment ident
@@ -521,6 +855,91 @@ func CreateEncryptedCommentCell(ctx context.Context, text string, senderAddr *ad
 	}
 
 	return root.EndCell(), nil
+}
+
+/*
+func (w *Wallet) transfer(ctx context.Context, to *address.Address, amount tlb.Coins, comment string, bounce bool, waitConfirmation ...bool) (tx *tlb.Transaction, block *ton.BlockIDExt, inMsgHash []byte, err error) {
+	transfer, err := w.BuildTransfer(to, amount, bounce, comment)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return w.Send(ctx, transfer, waitConfirmation...)
+}
+*/
+
+/*
+func (w *Wallet) DeployContractWaitTransaction(ctx context.Context, amount tlb.Coins, msgBody, contractCode, contractData *cell.Cell) (*address.Address, *tlb.Transaction, *ton.BlockIDExt, error) {
+	state := &tlb.StateInit{
+		Data: contractData,
+		Code: contractCode,
+	}
+
+	stateCell, err := tlb.ToCell(state)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	addr := address.NewAddress(0, 0, stateCell.Hash())
+
+	tx, block, err := w.SendWaitTransaction(ctx, &Message{
+		Mode: PayGasSeparately + IgnoreErrors,
+		InternalMessage: &tlb.InternalMessage{
+			IHRDisabled: true,
+			Bounce:      false,
+			DstAddr:     addr,
+			Amount:      amount,
+			Body:        msgBody,
+			StateInit:   state,
+		},
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return addr, tx, block, nil
+}
+*/
+
+// Deprecated: use DeployContractWaitTransaction
+/*
+func (w *Wallet) DeployContract(ctx context.Context, amount tlb.Coins, msgBody, contractCode, contractData *cell.Cell, waitConfirmation ...bool) (*address.Address, error) {
+	state := &tlb.StateInit{
+		Data: contractData,
+		Code: contractCode,
+	}
+
+	stateCell, err := tlb.ToCell(state)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := address.NewAddress(0, 0, stateCell.Hash())
+
+	if _, _, _, err = w.Send(ctx, &Message{
+		Mode: PayGasSeparately + IgnoreErrors,
+		InternalMessage: &tlb.InternalMessage{
+			IHRDisabled: true,
+			Bounce:      false,
+			DstAddr:     addr,
+			Amount:      amount,
+			Body:        msgBody,
+			StateInit:   state,
+		},
+	}, waitConfirmation...); err != nil {
+		return nil, err
+	}
+
+	return addr, nil
+}
+*/
+
+// Deprecated: use ton.FindLastTransactionByInMsgHash
+// FindTransactionByInMsgHash returns transaction in wallet account with incoming message hash equal to msgHash.
+func (w *Wallet) FindTransactionByInMsgHash(ctx context.Context, msgHash []byte, maxTxNumToScan ...int) (*tlb.Transaction, error) {
+	tx, err := w.api.FindLastTransactionByInMsgHash(ctx, w.addr, msgHash, maxTxNumToScan...)
+	if err != nil && errors.Is(err, ton.ErrTxWasNotFound) {
+		return nil, ErrTxWasNotFound
+	}
+	return tx, err
 }
 
 func SimpleMessage(to *address.Address, amount tlb.Coins, payload *cell.Cell) *Message {

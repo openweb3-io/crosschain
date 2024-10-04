@@ -9,5 +9,5 @@ import (
 type Signer interface {
 	PublicKey(ctx context.Context) ([]byte, error)
 	SharedKey(theirKey []byte) ([]byte, error)
-	Sign(ctx context.Context, payload types.TxDataToSign) (types.TxSignature, error)
+	Sign(payload types.TxDataToSign) (types.TxSignature, error)
 }

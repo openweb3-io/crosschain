@@ -26,6 +26,6 @@ func (s *LocalSigner) SharedKey(theirKey []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (s *LocalSigner) Sign(ctx context.Context, payload types.TxDataToSign) (types.TxSignature, error) {
+func (s *LocalSigner) Sign(payload types.TxDataToSign) (types.TxSignature, error) {
 	return crypto.Sign(payload, s.key)
 }

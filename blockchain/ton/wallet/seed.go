@@ -1,12 +1,9 @@
 package wallet
 
 import (
-	"crypto/ed25519"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha512"
-	"errors"
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -60,42 +57,6 @@ func NewSeedWithPassword(password string) []string {
 }
 
 type VersionConfig any
-
-func FromSeed(api TonAPI, seed []string, version VersionConfig) (*Wallet, error) {
-	return FromSeedWithPassword(api, seed, "", version)
-}
-
-func FromSeedWithPassword(api TonAPI, seed []string, password string, version VersionConfig) (*Wallet, error) {
-	// validate seed
-	if len(seed) < 12 {
-		return nil, fmt.Errorf("seed should have at least 12 words")
-	}
-	for _, s := range seed {
-		if !words[s] {
-			return nil, fmt.Errorf("unknown word '%s' in seed", s)
-		}
-	}
-
-	mac := hmac.New(sha512.New, []byte(strings.Join(seed, " ")))
-	mac.Write([]byte(password))
-	hash := mac.Sum(nil)
-
-	if len(password) > 0 {
-		p := pbkdf2.Key(hash, []byte(_PasswordSalt), 1, 1, sha512.New)
-		if p[0] != 1 {
-			return nil, errors.New("invalid seed")
-		}
-	} else {
-		p := pbkdf2.Key(hash, []byte(_BasicSalt), _Iterations/256, 1, sha512.New)
-		if p[0] != 0 {
-			return nil, errors.New("invalid seed")
-		}
-	}
-
-	k := pbkdf2.Key(hash, []byte(_Salt), _Iterations, 32, sha512.New)
-
-	return FromPrivateKey(api, ed25519.NewKeyFromSeed(k), version)
-}
 
 var wordsArr = func() []string {
 	wa := make([]string, 0, len(words))

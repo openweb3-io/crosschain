@@ -9,18 +9,18 @@ import (
 type TxInput struct {
 	Timestamp       int64
 	AccountStatus   tonapi.AccountStatus
-	Seq             uint64
+	Seq             uint32
 	EstimatedMaxFee types.BigInt
 	TonBalance      types.BigInt
-	From            string
-	To              string
+	From            types.Address
+	To              types.Address
 	// Token                string
 	TokenWallet     *address.Address
 	TokenDecimals   int32
 	Network         string
 	Amount          types.BigInt
 	Memo            string
-	ContractAddress *string
+	ContractAddress *types.Address
 }
 
 func NewTxInput() *TxInput {
