@@ -12,7 +12,7 @@ var supportedVariantTx = []xc.TxVariantInput{}
 func RegisterTxBaseInput(txInput xc.TxInput) {
 	for _, existing := range supportedBaseInputTx {
 		if existing.GetBlockchain() == txInput.GetBlockchain() {
-			panic(fmt.Sprintf("base input %T driver %s duplicates %T", txInput, txInput.GetBlockchain(), existing))
+			panic(fmt.Sprintf("base input %T blockchain %s duplicates %T", txInput, txInput.GetBlockchain(), existing))
 		}
 	}
 	supportedBaseInputTx = append(supportedBaseInputTx, txInput)
@@ -24,7 +24,7 @@ func GetSupportedBaseTxInputs() []xc.TxInput {
 func RegisterTxVariantInput(variant xc.TxVariantInput) {
 	for _, existing := range supportedVariantTx {
 		if existing.GetVariant() == variant.GetVariant() {
-			panic(fmt.Sprintf("staking input %T driver %s duplicates %T", variant, variant.GetVariant(), existing))
+			panic(fmt.Sprintf("staking input %T blockchain %s duplicates %T", variant, variant.GetVariant(), existing))
 		}
 	}
 	i1, ok1 := variant.(xc.StakeTxInput)

@@ -88,7 +88,7 @@ func Normalize(address string, nativeAsset xc_types.NativeAsset) string {
 	}
 
 	address = strings.TrimSpace(address)
-	switch driver := xc_types.NativeAsset(nativeAsset).Blockchain(); driver {
+	switch blockchain := xc_types.NativeAsset(nativeAsset).Blockchain(); blockchain {
 	case xc_types.BlockchainEVM, xc_types.BlockchainEVMLegacy:
 		prefix := "0x"
 		if nativeAsset == xc_types.XDC {
@@ -138,7 +138,7 @@ func TransactionHash(hash string, nativeAsset xc_types.NativeAsset) string {
 
 	hash = strings.TrimSpace(hash)
 
-	switch driver := xc_types.NativeAsset(nativeAsset).Blockchain(); driver {
+	switch blockchain := xc_types.NativeAsset(nativeAsset).Blockchain(); blockchain {
 	case xc_types.BlockchainEVM, xc_types.BlockchainEVMLegacy:
 		prefix := "0x"
 		if nativeAsset == xc_types.XDC {
@@ -158,7 +158,7 @@ func TransactionHash(hash string, nativeAsset xc_types.NativeAsset) string {
 		hash = strings.ToLower(hash)
 
 	case xc_types.BlockchainAptos, xc_types.BlockchainSui:
-		if driver == xc_types.BlockchainSui {
+		if blockchain == xc_types.BlockchainSui {
 			// Sui transaction hashes are not hex
 			return hash
 		}

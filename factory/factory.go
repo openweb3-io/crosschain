@@ -1,12 +1,13 @@
 package factory
 
 import (
-	"github.com/openweb3-io/crosschain"
-	"github.com/openweb3-io/crosschain/factory/driver"
+	xc_client "github.com/openweb3-io/crosschain/client"
+	"github.com/openweb3-io/crosschain/factory/blockchains"
+	"github.com/openweb3-io/crosschain/types"
 )
 
 type IFactory interface {
-	NewClient(cfg string) (crosschain.IClient, error)
+	NewClient(cfg types.IAsset) (xc_client.IClient, error)
 }
 
 type Factory struct {
@@ -14,10 +15,10 @@ type Factory struct {
 
 var _ IFactory = &Factory{}
 
-func NewFactory() *Factory {
+func NewDefaultFactory() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) NewClient(cfg string) (crosschain.IClient, error) {
-	return driver.NewClient(cfg)
+func (f *Factory) NewClient(cfg types.IAsset) (xc_client.IClient, error) {
+	return blockchains.NewClient(cfg)
 }

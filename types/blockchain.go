@@ -33,7 +33,7 @@ const (
 	BlockchainSui           = Blockchain("sui")
 	BlockchainTron          = Blockchain("tron")
 	BlockchainTon           = Blockchain("ton")
-	// Crosschain is a client-only driver
+	// Crosschain is a client-only blockchain
 	BlockchainCrosschain = Blockchain("crosschain")
 )
 
@@ -85,7 +85,7 @@ func NewWithdrawingInputType(blockchain Blockchain, variant string) TxVariantInp
 	return TxVariantInputType(fmt.Sprintf("blockchains/%s/withdrawing/%s", blockchain, variant))
 }
 
-func (variant TxVariantInputType) Driver() Blockchain {
+func (variant TxVariantInputType) Blockchain() Blockchain {
 	return Blockchain(strings.Split(string(variant), "/")[1])
 }
 func (variant TxVariantInputType) Variant() string {

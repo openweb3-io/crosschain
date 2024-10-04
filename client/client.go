@@ -9,6 +9,9 @@ import (
 )
 
 type IClient interface {
+	// Fetch the basic transaction input for any new transaction
+	FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address) (xc_types.TxInput, error)
+
 	/**
 	 * get balance
 	 */

@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"time"
 
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/pkg/errors"
 
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
@@ -28,12 +29,15 @@ type Client struct {
 	lclient ton.APIClientWrapped
 }
 
-func NewClient(cfg string) (*Client, error) {
+func NewClient(cfg types.IAsset) (*Client, error) {
 	client := liteclient.NewConnectionPool()
 
 	// from cfg
 	// url := "https://ton-blockchain.github.io/testnet-global.config.json"
-	url := "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
+	url := cfg.GetChain().URL
+	if url == "" {
+		url = "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
+	}
 	err := client.AddConnectionsFromConfigUrl(context.Background(), url)
 	if err != nil {
 		return nil, err
@@ -41,6 +45,9 @@ func NewClient(cfg string) (*Client, error) {
 	liteApiClient := _ton.NewAPIClient(client)
 
 	tonApi, err := tonapi.New(tonapi.WithToken("AEXRCJJGQBXCFWQAAAAD3RYTVUWCXT5JW6YN2QU7LHXMKPMOXHFB75P4JSD52AVOVQWPGNY"))
+	if err != nil {
+		return nil, err
+	}
 
 	return &Client{tonApi, liteApiClient}, nil
 }
@@ -227,4 +234,10 @@ func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
 	}
 
 	return nil
+}
+
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address, to types.Address) (types.TxInput, error) {
+	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
+	args, _ := xcbuilder.NewTransferArgs(from, to, types.NewBigIntFromUint64(1))
+	return client.FetchTransferInput(ctx, args)
 }

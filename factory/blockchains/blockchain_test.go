@@ -1,9 +1,9 @@
-package driver_test
+package blockchains_test
 
 import (
 	"testing"
 
-	"github.com/openweb3-io/crosschain/factory/driver"
+	"github.com/openweb3-io/crosschain/factory/blockchains"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -21,7 +21,7 @@ func (suite *BlockchainTestSuite) SetupTest(t *testing.T) {
 func (suite *BlockchainTestSuite) TestNewClient() {
 	require := suite.Require()
 
-	client, err := driver.NewClient("ton")
+	client, err := blockchains.NewClient("ton")
 	require.NoError(err)
 	require.NotNil(client)
 }

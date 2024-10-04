@@ -28,6 +28,10 @@ func NewTxInput() *TxInput {
 	return &TxInput{}
 }
 
+func (input *TxInput) GetBlockchain() types.Blockchain {
+	return types.BlockchainTon
+}
+
 func (input *TxInput) SetGasFeePriority(other types.GasFeePriority) error {
 	multiplier, err := other.GetDefault()
 	if err != nil {
