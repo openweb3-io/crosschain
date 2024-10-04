@@ -3,96 +3,186 @@ package solana
 import (
 	"context"
 	"fmt"
-	"math/big"
+	"sort"
 	"strconv"
 
+	"github.com/pkg/errors"
+
+	"github.com/gagliardetto/solana-go"
 	solana_sdk "github.com/gagliardetto/solana-go"
-	ata "github.com/gagliardetto/solana-go/programs/associated-token-account"
-	"github.com/gagliardetto/solana-go/programs/system"
-	"github.com/gagliardetto/solana-go/programs/token"
 	"github.com/gagliardetto/solana-go/rpc"
 
-	_types "github.com/openweb3-io/crosschain/types"
+	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
+	"github.com/openweb3-io/crosschain/types"
 )
 
-type SolanaApi struct {
-	endpoint string
-	chainId  *big.Int
-	client   *rpc.Client
+type Client struct {
+	Asset  types.IAsset
+	client *rpc.Client
 }
 
-func New(endpoint string, chainId *big.Int) *SolanaApi {
+func NewClient(asset types.IAsset) *Client {
+	cfg := asset.GetChain()
+
+	endpoint := cfg.URL
 	if endpoint == "" {
 		endpoint = rpc.MainNetBeta_RPC
 	}
 	client := rpc.New(endpoint)
-	return &SolanaApi{endpoint, chainId, client}
+	return &Client{Asset: asset, client: client}
 }
 
-func (a *SolanaApi) EstimateGas(ctx context.Context, input *_types.TransferArgs) (*big.Int, error) {
+func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*TxInput, error) {
+	txInput := NewTxInput()
 
-	tx, err := a.buildTransction(ctx, input)
+	// get recent block hash (i.e. nonce)
+	recent, err := client.client.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get latest blockhash: %v", err)
 	}
-
-	feeCalc, err := a.client.GetFeeForMessage(ctx, tx.Message.ToBase64(), rpc.CommitmentFinalized)
-	if err != nil {
-		return nil, err
+	if recent == nil || recent.Value == nil {
+		return nil, errors.New("error fetching latest blockhash")
 	}
-	fee := uint64(*feeCalc.Value)
+	txInput.RecentBlockHash = recent.Value.Blockhash
 
-	return big.NewInt(int64(fee)), nil
+	return txInput, nil
 }
 
-func (a *SolanaApi) BuildTransaction(ctx context.Context, input *_types.TransferArgs) (_types.Tx, error) {
-	solanaTx, err := a.buildTransction(ctx, input)
+func (client *Client) FetchTransferInput(ctx context.Context, args *types.TransferArgs) (types.TxInput, error) {
+	txInput, err := client.FetchBaseInput(ctx, args.From)
 	if err != nil {
 		return nil, err
 	}
 
-	solanaTx, err = a.signTx(ctx, input, solanaTx)
+	if args.ContractAddress == nil {
+		return txInput, nil
+	}
+
+	contract := *args.ContractAddress
+
+	mint, err := solana.PublicKeyFromBase58(string(*args.ContractAddress))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid mint address: %s", string(contract))
+	}
+
+	mintInfo, err := client.client.GetAccountInfo(ctx, mint)
+	if err != nil {
+		return nil, err
+	}
+	txInput.TokenProgram = mintInfo.Value.Owner
+
+	// get account info - check if to is an owner or ata
+	accountTo, err := solana.PublicKeyFromBase58(string(args.To))
 	if err != nil {
 		return nil, err
 	}
 
-	signatures := make([]_types.TxSignature, len(solanaTx.Signatures))
-	for i, signature := range solanaTx.Signatures {
-		signatures[i] = signature[:]
-	}
-
-	return &Tx{
-		Transaction: solanaTx,
-		signatures:  signatures,
-	}, nil
-}
-
-func (a *SolanaApi) signTx(ctx context.Context, input *_types.TransferArgs, tx *solana_sdk.Transaction) (*solana_sdk.Transaction, error) {
-	rawData, err := tx.Message.MarshalBinary()
+	// Determine if destination is a token account or not by
+	// trying to lookup a token balance
+	_, err = client.client.GetTokenAccountBalance(ctx, accountTo, rpc.CommitmentFinalized)
 	if err != nil {
-		return nil, err
+		txInput.ToIsATA = false
+	} else {
+		txInput.ToIsATA = true
 	}
 
-	if input.FeePayer != nil {
-		_signatureFee, err := input.FeePayerSigner.Sign(ctx, rawData)
+	// for tokens, get ata account info
+	ataTo := accountTo
+	if !txInput.ToIsATA {
+		ataToStr, err := solana_types.FindAssociatedTokenAddress(string(args.To), string(contract), mintInfo.Value.Owner)
 		if err != nil {
 			return nil, err
 		}
-		tx.Signatures = append(tx.Signatures, solana_sdk.Signature(_signatureFee))
+		ataTo = solana.MustPublicKeyFromBase58(ataToStr)
 	}
 
-	_signature, err := input.Signer.Sign(ctx, rawData)
+	_, err = client.client.GetAccountInfo(ctx, ataTo)
+	if err != nil {
+		// if the ATA doesn't exist yet, we will create when sending tokens
+		txInput.ShouldCreateATA = true
+	}
+
+	// Fetch all token accounts as if they are utxo
+	if contract != "" {
+		tokenAccounts, err := client.GetTokenAccountsByOwner(ctx, string(args.From), string(contract))
+		if err != nil {
+			return nil, err
+		}
+		zero := types.NewBigIntFromInt64(0)
+
+		for _, acc := range tokenAccounts {
+			amount := types.NewBigIntFromStr(acc.Info.Parsed.Info.TokenAmount.Amount)
+			if amount.Cmp(&zero) > 0 {
+				txInput.SourceTokenAccounts = append(txInput.SourceTokenAccounts, &TokenAccount{
+					Account: acc.Account.Pubkey,
+					Balance: amount,
+				})
+			}
+		}
+
+		sort.Slice(txInput.SourceTokenAccounts, func(i, j int) bool {
+			return txInput.SourceTokenAccounts[i].Balance.Cmp(&txInput.SourceTokenAccounts[j].Balance) > 0
+		})
+		if len(txInput.SourceTokenAccounts) > MaxTokenTransfers {
+			txInput.SourceTokenAccounts = txInput.SourceTokenAccounts[:MaxTokenTransfers]
+		}
+
+		if len(tokenAccounts) == 0 {
+			// no balance
+			return nil, errors.New("no balance to send solana token")
+		}
+	}
+
+	// fetch priority fee info
+	accountsToLock := solana.PublicKeySlice{}
+	accountsToLock = append(accountsToLock, mint)
+	fees, err := client.client.GetRecentPrioritizationFees(ctx, accountsToLock)
+	if err != nil {
+		return txInput, fmt.Errorf("could not lookup priority fees: %v", err)
+	}
+	priority_fee_count := uint64(0)
+	// start with 100 min priority fee, then average in the recent priority fees paid.
+	priority_fee_sum := uint64(100)
+	for _, fee := range fees {
+		if fee.PrioritizationFee > 0 {
+			priority_fee_sum += fee.PrioritizationFee
+			priority_fee_count += 1
+		}
+	}
+	if priority_fee_count > 0 {
+		txInput.PrioritizationFee = types.NewBigIntFromUint64(
+			priority_fee_sum / priority_fee_count,
+		)
+	} else {
+		// default 100
+		txInput.PrioritizationFee = types.NewBigIntFromUint64(
+			100,
+		)
+	}
+	// apply multiplier
+	txInput.PrioritizationFee = txInput.PrioritizationFee.ApplyGasPriceMultiplier(client.Asset.GetChain())
+
+	return txInput, nil
+}
+
+func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
+	_tx := tx.(*Tx)
+	solanaTx := _tx.SolTx
+
+	feeCalc, err := a.client.GetFeeForMessage(ctx, solanaTx.Message.ToBase64(), rpc.CommitmentFinalized)
 	if err != nil {
 		return nil, err
 	}
-	tx.Signatures = append(tx.Signatures, solana_sdk.Signature(_signature))
 
-	return tx, nil
+	value := *feeCalc.Value
+
+	fee := types.NewBigIntFromUint64(value)
+	return &fee, nil
 }
 
-func (a *SolanaApi) BroadcastSignedTx(ctx context.Context, _tx _types.Tx) error {
+func (a *Client) BroadcastSignedTx(ctx context.Context, _tx types.Tx) error {
 	tx := _tx.(*Tx)
-	solanaTx := tx.Transaction
+	solanaTx := tx.SolTx
 
 	payload, err := solanaTx.MarshalBinary()
 	if err != nil {
@@ -103,129 +193,75 @@ func (a *SolanaApi) BroadcastSignedTx(ctx context.Context, _tx _types.Tx) error 
 	return err
 }
 
-func (a *SolanaApi) buildTransction(ctx context.Context, input *_types.TransferArgs) (*solana_sdk.Transaction, error) {
-	recipient := solana_sdk.MustPublicKeyFromBase58(input.To)
-	sender := solana_sdk.MustPublicKeyFromBase58(input.From)
-
-	if input.FeePayer != nil && input.From == *input.FeePayer {
-		return nil, fmt.Errorf("no need to set feepayer")
+func (a *Client) GetBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
+	addr := solana_sdk.MustPublicKeyFromBase58(string(address))
+	if contractAddress == nil {
+		out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)
+		if err != nil {
+			return nil, err
+		}
+		balance := types.NewBigIntFromUint64(out.Value)
+		return &balance, nil
+	} else {
+		mint := solana_sdk.MustPublicKeyFromBase58(string(*contractAddress))
+		associated, _, err := solana_sdk.FindAssociatedTokenAddress(addr, mint)
+		if err != nil {
+			return nil, err
+		}
+		out, err := a.client.GetTokenAccountBalance(ctx, associated, rpc.CommitmentFinalized)
+		if err != nil {
+			return nil, err
+		}
+		amount, err := strconv.ParseInt(out.Value.Amount, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		balance := types.NewBigIntFromInt64(amount)
+		return &balance, nil
 	}
+}
 
-	recent, err := a.client.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
+type TokenAccountWithInfo struct {
+	// We need to manually parse TokenAccountInfo
+	Info *solana_types.TokenAccountInfo
+	// Account is what's returned by solana client
+	Account *rpc.TokenAccount
+}
+
+// Get all token accounts for a given token that are owned by an address.
+func (client *Client) GetTokenAccountsByOwner(ctx context.Context, addr string, contract string) ([]*TokenAccountWithInfo, error) {
+	address, err := solana.PublicKeyFromBase58(addr)
+	if err != nil {
+		return nil, err
+	}
+	mint, err := solana.PublicKeyFromBase58(contract)
 	if err != nil {
 		return nil, err
 	}
 
-	var tx *solana_sdk.Transaction
-
-	opts := []solana_sdk.TransactionOption{}
-	if input.FeePayer != nil {
-		feePayer := solana_sdk.MustPublicKeyFromBase58(*input.FeePayer)
-		opts = append(opts, solana_sdk.TransactionPayer(feePayer))
+	conf := rpc.GetTokenAccountsConfig{
+		Mint: &mint,
 	}
-
-	if input.ContractAddress == nil {
-
-		balance, err := a.client.GetBalance(ctx, sender, rpc.CommitmentFinalized)
-		if err != nil {
-			return nil, err
-		}
-		if input.Amount.Int().Cmp(big.NewInt(int64(balance.Value))) > 0 {
-			return nil, fmt.Errorf("insuffiecent amount, balance: %v, amount: %v", balance.Value, input.Amount.String())
-		}
-
-		tx, err = solana_sdk.NewTransaction(
-			[]solana_sdk.Instruction{
-				system.NewTransferInstruction(
-					input.Amount.Uint64(),
-					sender,
-					recipient,
-				).Build(),
-			},
-			recent.Value.Blockhash,
-			opts...,
-		)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		instr := []solana_sdk.Instruction{}
-		mint := solana_sdk.MustPublicKeyFromBase58(*input.ContractAddress)
-
-		createInst, err := ata.NewCreateInstruction(sender, recipient, mint).ValidateAndBuild()
-		if err != nil {
-			return nil, err
-		}
-
-		senderAssociated, _, _ := solana_sdk.FindAssociatedTokenAddress(sender, mint)
-		recipientAssociated, _, _ := solana_sdk.FindAssociatedTokenAddress(recipient, mint)
-
-		if _, err := a.client.GetAccountInfo(ctx, recipientAssociated); err != nil {
-			instr = append(instr, createInst)
-		}
-
-		balance, err := a.client.GetTokenAccountBalance(ctx, senderAssociated, rpc.CommitmentFinalized)
-		if err != nil {
-			return nil, err
-		}
-
-		balanceAmount, err := strconv.ParseInt(balance.Value.Amount, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		if input.Amount.Int().Cmp(big.NewInt(balanceAmount)) > 0 {
-			return nil, fmt.Errorf("insuffiecent amount, balance: %v, amount: %v", balance.Value, input.Amount.String())
-		}
-
-		transInst, err := token.NewTransferCheckedInstruction(
-			input.Amount.Uint64(),
-			uint8(input.TokenDecimals),
-			senderAssociated,
-			mint,
-			recipientAssociated,
-			sender,
-			nil,
-		).ValidateAndBuild()
-		if err != nil {
-			return nil, err
-		}
-
-		instr = append(instr, transInst)
-		tx, err = solana_sdk.NewTransaction(instr, recent.Value.Blockhash, opts...)
-		if err != nil {
-			return nil, err
-		}
+	opts := rpc.GetTokenAccountsOpts{
+		Commitment: rpc.CommitmentFinalized,
+		// required to be able to parse extra data as json
+		Encoding: "jsonParsed",
 	}
-	return tx, nil
-}
-
-func (a *SolanaApi) GetBalance(ctx context.Context, address string, contractAddress *string) (*big.Int, error) {
-	balance := big.NewInt(0)
-
-	addr := solana_sdk.MustPublicKeyFromBase58(address)
-	if contractAddress == nil {
-		out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)
-		if err != nil {
-			return balance, err
-		}
-		balance = big.NewInt(int64(out.Value))
-	} else {
-		mint := solana_sdk.MustPublicKeyFromBase58(*contractAddress)
-		associated, _, err := solana_sdk.FindAssociatedTokenAddress(addr, mint)
-		if err != nil {
-			return balance, err
-		}
-		out, err := a.client.GetTokenAccountBalance(ctx, associated, rpc.CommitmentFinalized)
-		if err != nil {
-			return balance, err
-		}
-		amount, err := strconv.ParseInt(out.Value.Amount, 10, 64)
-		if err != nil {
-			return balance, err
-		}
-		balance = big.NewInt(amount)
+	out, err := client.client.GetTokenAccountsByOwner(ctx, address, &conf, &opts)
+	if err != nil || out == nil {
+		return nil, err
 	}
-
-	return balance, nil
+	tokenAccounts := []*TokenAccountWithInfo{}
+	for _, acc := range out.Value {
+		var accountInfo solana_types.TokenAccountInfo
+		accountInfo, err = solana_types.ParseRpcData(acc.Account.Data)
+		if err != nil {
+			return nil, err
+		}
+		tokenAccounts = append(tokenAccounts, &TokenAccountWithInfo{
+			Info:    &accountInfo,
+			Account: acc,
+		})
+	}
+	return tokenAccounts, nil
 }
