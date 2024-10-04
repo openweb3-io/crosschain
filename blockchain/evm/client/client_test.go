@@ -1,0 +1,161 @@
+package client_test
+
+import (
+	"context"
+	"encoding/hex"
+	"fmt"
+	"testing"
+
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/openweb3-io/crosschain/blockchain/evm"
+	"github.com/openweb3-io/crosschain/blockchain/evm/builder"
+	"github.com/openweb3-io/crosschain/blockchain/evm/client"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	"github.com/openweb3-io/crosschain/signer"
+	"github.com/openweb3-io/crosschain/types"
+	"github.com/test-go/testify/suite"
+)
+
+var (
+	endpoint = "https://sepolia.infura.io/v3/4538f2b2d74c4f48b1a74de742293c51"
+	chainId  = 11155111
+	pkStrHex = "8e812436a0e3323166e1f0e8ba79e19e217b2c4a53c970d4cca0cfb1078979df"
+)
+
+type ClientTestSuite struct {
+	suite.Suite
+	signer signer.Signer
+}
+
+func TestClientTestSuite(t *testing.T) {
+	suite.Run(t, new(ClientTestSuite))
+}
+
+func (suite *ClientTestSuite) SetupTest() {
+	pkBytes, err := hex.DecodeString(pkStrHex)
+	suite.Require().NoError(err)
+
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+	suite.signer = evm.NewLocalSigner(priv)
+
+}
+
+func (suite *ClientTestSuite) TestTranfser() {
+	ctx := context.Background()
+
+	//testnet Holesky 17000
+	//testnet sepolia 11155111
+	client, err := client.NewClient(&types.ChainConfig{
+		// URL: "https://eth-mainnet.public.blastapi.io",
+		ChainID: int64(chainId),
+		URL:     endpoint,
+		// URL: "http://chainproto-admin.chainproto.dev/rpc/ethereum/11155111/testnet",
+	})
+	suite.Require().NoError(err)
+
+	gas := types.NewBigIntFromInt64(21000)
+	args := &xcbuilder.TransferArgs{
+		From:   "0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
+		To:     "0x388C818CA8B9251b393131C08a736A67ccB19297",
+		Amount: types.NewBigIntFromInt64(3000),
+		Gas:    &gas,
+	}
+
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := builder.NewTxBuilder(&types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Transfer(args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+	suite.Require().Equal(len(sighashes), 1)
+
+	sig, err := suite.signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(sig)
+	suite.Require().NoError(err)
+
+	err = client.SubmitTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("tx hash: %x\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) aTestTranfserERC20() {
+	ctx := context.Background()
+	contractAddress := "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+
+	//testnet Holesky 17000
+	//testnet sepolia 11155111
+	client, err := client.NewClient(&types.ChainConfig{
+		ChainID: int64(chainId),
+		URL:     "https://sepolia.infura.io/v3/4538f2b2d74c4f48b1a74de742293c51",
+	})
+	suite.Require().NoError(err)
+
+	amount := types.NewBigIntFromInt64(6000)
+	gas := types.NewBigIntFromInt64(43000)
+	args := &xcbuilder.TransferArgs{
+		From: "0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
+		To:   "0x388C818CA8B9251b393131C08a736A67ccB19297",
+		// ContractAddress: (*types.Address)(&contractAddress), //LINK
+		Amount: amount,
+		Gas:    &gas,
+	}
+
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
+		Contract: contractAddress,
+		Decimals: 18,
+	})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Transfer(args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+	suite.Require().Equal(len(sighashes), 1)
+
+	sig, err := suite.signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(sig)
+	suite.Require().NoError(err)
+
+	err = client.SubmitTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("tx hash: %x\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) aTestFetchBalance() {
+	ctx := context.Background()
+
+	client, err := client.NewClient(&types.ChainConfig{
+		ChainID: int64(chainId),
+		URL:     endpoint,
+	})
+	suite.Require().NoError(err)
+
+	addr := types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
+	contractAddress := types.Address("0x779877A7B0D9E8603169DdbD7836e478b4624789")
+
+	balance, err := client.FetchBalance(ctx, addr)
+	suite.Require().NoError(err)
+
+	fmt.Printf("[EVM]] address: %s, balance %v", addr, balance)
+
+	balance, err = client.FetchBalanceForAsset(ctx, addr, contractAddress)
+	suite.Require().NoError(err)
+
+	fmt.Printf("[EVM] contract %v, address: %v, balance: %v", contractAddress, addr, balance)
+
+}

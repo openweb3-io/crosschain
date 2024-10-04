@@ -1,5 +1,14 @@
 package types
 
+// TxStatus is the status of a tx on chain, currently success or failure.
+type TxStatus uint8
+
+// TxStatus values
+const (
+	TxStatusSuccess TxStatus = 0
+	TxStatusFailure TxStatus = 1
+)
+
 type TxHash []byte
 
 type TxSignature []byte
@@ -21,4 +30,23 @@ type Tx interface {
 	Sighashes() ([]TxDataToSign, error)
 	AddSignatures(...TxSignature) error
 	GetSignatures() []TxSignature
+}
+
+type TxVariantInput interface {
+	TxInput
+	GetVariant() TxVariantInputType
+}
+
+// Markers for each type of Variant Tx
+type StakeTxInput interface {
+	TxVariantInput
+	Staking()
+}
+type UnstakeTxInput interface {
+	TxVariantInput
+	Unstaking()
+}
+type WithdrawTxInput interface {
+	TxVariantInput
+	Withdrawing()
 }

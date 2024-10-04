@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/openweb3-io/crosschain/signer"
+	"github.com/openweb3-io/crosschain/types"
 )
 
 type LocalSigner struct {
@@ -25,6 +26,6 @@ func (s *LocalSigner) SharedKey(theirKey []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (s *LocalSigner) Sign(ctx context.Context, payload []byte) ([]byte, error) {
+func (s *LocalSigner) Sign(payload types.TxDataToSign) (types.TxSignature, error) {
 	return crypto.Sign(payload, s.key)
 }

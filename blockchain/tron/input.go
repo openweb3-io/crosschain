@@ -13,3 +13,17 @@ type TxInput struct {
 	Expiration    int64
 	Timestamp     int64
 }
+
+func (input *TxInput) GetBlockchain() types.Blockchain {
+	return types.BlockchainTron
+}
+
+func (input *TxInput) SetGasFeePriority(other types.GasFeePriority) error {
+	multiplier, err := other.GetDefault()
+	if err != nil {
+		return err
+	}
+	// tron doesn't do prioritization
+	_ = multiplier
+	return nil
+}

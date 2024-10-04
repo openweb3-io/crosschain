@@ -375,7 +375,7 @@ func (w *Wallet) GetSubwallet(ctx context.Context, subwallet uint32) (*Wallet, e
 }
 
 /*
-func (w *Wallet) GetBalance(ctx context.Context, block *ton.BlockIDExt) (tlb.Coins, error) {
+func (w *Wallet) FetchBalance(ctx context.Context, block *ton.BlockIDExt) (tlb.Coins, error) {
 	acc, err := w.api.WaitForBlock(block.SeqNo).GetAccount(ctx, block, w.addr)
 	if err != nil {
 		return tlb.Coins{}, fmt.Errorf("failed to get account state: %w", err)

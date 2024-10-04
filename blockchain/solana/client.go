@@ -180,7 +180,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 	return &fee, nil
 }
 
-func (a *Client) BroadcastSignedTx(ctx context.Context, _tx types.Tx) error {
+func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
 	tx := _tx.(*Tx)
 	solanaTx := tx.SolTx
 
@@ -193,7 +193,7 @@ func (a *Client) BroadcastSignedTx(ctx context.Context, _tx types.Tx) error {
 	return err
 }
 
-func (a *Client) GetBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
+func (a *Client) FetchBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
 	addr := solana_sdk.MustPublicKeyFromBase58(string(address))
 	if contractAddress == nil {
 		out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)

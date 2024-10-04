@@ -11,6 +11,7 @@ import (
 	"github.com/test-go/testify/suite"
 
 	"github.com/openweb3-io/crosschain/blockchain/tron"
+	"github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 )
 
@@ -41,7 +42,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 
 	amount := types.NewBigIntFromInt64(3)
 
-	input, err := client.FetchTransferInput(ctx, &types.TransferArgs{
+	input, err := client.FetchTransferInput(ctx, &builder.TransferArgs{
 		From:   "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
 		To:     "TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
 		Amount: amount,
@@ -71,7 +72,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = client.BroadcastSignedTx(ctx, tx)
+	err = client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %x\n", tx.Hash())
@@ -86,7 +87,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	contractAddress := types.Address("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
 	gas := types.NewBigIntFromInt64(1)
 
-	input, err := client.FetchTransferInput(ctx, &types.TransferArgs{
+	input, err := client.FetchTransferInput(ctx, &builder.TransferArgs{
 		ContractAddress: &contractAddress, //BTT test tokens
 		TokenDecimals:   18,
 		From:            "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
@@ -113,30 +114,30 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	priv := crypto.ToECDSAUnsafe(pkBytes)
 
 	signer := tron.NewLocalSigner(priv)
-	signature, err := signer.Sign(ctx, sighashes[0])
+	signature, err := signer.Sign(sighashes[0])
 	suite.Require().NoError(err)
 
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	client.BroadcastSignedTx(ctx, tx)
+	client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("trx hash: %x\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) TestGetbalance() {
+func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
 	client := tron.NewClient(endpoint, chainId)
-	out, err := client.GetBalance(ctx, types.Address(senderPubk), nil)
+	out, err := client.FetchBalance(ctx, types.Address(senderPubk))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
 
 	contractAddress := "TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn"
 	contractAddr := types.Address(contractAddress)
-	out, err = client.GetBalance(ctx, types.Address(senderPubk), &contractAddr)
+	out, err = client.FetchBalanceForAsset(ctx, types.Address(senderPubk), &contractAddr)
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)

@@ -82,7 +82,7 @@ func (suite *SolanaTestSuite) TestTranfser() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
+	err = suite.client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())
@@ -123,7 +123,7 @@ func (suite *SolanaTestSuite) TestSPLTranfser(t *testing.T) {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
+	err = suite.client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())
@@ -166,22 +166,22 @@ func (suite *SolanaTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
+	err = suite.client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *SolanaTestSuite) TestGetBalance() {
+func (suite *SolanaTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	contractAddress := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
 
-	out, err := suite.client.GetBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), nil)
+	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), nil)
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s SOL balance: %v", senderPrivateKey.PublicKey().String(), out)
 
-	out, err = suite.client.GetBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), (*types.Address)(&contractAddress))
+	out, err = suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), (*types.Address)(&contractAddress))
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s SPL token balance: %v", senderPrivateKey.PublicKey().String(), out)

@@ -1,7 +1,10 @@
-package ton
+package tx
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/xssnick/tonutils-go/address"
@@ -81,4 +84,19 @@ func NewTx(fromAddr *address.Address, cellBuilder *cell.Builder, stateInitMaybe 
 			StateInit: stateInitMaybe,
 		},
 	}
+}
+
+// Normal to hex as it doesn't have any special characters
+func Normalize(txhash string) string {
+	txhash = strings.TrimPrefix(txhash, "0x")
+	if bz, err := hex.DecodeString(txhash); err == nil {
+		return hex.EncodeToString(bz)
+	}
+	if bz, err := base64.StdEncoding.DecodeString(txhash); err == nil {
+		return hex.EncodeToString(bz)
+	}
+	if bz, err := base64.RawURLEncoding.DecodeString(txhash); err == nil {
+		return hex.EncodeToString(bz)
+	}
+	return txhash
 }

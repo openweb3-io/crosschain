@@ -11,6 +11,7 @@ import (
 	tronApi "github.com/fbsobreira/gotron-sdk/pkg/proto/api"
 	"github.com/pkg/errors"
 
+	"github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	_types "github.com/openweb3-io/crosschain/types"
 	"google.golang.org/grpc"
@@ -46,7 +47,7 @@ func NewClient(
 	}
 }
 
-func (client *Client) FetchTransferInput(ctx context.Context, args *types.TransferArgs) (types.TxInput, error) {
+func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
 	input := new(TxInput)
 	input.From = args.From
 	input.To = args.To
@@ -72,49 +73,22 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *types.Transf
 	return input, nil
 }
 
-func (a *Client) GetBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
-	if contractAddress == nil {
-		account, err := a.client.GetAccount(string(address))
-		if err != nil {
-			return nil, err
-		}
-		balance := types.NewBigIntFromInt64(account.Balance)
-		return &balance, nil
-	} else {
-		balance, err := a.client.TRC20ContractBalance(string(address), string(*contractAddress))
-		if err != nil {
-			return nil, err
-		}
-		return (*types.BigInt)(balance), nil
+func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
+	account, err := a.client.GetAccount(string(address))
+	if err != nil {
+		return nil, err
 	}
+	balance := types.NewBigIntFromInt64(account.Balance)
+	return &balance, nil
 }
 
-/*
-func (a *Client) BuildTransaction(ctx context.Context, input *_types.TransferArgs) (_types.Tx, error) {
-	var tx *tronApi.TransactionExtention
-
-	if input.ContractAddress == nil {
-		_tx, err := a.client.Transfer(input.From, input.To, input.Amount.Int().Int64())
-		if err != nil {
-			return nil, err
-		}
-		tx = _tx
-
-	} else {
-		amount := decimal.NewFromBigInt(input.Amount.Int(), input.TokenDecimals)
-		//call contract
-		_tx, err := a.client.TRC20Send(input.From, input.To, *input.ContractAddress, amount.BigInt(), input.Gas.Int().Int64())
-		if err != nil {
-			return nil, err
-		}
-		tx = _tx
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
+	balance, err := a.client.TRC20ContractBalance(string(address), string(*contractAddress))
+	if err != nil {
+		return nil, err
 	}
-
-	return &Tx{
-		tronTx: tx.Transaction,
-	}, nil
+	return (*types.BigInt)(balance), nil
 }
-*/
 
 func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.BigInt, err error) {
 	_tx := tx.(*Tx)
@@ -171,7 +145,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 
 }
 
-func (a *Client) BroadcastSignedTx(ctx context.Context, _tx _types.Tx) error {
+func (a *Client) SubmitTx(ctx context.Context, _tx _types.Tx) error {
 	tx := _tx.(*Tx)
 	if _, err := a.client.Broadcast(tx.tronTx); err != nil {
 		return err

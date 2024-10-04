@@ -9,7 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
+	"github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/tonkeeper/tonapi-go"
 	"github.com/xssnick/tonutils-go/address"
@@ -43,7 +45,7 @@ func NewClient(cfg string) (*Client, error) {
 	return &Client{tonApi, liteApiClient}, nil
 }
 
-func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArgs) (types.TxInput, error) {
+func (a *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
 	acc, err := a.client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(args.From),
 	})
@@ -113,7 +115,7 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *types.TransferArg
 			return nil, err
 		}
 
-		tx := NewTx(fromAddr, cellBuilder, nil)
+		tx := tx.NewTx(fromAddr, cellBuilder, nil)
 		sighashes, err := tx.Sighashes()
 		if err != nil {
 			return nil, err
@@ -172,7 +174,7 @@ func (a *Client) GetBalanceForAsset(ctx context.Context, ownerAddress types.Addr
 	return &amount, nil
 }
 
-func (a *Client) GetBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
+func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
 	account, err := a.client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(address),
 	})
@@ -184,10 +186,10 @@ func (a *Client) GetBalance(ctx context.Context, address types.Address) (*types.
 	return &balance, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
-	_tx := tx.(*Tx)
+func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, error) {
+	tx := _tx.(*tx.Tx)
 
-	boc, err := _tx.Serialize()
+	boc, err := tx.Serialize()
 	if err != nil {
 		return nil, err
 	}
@@ -203,8 +205,8 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 	return &gas, nil
 }
 
-func (a *Client) BroadcastSignedTx(ctx context.Context, _tx types.Tx) error {
-	tx := _tx.(*Tx)
+func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
+	tx := _tx.(*tx.Tx)
 
 	st := time.Now()
 	defer func() {

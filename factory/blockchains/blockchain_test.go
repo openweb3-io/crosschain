@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type DriverTestSuite struct {
+type BlockchainTestSuite struct {
 	suite.Suite
 }
 
-func TestDriverTestSuite(t *testing.T) {
-	suite.Run(t, new(DriverTestSuite))
+func TestBlockchainTestSuite(t *testing.T) {
+	suite.Run(t, new(BlockchainTestSuite))
 }
 
-func (suite *DriverTestSuite) SetupTest(t *testing.T) {
+func (suite *BlockchainTestSuite) SetupTest(t *testing.T) {
 }
 
-func (suite *DriverTestSuite) TestNewClient() {
+func (suite *BlockchainTestSuite) TestNewClient() {
 	require := suite.Require()
 
 	client, err := driver.NewClient("ton")

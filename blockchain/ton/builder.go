@@ -3,6 +3,7 @@ package ton
 import (
 	"context"
 
+	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
@@ -84,7 +85,7 @@ func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (
 		return nil, err
 	}
 
-	return NewTx(fromAddr, cellBuilder, nil), nil
+	return tx.NewTx(fromAddr, cellBuilder, nil), nil
 }
 
 func BuildTransfer(

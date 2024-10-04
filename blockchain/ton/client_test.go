@@ -10,6 +10,7 @@ import (
 
 	"github.com/croutondefi/stonfi-go"
 	"github.com/openweb3-io/crosschain/blockchain/ton"
+	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/signer"
 	"github.com/openweb3-io/crosschain/types"
@@ -132,7 +133,7 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
+	err = suite.client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash(base64): %v\n", base64.StdEncoding.EncodeToString(tx.Hash()))
@@ -234,7 +235,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	})
 	suite.Require().NoError(err)
 
-	tx := ton.NewTx(w.Address(), cellBuilder, nil)
+	tx := tx.NewTx(w.Address(), cellBuilder, nil)
 
 	sighashes, err := tx.Sighashes()
 	suite.Require().NoError(err)
@@ -246,7 +247,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
+	err = suite.client.SubmitTx(ctx, tx)
 	suite.Require().NoError(err)
 }
 
@@ -298,16 +299,16 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err, "add signature error")
 
-	err = suite.client.BroadcastSignedTx(ctx, tx)
-	suite.Require().NoError(err, "BroadcastSignedTx failed")
+	err = suite.client.SubmitTx(ctx, tx)
+	suite.Require().NoError(err, "SubmitTx failed")
 }
 
-func (suite *ClientTestSuite) TestGetBalance() {
+func (suite *ClientTestSuite) TestFetchBalance() {
 	contract := "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"
 
 	ctx := context.Background()
 
-	balance, err := suite.client.GetBalance(ctx, types.Address(suite.account1Address.String()))
+	balance, err := suite.client.FetchBalance(ctx, types.Address(suite.account1Address.String()))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TON balance: %v\n", suite.account1Address.String(), balance)
 
