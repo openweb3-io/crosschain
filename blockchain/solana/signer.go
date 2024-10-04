@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/openweb3-io/crosschain/signer"
+	"github.com/openweb3-io/crosschain/types"
 )
 
 type Signature [64]byte
@@ -30,7 +31,7 @@ func (s *LocalSigner) SharedKey(theirKey []byte) ([]byte, error) {
 	return nil, errors.New("shared key is not supported in Solana")
 }
 
-func (s *LocalSigner) Sign(ctx context.Context, payload []byte) ([]byte, error) {
+func (s *LocalSigner) Sign(payload types.TxDataToSign) (types.TxSignature, error) {
 	p := ed25519.PrivateKey(s.key)
 	signData, err := p.Sign(crypto_rand.Reader, payload, crypto.Hash(0))
 	if err != nil {
