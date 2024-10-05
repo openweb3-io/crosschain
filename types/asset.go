@@ -110,8 +110,8 @@ func (staking *StakingConfig) Enabled() bool {
 }
 
 type ChainConfig struct {
-	Chain NativeAsset `yaml:"chain,omitempty"`
-
+	Chain              NativeAsset `yaml:"chain,omitempty"`
+	Network            string
 	URL                string
 	ChainGasMultiplier float64 `yaml:"chain_gas_multiplier,omitempty"`
 	ChainMaxGasPrice   float64 `yaml:"chain_max_gas_price,omitempty"`

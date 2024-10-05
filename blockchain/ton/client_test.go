@@ -8,12 +8,14 @@ import (
 	"math/big"
 	"testing"
 
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
+
 	"github.com/croutondefi/stonfi-go"
 	"github.com/openweb3-io/crosschain/blockchain/ton"
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/signer"
-	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/test-go/testify/suite"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
@@ -90,7 +92,7 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.account1Signer = ton.NewLocalSigner(account1PrivKey)
 	suite.account2Signer = ton.NewLocalSigner(account2PrivKey)
 
-	client, err := ton.NewClient("cfg")
+	client, err := ton.NewClient(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 	suite.client = client
 }
@@ -106,21 +108,21 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	readableAmount, err := types.NewAmountHumanReadableFromStr("0.01")
+	readableAmount, err := xc_types.NewAmountHumanReadableFromStr("0.01")
 	suite.Require().NoError(err)
 	blockchainAmount := readableAmount.ToBlockchain(9)
 
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		From:   types.Address(from.String()),
-		To:     types.Address(to.String()),
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
+		From:   xc_types.Address(from.String()),
+		To:     xc_types.Address(to.String()),
 		Amount: blockchainAmount,
 		Memo:   "test transfer ton",
 		// Token:  "TON",
 	})
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder()
-	tx, err := builder.BuildTransaction(ctx, input)
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{})
+	tx, err := builder.NewTransfer(input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -147,18 +149,18 @@ func (suite *ClientTestSuite) aTest_EstimateGas() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder()
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{})
 
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		From:   types.Address(from.String()),
-		To:     types.Address(to.String()),
-		Amount: types.NewBigIntFromUint64(10000000),
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
+		From:   xc_types.Address(from.String()),
+		To:     xc_types.Address(to.String()),
+		Amount: xc_types.NewBigIntFromUint64(10000000),
 		Memo:   "test",
 		// Token:  "TON",
 	})
 	suite.Require().NoError(err)
 
-	tx, err := builder.BuildTransaction(ctx, input)
+	tx, err := builder.NewTransfer(input)
 	suite.Require().NoError(err)
 
 	amount, err := suite.client.EstimateGas(ctx, tx)
@@ -206,7 +208,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	routerRevV1 := stonfi.NewRouterRevisionV1(liteApiClient, routerAddr)
 	router := stonfi.NewRouter(liteApiClient, routerAddr, routerRevV1)
 
-	rm, _ := types.NewAmountHumanReadableFromStr("0.1")
+	rm, _ := xc_types.NewAmountHumanReadableFromStr("0.1")
 	offerAmount := rm.ToBlockchain(9)
 
 	data, err := router.BuildSwapProxyTonTxParams(ctx, stonfi.SwapProxyTonParams{
@@ -219,7 +221,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	})
 	suite.Require().NoError(err)
 
-	w, err := wallet.FromAddress(ctx, nil, suite.account1Address, wallet.V4R2)
+	w, err := wallet.FromAddress(nil, suite.account1Address, wallet.V4R2)
 	suite.Require().NoError(err)
 
 	cellBuilder, err := w.BuildMessages(ctx, false, []*wallet.Message{
@@ -261,12 +263,12 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	readableAmount, err := types.NewAmountHumanReadableFromStr("0.01")
+	readableAmount, err := xc_types.NewAmountHumanReadableFromStr("0.01")
 	suite.Require().NoError(err)
 	amount := readableAmount.ToBlockchain(6)
 	suite.Require().NoError(err)
 
-	jettonBalance, err := suite.client.GetBalanceForAsset(ctx, types.Address(from.String()), types.Address(contractAddress))
+	jettonBalance, err := suite.client.GetBalanceForAsset(ctx, xc_types.Address(from.String()), xc_types.Address(contractAddress))
 	suite.Require().NoError(err, "error GetBalanceForAsset")
 
 	if jettonBalance.Cmp(&amount) < 0 {
@@ -274,11 +276,11 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	}
 
 	// call BuildTransaction method
-	builder := ton.NewTxBuilder()
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
-		ContractAddress: (*types.Address)(&contractAddress),
-		From:            types.Address(from.String()),
-		To:              types.Address(to.String()),
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{})
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
+		ContractAddress: (*xc_types.Address)(&contractAddress),
+		From:            xc_types.Address(from.String()),
+		To:              xc_types.Address(to.String()),
 		Amount:          amount,
 		Memo:            "test jetton",
 		// Token:           "USDT",
@@ -286,7 +288,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	})
 	suite.Require().NoError(err, "error FetchTransferInput")
 
-	tx, err := builder.BuildTransaction(ctx, input)
+	tx, err := builder.NewTransfer(input)
 	suite.Require().NoError(err, "error BuildTransaction")
 
 	sighashes, err := tx.Sighashes()
@@ -308,11 +310,11 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 
 	ctx := context.Background()
 
-	balance, err := suite.client.FetchBalance(ctx, types.Address(suite.account1Address.String()))
+	balance, err := suite.client.FetchBalance(ctx, xc_types.Address(suite.account1Address.String()))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TON balance: %v\n", suite.account1Address.String(), balance)
 
-	balance, err = suite.client.GetBalanceForAsset(ctx, types.Address(suite.account1Address.String()), types.Address(contract))
+	balance, err = suite.client.GetBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), xc_types.Address(contract))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s jetton balance: %v\n", suite.account1Address.String(), balance)
 }

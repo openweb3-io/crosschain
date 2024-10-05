@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
@@ -15,7 +15,7 @@ import (
 type Tx struct {
 	CellBuilder     *cell.Builder
 	ExternalMessage *tlb.ExternalMessage
-	signatures      []types.TxSignature
+	signatures      []xc_types.TxSignature
 }
 
 func (tx *Tx) Serialize() ([]byte, error) {
@@ -30,7 +30,7 @@ func (tx *Tx) Serialize() ([]byte, error) {
 	return bz, nil
 }
 
-func (tx *Tx) Hash() types.TxHash {
+func (tx *Tx) Hash() xc_types.TxHash {
 	if tx.ExternalMessage.Body == nil {
 		return nil
 	}
@@ -49,14 +49,14 @@ func (tx *Tx) Hash() types.TxHash {
 
 	// TON supports loading transaction by either hex, base64-std, or base64url.
 	// We choose hex as it's preferred in explorers and doesn't have special characters.
-	return types.TxHash(hash)
+	return xc_types.TxHash(hex.EncodeToString(hash))
 }
 
-func (tx *Tx) GetSignatures() []types.TxSignature {
+func (tx *Tx) GetSignatures() []xc_types.TxSignature {
 	return tx.signatures
 }
 
-func (tx *Tx) AddSignatures(sigs ...types.TxSignature) error {
+func (tx *Tx) AddSignatures(sigs ...xc_types.TxSignature) error {
 	if tx.ExternalMessage.Body != nil {
 		return fmt.Errorf("already signed TON tx")
 	}
@@ -67,9 +67,9 @@ func (tx *Tx) AddSignatures(sigs ...types.TxSignature) error {
 	return nil
 }
 
-func (tx Tx) Sighashes() ([]types.TxDataToSign, error) {
+func (tx Tx) Sighashes() ([]xc_types.TxDataToSign, error) {
 	hash := tx.CellBuilder.EndCell().Hash()
-	return []types.TxDataToSign{hash}, nil
+	return []xc_types.TxDataToSign{hash}, nil
 }
 
 func NewTx(fromAddr *address.Address, cellBuilder *cell.Builder, stateInitMaybe *tlb.StateInit) *Tx {

@@ -152,7 +152,7 @@ type Wallet struct {
 	seqnoFetcher SeqnoFetcher
 }
 
-func FromAddress(ctx context.Context, seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig) (*Wallet, error) {
+func FromAddress(seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig) (*Wallet, error) {
 	var subwallet uint32 = DefaultSubwallet
 
 	// default subwallet depends on wallet type

@@ -7,20 +7,21 @@ import (
 	"math/big"
 	"time"
 
+	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/tonkeeper/tonapi-go"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 	_ton "github.com/xssnick/tonutils-go/ton"
-	"github.com/xssnick/tonutils-go/ton/jetton"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +30,7 @@ type Client struct {
 	lclient ton.APIClientWrapped
 }
 
-func NewClient(cfg types.IAsset) (*Client, error) {
+func NewClient(cfg xc_types.IAsset) (*Client, error) {
 	client := liteclient.NewConnectionPool()
 
 	// from cfg
@@ -52,15 +53,15 @@ func NewClient(cfg types.IAsset) (*Client, error) {
 	return &Client{tonApi, liteApiClient}, nil
 }
 
-func (a *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
-	acc, err := a.client.GetAccount(ctx, tonapi.GetAccountParams{
+func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
+	acc, err := client.client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(args.From),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	seq, err := a.client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
+	seq, err := client.client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
 		AccountID: string(args.From),
 	})
 	if err != nil {
@@ -70,9 +71,9 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *builder.TransferA
 	input := &TxInput{
 		Timestamp:       333,
 		AccountStatus:   acc.Status,
-		TonBalance:      types.NewBigIntFromInt64(acc.GetBalance()),
+		TonBalance:      xc_types.NewBigIntFromInt64(acc.GetBalance()),
 		Seq:             uint32(seq.Seqno),
-		EstimatedMaxFee: types.NewBigIntFromInt64(0), // TODO
+		EstimatedMaxFee: xc_types.NewBigIntFromInt64(0), // TODO
 		From:            args.From,
 		To:              args.To,
 		TokenDecimals:   args.TokenDecimals,
@@ -82,90 +83,117 @@ func (a *Client) FetchTransferInput(ctx context.Context, args *builder.TransferA
 	}
 
 	if input.ContractAddress != nil {
-		fromAddr, _ := address.ParseAddr(string(args.From))
-		toAddr, _ := address.ParseAddr(string(args.To))
-		contractAddr, _ := address.ParseAddr(string(*args.ContractAddress))
-		amountTlb, _ := tlb.FromNano(big.NewInt(1), int(args.TokenDecimals))
-
-		token := jetton.NewJettonMasterClient(a.lclient, contractAddr)
-		tokenWallet, err := token.GetJettonWallet(ctx, fromAddr)
+		input.TokenWallet, err = client.GetJettonWallet(ctx, args.From, xc_types.ContractAddress(*args.ContractAddress))
 		if err != nil {
-			return nil, err
+			return input, err
 		}
 
-		input.TokenWallet = tokenWallet.Address()
-
-		example, err := BuildJettonTransfer(
-			10,
-			fromAddr,
-			input.TokenWallet,
-			toAddr,
-			amountTlb,
-			tlb.MustFromTON("1.0"),
-			args.Memo,
-		)
+		maxFee, err := client.EstimateMaxFee(ctx, args.From, args.To, input.TokenWallet, args.TokenDecimals, args.Memo, input.Seq)
 		if err != nil {
-			return nil, err
+			return input, err
 		}
-
-		seqnoFetcher := func(ctx context.Context, subWallet uint32) (uint32, error) {
-			return input.Seq, nil
-		}
-
-		w, err := wallet.FromAddress(ctx, seqnoFetcher, fromAddr, wallet.V4R2)
-		if err != nil {
-			return nil, err
-		}
-
-		cellBuilder, err := w.BuildMessages(ctx, false, []*wallet.Message{example})
-		if err != nil {
-			return nil, err
-		}
-
-		tx := tx.NewTx(fromAddr, cellBuilder, nil)
-		sighashes, err := tx.Sighashes()
-		if err != nil {
-			return nil, err
-		}
-		if len(sighashes) != 1 {
-			return nil, errors.New("invalid sighashes")
-		}
-
-		/*
-			_, privKey, err := ed25519.GenerateKey(nil)
-			if err != nil {
-				return nil, err
-			}
-		*/
-		privateKey := make([]byte, 64)
-		signature := ed25519.Sign(privateKey, sighashes[0])
-
-		err = tx.AddSignatures(signature)
-		if err != nil {
-			return nil, err
-		}
-
-		b, err := tx.Serialize()
-		if err != nil {
-			return nil, err
-		}
-
-		res, err := a.client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
-			Boc: base64.StdEncoding.EncodeToString(b),
-			Params: []tonapi.EmulateMessageToWalletReqParamsItem{
-				{
-					Address: string(args.From),
-				},
-			},
-		}, tonapi.EmulateMessageToWalletParams{})
-		if err != nil {
-			return nil, errors.Wrap(err, "could not estimate fee")
-		}
-
-		input.EstimatedMaxFee = types.NewBigIntFromInt64(res.Event.Extra * -1)
+		input.EstimatedMaxFee = *maxFee
 	}
 
 	return input, nil
+}
+
+func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address, contract xc_types.ContractAddress) (xc_types.Address, error) {
+	// fromAddr, _ := address.ParseAddr(string(from))
+	// contractAddr, _ := address.ParseAddr(string(contract))
+
+	result, err := client.client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
+		AccountID: string(from),
+		JettonID:  string(contract),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	/*
+		token := jetton.NewJettonMasterClient(client.lclient, contractAddr)
+		tokenWallet, err := token.GetJettonWallet(ctx, fromAddr)
+		if err != nil {
+			return "", err
+		}
+	*/
+
+	return xc_types.Address(result.WalletAddress.Address), nil
+}
+
+func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address, to xc_types.Address, jettonWalletAddress xc_types.Address, tokenDecimals int32, memo string, seq uint32) (*types.BigInt, error) {
+	fromAddr, _ := address.ParseAddr(string(from))
+	toAddr, _ := address.ParseAddr(string(to))
+	jettonWalletAddr, err := tonaddress.ParseAddress(jettonWalletAddress, "")
+	if err != nil {
+		return nil, err
+	}
+	amountTlb, _ := tlb.FromNano(big.NewInt(1), int(tokenDecimals))
+
+	example, err := BuildJettonTransfer(
+		10,
+		fromAddr,
+		jettonWalletAddr,
+		toAddr,
+		amountTlb,
+		tlb.MustFromTON("1.0"),
+		memo,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	seqnoFetcher := func(ctx context.Context, subWallet uint32) (uint32, error) {
+		return seq, nil
+	}
+
+	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, wallet.V4R2)
+	if err != nil {
+		return nil, err
+	}
+
+	cellBuilder, err := w.BuildMessages(ctx, false, []*wallet.Message{example})
+	if err != nil {
+		return nil, err
+	}
+
+	tx := tx.NewTx(fromAddr, cellBuilder, nil)
+	sighashes, err := tx.Sighashes()
+	if err != nil {
+		return nil, err
+	}
+	if len(sighashes) != 1 {
+		return nil, errors.New("invalid sighashes")
+	}
+
+	privateKey := make([]byte, 64)
+	signature := ed25519.Sign(privateKey, sighashes[0])
+
+	err = tx.AddSignatures(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := tx.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := client.client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
+		Boc: base64.StdEncoding.EncodeToString(b),
+		/*Params: []tonapi.EmulateMessageToWalletReqParamsItem{
+			{
+				Address: string(from),
+			},
+		},*/
+	}, tonapi.EmulateMessageToWalletParams{})
+	if err != nil {
+		return nil, errors.Wrap(err, "could not estimate fee")
+	}
+
+	gas := types.NewBigIntFromInt64(res.Event.Extra * -1)
+
+	return &gas, nil
 }
 
 func (a *Client) GetBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.Address) (*types.BigInt, error) {

@@ -2,10 +2,13 @@ package ton
 
 import (
 	"context"
+	"fmt"
 
+	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -16,13 +19,18 @@ import (
 var Zero = types.NewBigIntFromInt64(0)
 
 type TxBuilder struct {
+	Asset xc_types.IAsset
 }
 
-func NewTxBuilder() *TxBuilder {
-	return &TxBuilder{}
+func NewTxBuilder(asset xc_types.IAsset) *TxBuilder {
+	return &TxBuilder{
+		Asset: asset,
+	}
 }
 
-func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
+	ctx := context.Background()
+
 	txInput := input.(*TxInput)
 
 	toAddr, err := address.ParseAddr(string(txInput.To))
@@ -38,6 +46,11 @@ func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (
 
 	var message *wallet.Message
 	if txInput.ContractAddress != nil {
+		tokenAddr, err := tonaddress.ParseAddress(txInput.TokenWallet, "")
+		if err != nil {
+			return nil, fmt.Errorf("invalid TON token address %s: %v", txInput.TokenWallet, err)
+		}
+
 		amountTlb, err := tlb.FromNano(txInput.Amount.Int(), int(txInput.TokenDecimals))
 		if err != nil {
 			return nil, err
@@ -54,7 +67,7 @@ func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (
 		message, err = BuildJettonTransfer(
 			uint64(txInput.Timestamp),
 			fromAddr,
-			txInput.TokenWallet,
+			tokenAddr,
 			toAddr,
 			amountTlb,
 			tlb.FromNanoTON(maxJettonFee.Int()),
@@ -74,7 +87,7 @@ func (b *TxBuilder) BuildTransaction(ctx context.Context, input types.TxInput) (
 		return txInput.Seq, nil
 	}
 
-	w, err := wallet.FromAddress(ctx, seqnoFetcher, fromAddr, wallet.V4R2)
+	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, wallet.V4R2)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +120,7 @@ func BuildTransfer(
 func BuildJettonTransfer(
 	randomInt uint64,
 	from *address.Address,
-	tokenWallet *address.Address,
+	jettonWalletAddress *address.Address,
 	to *address.Address,
 	amount tlb.Coins,
 	maxFee tlb.Coins,
@@ -136,5 +149,5 @@ func BuildJettonTransfer(
 		return nil, nil
 	}
 
-	return wallet.SimpleMessage(tokenWallet, maxFee, tokenBody), nil
+	return wallet.SimpleMessage(jettonWalletAddress, maxFee, tokenBody), nil
 }
