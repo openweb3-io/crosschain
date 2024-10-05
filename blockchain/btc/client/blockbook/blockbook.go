@@ -67,7 +67,7 @@ func (client *BlockbookClient) LatestBlock(ctx context.Context) (uint64, error) 
 	return uint64(stats.Backend.Blocks), nil
 }
 
-func (client *BlockbookClient) SubmitTx(ctx context.Context, tx xc.Tx) error {
+func (client *BlockbookClient) BroadcastTx(ctx context.Context, tx xc.Tx) error {
 	serial, err := tx.Serialize()
 	if err != nil {
 		return fmt.Errorf("bad tx: %v", err)

@@ -32,18 +32,18 @@ func (tx *Tx) Serialize() ([]byte, error) {
 
 func (tx *Tx) Hash() xc_types.TxHash {
 	if tx.ExternalMessage.Body == nil {
-		return nil
+		return ""
 	}
 	ext, err := tlb.ToCell(tx.ExternalMessage)
 	if err != nil {
-		return nil
+		return ""
 	}
 
 	// Only way to calculate the correct hash is to reserialize it
 	bz := ext.ToBOC()
 	parsed, err := cell.FromBOC(bz)
 	if err != nil {
-		return nil
+		return ""
 	}
 	hash := parsed.Hash()
 

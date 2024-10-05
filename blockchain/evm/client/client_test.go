@@ -81,7 +81,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	err = tx.AddSignatures(sig)
 	suite.Require().NoError(err)
 
-	err = client.SubmitTx(ctx, tx)
+	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %x\n", tx.Hash())
@@ -137,7 +137,7 @@ func (suite *ClientTestSuite) aTestTranfserERC20() {
 	err = tx.AddSignatures(sig)
 	suite.Require().NoError(err)
 
-	err = client.SubmitTx(ctx, tx)
+	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %x\n", tx.Hash())
@@ -153,7 +153,7 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	suite.Require().NoError(err)
 
 	addr := types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
-	contractAddress := types.Address("0x779877A7B0D9E8603169DdbD7836e478b4624789")
+	contractAddress := types.ContractAddress("0x779877A7B0D9E8603169DdbD7836e478b4624789")
 
 	balance, err := client.FetchBalance(ctx, addr)
 	suite.Require().NoError(err)

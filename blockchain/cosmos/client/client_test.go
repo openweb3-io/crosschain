@@ -227,7 +227,7 @@ func TestSubmitTxErr(t *testing.T) {
 		URL: "",
 	})
 	tx := &tx.Tx{}
-	err := client.SubmitTx(context.Background(), tx)
+	err := client.BroadcastTx(context.Background(), tx)
 	require.ErrorContains(t, err, "no Host in request URL")
 }
 

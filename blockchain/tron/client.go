@@ -144,7 +144,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 
 }
 
-func (a *Client) SubmitTx(ctx context.Context, _tx _types.Tx) error {
+func (a *Client) BroadcastTx(ctx context.Context, _tx _types.Tx) error {
 	tx := _tx.(*Tx)
 	if _, err := a.client.Broadcast(tx.tronTx); err != nil {
 		return err

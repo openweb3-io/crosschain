@@ -117,16 +117,17 @@ type ChainConfig struct {
 	ChainTransferTax float64     `yaml:"chain_transfer_tax,omitempty"`
 	GasCoin          string      `yaml:"gas_coin,omitempty"`
 
-	Network            string // network
-	URL                string
-	ChainGasMultiplier float64 `yaml:"chain_gas_multiplier,omitempty"`
-	ChainMaxGasPrice   float64 `yaml:"chain_max_gas_price,omitempty"`
-	ChainMinGasPrice   float64 `yaml:"chain_min_gas_price,omitempty"`
-	Decimals           int32   `yaml:"decimals,omitempty"`
-	Provider           string  `yaml:"provider,omitempty"`
-	ChainID            int64   `yaml:"chain_id,omitempty"`
-	ChainCoinHDPath    uint32  `yaml:"chain_coin_hd_path,omitempty"`
-	ChainIDStr         string  `yaml:"chain_id_str,omitempty"`
+	Network              string // network
+	URL                  string
+	ChainGasMultiplier   float64 `yaml:"chain_gas_multiplier,omitempty"`
+	ChainMaxGasPrice     float64 `yaml:"chain_max_gas_price,omitempty"`
+	ChainMinGasPrice     float64 `yaml:"chain_min_gas_price,omitempty"`
+	Decimals             int32   `yaml:"decimals,omitempty"`
+	Provider             string  `yaml:"provider,omitempty"`
+	ChainID              int64   `yaml:"chain_id,omitempty"`
+	ChainCoinHDPath      uint32  `yaml:"chain_coin_hd_path,omitempty"`
+	ChainIDStr           string  `yaml:"chain_id_str,omitempty"`
+	ChainGasPriceDefault float64 `yaml:"chain_gas_price_default,omitempty"`
 
 	ExplorerURL string `yaml:"explorer_url,omitempty"`
 	NoGasFees   bool   `yaml:"no_gas_fees,omitempty"`

@@ -110,8 +110,8 @@ func NewClient(cfg *xc.ChainConfig) (*Client, error) {
 	}, nil
 }
 
-// SubmitTx submits a EVM tx
-func (client *Client) SubmitTx(ctx context.Context, trans xc.Tx) error {
+// BroadcastTx submits a EVM tx
+func (client *Client) BroadcastTx(ctx context.Context, trans xc.Tx) error {
 	switch tx := trans.(type) {
 	case *tx.Tx:
 		err := client.EthClient.SendTransaction(ctx, tx.EthTx)
@@ -327,7 +327,7 @@ func (client *Client) FetchBalance(ctx context.Context, addr xc.Address) (*xc.Bi
 }
 
 // Fetch the balance of the asset that this client is configured for
-func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, contract xc.Address) (*xc.BigInt, error) {
+func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, contract xc.ContractAddress) (*xc.BigInt, error) {
 	// token
 	zero := xc.NewBigIntFromUint64(0)
 	tokenAddress, _ := address.FromHex(xc.Address(contract))

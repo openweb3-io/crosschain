@@ -118,8 +118,8 @@ func (client *NativeClient) FetchTransferInput(ctx context.Context, args *xcbuil
 	return input, nil
 }
 
-// SubmitTx submits a Bitcoin tx
-func (client *NativeClient) SubmitTx(ctx context.Context, txInput xc.Tx) error {
+// BroadcastTx submits a Bitcoin tx
+func (client *NativeClient) BroadcastTx(ctx context.Context, txInput xc.Tx) error {
 	serial, err := txInput.Serialize()
 	if err != nil {
 		return fmt.Errorf("bad tx: %v", err)

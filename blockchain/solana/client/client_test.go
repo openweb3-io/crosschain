@@ -91,7 +91,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())
@@ -137,7 +137,7 @@ func (suite *ClientTestSuite) TestSPLTranfser() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())
@@ -185,7 +185,7 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %s\n", tx.Hash())

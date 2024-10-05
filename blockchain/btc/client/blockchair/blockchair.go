@@ -75,7 +75,7 @@ func (client *BlockchairClient) LatestBlock(ctx context.Context) (uint64, error)
 	return stats.Data.Blocks, nil
 }
 
-func (client *BlockchairClient) SubmitTx(ctx context.Context, tx xc.Tx) error {
+func (client *BlockchairClient) BroadcastTx(ctx context.Context, tx xc.Tx) error {
 	serial, err := tx.Serialize()
 	if err != nil {
 		return fmt.Errorf("bad tx: %v", err)

@@ -183,7 +183,7 @@ func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, 
 	return &fee, nil
 }
 
-func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
+func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 

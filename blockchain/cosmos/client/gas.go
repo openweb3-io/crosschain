@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,14 +32,14 @@ func (client *Client) EstimateGasPrice(ctx context.Context) (float64, error) {
 	if err != nil {
 		return zero, err
 	}
-	native := client.Asset.GetChain()
+	native := client.Chain
 	denoms := []string{
 		native.ChainCoin,
 		native.GasCoin,
 	}
 	minFeeRaw, err := gas.ParseMinGasError(res, denoms)
 	if err != nil {
-		defaultGas := client.Asset.GetChain().ChainGasPriceDefault
+		defaultGas := client.Chain.ChainGasPriceDefault
 		return defaultGas, nil
 	}
 	// Need to convert total fee into gas price (cost per gas)
@@ -49,7 +51,7 @@ func (client *Client) EstimateGasPrice(ctx context.Context) (float64, error) {
 // The only way currently to determine this price is to try to submit a tx for free
 // and look at the error log.
 func (client *Client) BuildReferenceTransfer(gasLimit uint64) (*tx.Tx, error) {
-	native := client.Asset.GetChain()
+	native := client.Chain
 	builder, err := builder.NewTxBuilder(native)
 	if err != nil {
 		return nil, err
@@ -93,7 +95,8 @@ func (client *Client) BuildReferenceTransfer(gasLimit uint64) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	sig, _, err := kb.Sign("from", toSign[0])
+	// TODO check SignSode
+	sig, _, err := kb.Sign("from", toSign[0], signing.SignMode_SIGN_MODE_TEXTUAL)
 	if err != nil {
 		return nil, err
 	}

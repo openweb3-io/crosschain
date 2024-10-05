@@ -172,7 +172,7 @@ func (s *ClientTestSuite) TestNewClient() {
 	require.ErrorContains(err, "api token required")
 }
 
-func (s *ClientTestSuite) TestSubmitTx() {
+func (s *ClientTestSuite) TestBroadcastTx() {
 	require := s.Require()
 	server, close := testtypes.MockHTTP(s.T(), []string{
 		// transaction submitted
@@ -182,7 +182,7 @@ func (s *ClientTestSuite) TestSubmitTx() {
 	asset := &xc.ChainConfig{Chain: xc.BTC, URL: server.URL, Network: "testnet", AuthSecret: "1234", Provider: string(btc_client.Blockchair)}
 	client, err := btc_client.NewClient(asset)
 	require.NoError(err)
-	err = client.SubmitTx(s.Ctx, &tx.Tx{
+	err = client.BroadcastTx(s.Ctx, &tx.Tx{
 		MsgTx: wire.NewMsgTx(2),
 	})
 	require.NoError(err)

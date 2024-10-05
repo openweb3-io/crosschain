@@ -137,10 +137,10 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("tx hash(base64): %v\n", base64.StdEncoding.EncodeToString(tx.Hash()))
+	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) aTest_EstimateGas() {
@@ -253,7 +253,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 }
 
@@ -309,7 +309,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err, "add signature error")
 
-	err = suite.client.SubmitTx(ctx, tx)
+	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err, "SubmitTx failed")
 }
 

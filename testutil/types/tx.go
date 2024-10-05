@@ -4,7 +4,7 @@ import (
 	xc_types "github.com/openweb3-io/crosschain/types"
 )
 
-// An object that only supports .Serialize for SubmitTx()
+// An object that only supports .Serialize for BroadcastTx()
 type MockXcTx struct {
 	SerializedSignedTx []byte
 	Signatures         []xc_types.TxSignature

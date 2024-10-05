@@ -76,7 +76,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	err = client.SubmitTx(ctx, tx)
+	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %x\n", tx.Hash())
@@ -128,7 +128,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	client.SubmitTx(ctx, tx)
+	client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("trx hash: %x\n", tx.Hash())
