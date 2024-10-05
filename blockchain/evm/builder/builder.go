@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -33,7 +34,7 @@ var _ GethTxBuilder = &EvmTxBuilder{}
 
 // TxBuilder for EVM
 type TxBuilder struct {
-	Asset         xc.IAsset
+	Chain         *xc.ChainConfig
 	gethTxBuilder GethTxBuilder
 	// Legacy bool
 }
@@ -47,9 +48,9 @@ func NewEvmTxBuilder() *EvmTxBuilder {
 }
 
 // NewTxBuilder creates a new EVM TxBuilder
-func NewTxBuilder(asset xc.IAsset) (TxBuilder, error) {
+func NewTxBuilder(chain *xc.ChainConfig) (TxBuilder, error) {
 	return TxBuilder{
-		Asset:         asset,
+		Chain:         chain,
 		gethTxBuilder: &EvmTxBuilder{},
 	}, nil
 }
@@ -69,10 +70,16 @@ func (txBuilder TxBuilder) WithTxBuilder(buider GethTxBuilder) TxBuilder {
 
 // NewTransfer creates a new transfer for an Asset, either native or token
 func (txBuilder TxBuilder) Transfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.NewTransfer(args.From, args.To, args.Amount, input)
+	return txBuilder.NewTransfer(args.GetFrom(), args.GetTo(), args.GetAmount(), input)
 }
 func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
-	switch asset := txBuilder.Asset.(type) {
+	txInput := input.(*tx_input.TxInput)
+	asset, _ := txInput.Args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
+
+	switch asset := asset.(type) {
 	/* TODO
 	case *xc.TaskConfig:
 		return txBuilder.NewTask(from, to, amount, input)
@@ -89,7 +96,7 @@ func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc
 		contract := asset.GetContract()
 		zap.S().Warn("new transfer for unknown asset type",
 			zap.String("chain", string(asset.GetChain().Chain)),
-			zap.String("contract", contract),
+			zap.String("contract", string(contract)),
 			zap.String("asset_type", fmt.Sprintf("%T", asset)),
 		)
 		if contract != "" {
@@ -102,19 +109,24 @@ func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc
 
 // NewNativeTransfer creates a new transfer for a native asset
 func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.gethTxBuilder.BuildTxWithPayload(txBuilder.Asset.GetChain(), to, amount, []byte{}, input)
+	return txBuilder.gethTxBuilder.BuildTxWithPayload(txBuilder.Chain, to, amount, []byte{}, input)
 }
 
 // NewTokenTransfer creates a new transfer for a token asset
 func (txBuilder TxBuilder) NewTokenTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+	txInput := input.(*tx_input.TxInput)
+	asset, ok := txInput.Args.GetAsset()
+	if !ok {
+		return nil, errors.New("asset needed")
+	}
 
 	zero := xc.NewBigIntFromUint64(0)
-	contract := txBuilder.Asset.GetContract()
+	contract := asset.GetContract()
 	payload, err := BuildERC20Payload(to, amount)
 	if err != nil {
 		return nil, err
 	}
-	return txBuilder.gethTxBuilder.BuildTxWithPayload(txBuilder.Asset.GetChain(), xc.Address(contract), zero, payload, input)
+	return txBuilder.gethTxBuilder.BuildTxWithPayload(asset.GetChain(), xc.Address(contract), zero, payload, input)
 }
 
 func BuildERC20Payload(to xc.Address, amount xc.BigInt) ([]byte, error) {
@@ -194,6 +206,12 @@ func GweiToWei(gwei uint64) xc.BigInt {
 }
 
 func (txBuilder TxBuilder) Stake(stakeArgs xcbuilder.StakeArgs, input xc.StakeTxInput) (xc.Tx, error) {
+	batchDepositInput := input.(*tx_input.BatchDepositInput)
+	asset, ok := batchDepositInput.Args.GetAsset()
+	if !ok {
+		return nil, errors.New("asset needed")
+	}
+
 	switch input := input.(type) {
 	case *tx_input.BatchDepositInput:
 		evmBuilder := NewEvmTxBuilder()
@@ -215,12 +233,12 @@ func (txBuilder TxBuilder) Stake(stakeArgs xcbuilder.StakeArgs, input xc.StakeTx
 		for i := range credentials {
 			credentials[i] = withdrawCred[:]
 		}
-		data, err := stake_batch_deposit.Serialize(txBuilder.Asset.GetChain(), input.PublicKeys, credentials, input.Signatures)
+		data, err := stake_batch_deposit.Serialize(asset.GetChain(), input.PublicKeys, credentials, input.Signatures)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input for %T: %v", input, err)
 		}
-		contract := txBuilder.Asset.GetChain().Staking.StakeContract
-		tx, err := evmBuilder.BuildTxWithPayload(txBuilder.Asset.GetChain(), xc.Address(contract), stakeArgs.GetAmount(), data, &input.TxInput)
+		contract := asset.GetChain().Staking.StakeContract
+		tx, err := evmBuilder.BuildTxWithPayload(asset.GetChain(), xc.Address(contract), stakeArgs.GetAmount(), data, &input.TxInput)
 		if err != nil {
 			return nil, fmt.Errorf("could not build tx for %T: %v", input, err)
 		}
@@ -230,6 +248,12 @@ func (txBuilder TxBuilder) Stake(stakeArgs xcbuilder.StakeArgs, input xc.StakeTx
 	}
 }
 func (txBuilder TxBuilder) Unstake(stakeArgs xcbuilder.StakeArgs, input xc.UnstakeTxInput) (xc.Tx, error) {
+	batchDepositInput := input.(*tx_input.ExitRequestInput)
+	asset, ok := batchDepositInput.Args.GetAsset()
+	if !ok {
+		return nil, errors.New("asset needed")
+	}
+
 	switch input := input.(type) {
 	case *tx_input.ExitRequestInput:
 		evmBuilder := NewEvmTxBuilder()
@@ -246,9 +270,9 @@ func (txBuilder TxBuilder) Unstake(stakeArgs xcbuilder.StakeArgs, input xc.Unsta
 		if err != nil {
 			return nil, fmt.Errorf("invalid input for %T: %v", input, err)
 		}
-		contract := txBuilder.Asset.GetChain().Staking.UnstakeContract
+		contract := asset.GetChain().Staking.UnstakeContract
 		zero := xc.NewBigIntFromUint64(0)
-		tx, err := evmBuilder.BuildTxWithPayload(txBuilder.Asset.GetChain(), xc.Address(contract), zero, data, &input.TxInput)
+		tx, err := evmBuilder.BuildTxWithPayload(asset.GetChain(), xc.Address(contract), zero, data, &input.TxInput)
 		if err != nil {
 			return nil, fmt.Errorf("could not build tx for %T: %v", input, err)
 		}

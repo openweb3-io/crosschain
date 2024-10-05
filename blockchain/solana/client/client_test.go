@@ -57,16 +57,17 @@ func TestClientTestSuite(t *testing.T) {
 func (suite *ClientTestSuite) TestTranfser() {
 	ctx := context.Background()
 
-	asset := &types.TokenAssetConfig{}
-
-	builder, err := builder.NewTxBuilder(asset)
+	builder, err := builder.NewTxBuilder()
 	suite.Require().NoError(err)
 
-	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
-		From:   types.Address(senderPrivateKey.PublicKey().String()),
-		To:     types.Address(recipientPrivateKey.PublicKey().String()), // must exist
-		Amount: types.NewBigIntFromInt64(35),
-	})
+	args, err := xcbuilder.NewTransferArgs(
+		types.Address(senderPrivateKey.PublicKey().String()),
+		types.Address(recipientPrivateKey.PublicKey().String()), // must exist
+		types.NewBigIntFromInt64(35),
+	)
+	suite.Require().NoError(err)
+
+	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTransfer(input)
@@ -98,17 +99,21 @@ func (suite *ClientTestSuite) TestTranfser() {
 func (suite *ClientTestSuite) TestSPLTranfser(t *testing.T) {
 	ctx := context.Background()
 
-	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
-		From:   types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
-		To:     types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
-		Amount: types.NewBigIntFromInt64(35),
-	})
+	args, err := xcbuilder.NewTransferArgs(
+		types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
+		types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
+		types.NewBigIntFromInt64(35),
+		xcbuilder.WithAsset(&types.TokenAssetConfig{
+			Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
+			Decimals: 6,
+		}),
+	)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
-		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
-		Decimals: 6,
-	})
+	input, err := suite.client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := builder.NewTxBuilder()
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)
@@ -142,17 +147,21 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 
 	// feePayer := recipientPrivateKey.PublicKey().String()
 
-	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
-		From:   types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
-		To:     types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
-		Amount: types.NewBigIntFromInt64(1),
-	})
+	args, err := xcbuilder.NewTransferArgs(
+		types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
+		types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
+		types.NewBigIntFromInt64(1),
+		xcbuilder.WithAsset(&types.TokenAssetConfig{
+			Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
+			Decimals: 6,
+		}),
+	)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
-		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
-		Decimals: 6,
-	})
+	input, err := suite.client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := builder.NewTxBuilder()
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)

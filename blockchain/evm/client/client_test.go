@@ -13,6 +13,7 @@ import (
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/signer"
 	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/test-go/testify/suite"
 )
 
@@ -45,7 +46,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 
 	//testnet Holesky 17000
 	//testnet sepolia 11155111
-	client, err := client.NewClient(&types.ChainConfig{
+	client, err := client.NewClient(&xc_types.ChainConfig{
 		// URL: "https://eth-mainnet.public.blastapi.io",
 		ChainID: int64(chainId),
 		URL:     endpoint,
@@ -53,18 +54,18 @@ func (suite *ClientTestSuite) TestTranfser() {
 	})
 	suite.Require().NoError(err)
 
-	gas := types.NewBigIntFromInt64(21000)
-	args := &xcbuilder.TransferArgs{
-		From:   "0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
-		To:     "0x388C818CA8B9251b393131C08a736A67ccB19297",
-		Amount: types.NewBigIntFromInt64(3000),
-		Gas:    &gas,
-	}
+	// gas := types.NewBigIntFromInt64(21000)
+	args, err := xcbuilder.NewTransferArgs(
+		"0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
+		"0x388C818CA8B9251b393131C08a736A67ccB19297",
+		xc_types.NewBigIntFromInt64(3000),
+	)
+	suite.Require().NoError(err)
 
 	input, err := client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder(&types.ChainConfig{})
+	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
 	tx, err := builder.Transfer(args, input)
@@ -88,36 +89,42 @@ func (suite *ClientTestSuite) TestTranfser() {
 
 func (suite *ClientTestSuite) aTestTranfserERC20() {
 	ctx := context.Background()
-	contractAddress := "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+	contractAddress := xc_types.ContractAddress("0x779877A7B0D9E8603169DdbD7836e478b4624789")
 
 	//testnet Holesky 17000
 	//testnet sepolia 11155111
-	client, err := client.NewClient(&types.ChainConfig{
+	client, err := client.NewClient(&xc_types.ChainConfig{
 		ChainID: int64(chainId),
 		URL:     "https://sepolia.infura.io/v3/4538f2b2d74c4f48b1a74de742293c51",
 	})
 	suite.Require().NoError(err)
 
-	amount := types.NewBigIntFromInt64(6000)
-	gas := types.NewBigIntFromInt64(43000)
-	args := &xcbuilder.TransferArgs{
-		From: "0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
-		To:   "0x388C818CA8B9251b393131C08a736A67ccB19297",
-		// ContractAddress: (*types.Address)(&contractAddress), //LINK
-		Amount: amount,
-		Gas:    &gas,
-	}
+	// gas := xc_types.NewBigIntFromInt64(43000)
+	args, err := xcbuilder.NewTransferArgs(
+		"0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
+		"0x388C818CA8B9251b393131C08a736A67ccB19297",
+		xc_types.NewBigIntFromInt64(6000),
+	)
+	suite.Require().NoError(err)
 
 	input, err := client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
-		Contract: contractAddress,
-		Decimals: 18,
-	})
+	args2, err := xcbuilder.NewTransferArgs(
+		"0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
+		"0x388C818CA8B9251b393131C08a736A67ccB19297",
+		xc_types.NewBigIntFromInt64(6000),
+		xcbuilder.WithAsset(&types.TokenAssetConfig{
+			Contract: contractAddress,
+			Decimals: 18,
+		}),
+	)
 	suite.Require().NoError(err)
 
-	tx, err := builder.Transfer(args, input)
+	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Transfer(args2, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -136,7 +143,7 @@ func (suite *ClientTestSuite) aTestTranfserERC20() {
 	fmt.Printf("tx hash: %x\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) aTestFetchBalance() {
+func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	client, err := client.NewClient(&types.ChainConfig{

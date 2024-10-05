@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/test-go/testify/suite"
-
 	"github.com/openweb3-io/crosschain/blockchain/tron"
 	"github.com/openweb3-io/crosschain/builder"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
+	"github.com/test-go/testify/suite"
 )
 
 var (
@@ -40,16 +41,19 @@ func (suite *ClientTestSuite) TestTransfer() {
 	//testnet
 	client := tron.NewClient(endpoint, chainId)
 
-	amount := types.NewBigIntFromInt64(3)
+	amount := xc_types.NewBigIntFromInt64(3)
 
-	input, err := client.FetchTransferInput(ctx, &builder.TransferArgs{
-		From:   "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
-		To:     "TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
-		Amount: amount,
-	})
+	args, err := builder.NewTransferArgs(
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
+		amount,
+	)
 	suite.Require().NoError(err)
 
-	builder := tron.NewTxBuilder(&types.ChainConfig{})
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	tx, err := builder.BuildTransfer(input)
 	suite.Require().NoError(err)
 
@@ -84,20 +88,24 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	//testnet
 	client := tron.NewClient(endpoint, chainId)
 
-	contractAddress := types.Address("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
-	gas := types.NewBigIntFromInt64(1)
+	contractAddress := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	// gas := types.NewBigIntFromInt64(1)
 
-	input, err := client.FetchTransferInput(ctx, &builder.TransferArgs{
-		ContractAddress: &contractAddress, //BTT test tokens
-		TokenDecimals:   18,
-		From:            "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
-		To:              "TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
-		Amount:          types.NewBigIntFromInt64(3),
-		Gas:             &gas, //10 trx
-	})
+	args, err := builder.NewTransferArgs(
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
+		xc_types.NewBigIntFromInt64(3),
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
+			Contract: contractAddress,
+			Decimals: 18,
+		}),
+	)
 	suite.Require().NoError(err)
 
-	builder := tron.NewTxBuilder(&types.ChainConfig{})
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	tx, err := builder.BuildTransfer(input)
 	suite.Require().NoError(err)
 

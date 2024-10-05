@@ -19,39 +19,40 @@ import (
 var Zero = types.NewBigIntFromInt64(0)
 
 type TxBuilder struct {
-	Asset xc_types.IAsset
 }
 
-func NewTxBuilder(asset xc_types.IAsset) *TxBuilder {
-	return &TxBuilder{
-		Asset: asset,
-	}
+func NewTxBuilder() *TxBuilder {
+	return &TxBuilder{}
 }
 
 func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
 	ctx := context.Background()
 
 	txInput := input.(*TxInput)
+	args := txInput.Args
 
-	toAddr, err := address.ParseAddr(string(txInput.To))
+	toAddr, err := address.ParseAddr(string(args.GetTo()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid TON to address: %s", txInput.To)
+		return nil, errors.Wrapf(err, "invalid TON to address: %s", args.GetTo())
 	}
 	// TODO 应该在外部传入地址的时候决定 bounce
 	toAddr = toAddr.Bounce(false)
-	fromAddr, err := address.ParseAddr(string(txInput.From))
+	fromAddr, err := address.ParseAddr(string(args.GetFrom()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid TON address %s", txInput.From)
+		return nil, errors.Wrapf(err, "invalid TON address %s", args.GetFrom())
 	}
 
 	var message *wallet.Message
-	if txInput.ContractAddress != nil {
+
+	asset, _ := args.GetAsset()
+
+	if asset != nil && asset.GetContract() != "" {
 		tokenAddr, err := tonaddress.ParseAddress(txInput.TokenWallet, "")
 		if err != nil {
 			return nil, fmt.Errorf("invalid TON token address %s: %v", txInput.TokenWallet, err)
 		}
 
-		amountTlb, err := tlb.FromNano(txInput.Amount.Int(), int(txInput.TokenDecimals))
+		amountTlb, err := tlb.FromNano(args.GetAmount().Int(), int(asset.GetDecimals()))
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +78,7 @@ func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
 			return nil, err
 		}
 	} else {
-		message, err = BuildTransfer(toAddr, tlb.FromNanoTON(txInput.Amount.Int()), txInput.Memo)
+		message, err = BuildTransfer(toAddr, tlb.FromNanoTON(args.GetAmount().Int()), txInput.Memo)
 		if err != nil {
 			return nil, errors.Wrap(err, "BuildTransfer failed")
 		}

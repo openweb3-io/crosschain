@@ -19,11 +19,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func (client *Client) DefaultGasLimit() uint64 {
+func (client *Client) DefaultGasLimit(asset xc.IAsset) uint64 {
 	// Set absolute gas limits for safety
 	gasLimit := uint64(90_000)
-	native := client.Asset.GetChain()
-	if client.Asset.GetContract() != "" {
+	native := asset.GetChain()
+	if asset.GetContract() != "" {
 		// token
 		gasLimit = 500_000
 	}
@@ -35,7 +35,7 @@ func (client *Client) DefaultGasLimit() uint64 {
 }
 
 // Simulate a transaction to get the estimated gas limit
-func (client *Client) SimulateGasWithLimit(ctx context.Context, from xc.Address, trans *tx.Tx) (uint64, error) {
+func (client *Client) SimulateGasWithLimit(ctx context.Context, from xc.Address, trans *tx.Tx, asset xc.IAsset) (uint64, error) {
 	zero := big.NewInt(0)
 	fromAddr, _ := address.FromHex(from)
 
@@ -66,7 +66,7 @@ func (client *Client) SimulateGasWithLimit(ctx context.Context, from xc.Address,
 		gasLimit, err = client.EthClient.EstimateGas(ctx, msg)
 	} else if err != nil && strings.Contains(err.Error(), "less than the block's baseFeePerGas") {
 		// this estimate does not work with hardhat -> use defaults
-		return client.DefaultGasLimit(), nil
+		return client.DefaultGasLimit(asset), nil
 	}
 	if err != nil {
 		return 0, fmt.Errorf("could not simulate tx: %v", err)
@@ -80,7 +80,7 @@ func (client *Client) SimulateGasWithLimit(ctx context.Context, from xc.Address,
 		gasLimit += 1_000
 		amountEth, err := client.FetchNativeBalance(ctx, from)
 		oneEthHuman, _ := xc.NewAmountHumanReadableFromStr("1")
-		oneEth := oneEthHuman.ToBlockchain(client.Asset.GetChain().Decimals)
+		oneEth := oneEthHuman.ToBlockchain(client.Chain.GetChain().Decimals)
 		// add 70k more if we can clearly afford it
 		if err == nil && amountEth.Cmp(&oneEth) >= 0 {
 			// increase gas budget 70k
@@ -89,7 +89,7 @@ func (client *Client) SimulateGasWithLimit(ctx context.Context, from xc.Address,
 	}
 
 	if gasLimit == 0 {
-		gasLimit = client.DefaultGasLimit()
+		gasLimit = client.DefaultGasLimit(asset)
 	}
 	return gasLimit, nil
 }
@@ -109,20 +109,29 @@ func (client *Client) GetNonce(ctx context.Context, from xc.Address) (uint64, er
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc.TxInput, error) {
-	txInput, err := client.FetchUnsimulatedInput(ctx, args.From)
+	txInput, err := client.FetchUnsimulatedInput(ctx, args.GetFrom())
 	if err != nil {
 		return txInput, err
 	}
-	builder, err := builder.NewTxBuilder(client.Asset)
+	txInput.Args = args
+
+	var asset xc.IAsset
+	if as, ok := args.GetAsset(); ok {
+		asset = as
+	} else {
+		asset = client.Chain
+	}
+
+	builder, err := builder.NewTxBuilder(client.Chain)
 	if err != nil {
 		return nil, fmt.Errorf("could not prepare to simulate: %v", err)
 	}
-	exampleTf, err := builder.NewTransfer(args.From, args.To, args.Amount, txInput)
+	exampleTf, err := builder.NewTransfer(args.GetFrom(), args.GetTo(), args.GetAmount(), txInput)
 	if err != nil {
 		return nil, fmt.Errorf("could not prepare to simulate: %v", err)
 	}
 
-	gasLimit, err := client.SimulateGasWithLimit(ctx, args.From, exampleTf.(*tx.Tx))
+	gasLimit, err := client.SimulateGasWithLimit(ctx, args.GetFrom(), exampleTf.(*tx.Tx), asset)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +147,7 @@ func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc.Address, t
 
 // FetchLegacyTxInput returns tx input for a EVM tx
 func (client *Client) FetchUnsimulatedInput(ctx context.Context, from xc.Address) (*tx_input.TxInput, error) {
-	nativeAsset := client.Asset.GetChain()
+	nativeAsset := client.Chain
 
 	zero := xc.NewBigIntFromUint64(0)
 	result := tx_input.NewTxInput()
@@ -174,7 +183,7 @@ func (client *Client) FetchUnsimulatedInput(ctx context.Context, from xc.Address
 		}
 		result.GasFeeCap = xc.BigInt(*latestHeader.BaseFee)
 		// should only multiply one cap, not both.
-		result.GasTipCap = xc.BigInt(*gasTipCap).ApplyGasPriceMultiplier(client.Asset.GetChain())
+		result.GasTipCap = xc.BigInt(*gasTipCap).ApplyGasPriceMultiplier(client.Chain)
 
 		if result.GasFeeCap.Cmp(&result.GasTipCap) < 0 {
 			// increase max fee cap to accomodate tip if needed

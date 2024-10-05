@@ -19,18 +19,17 @@ import (
 )
 
 type Client struct {
-	Asset  types.IAsset
+	cfg    *types.ChainConfig
 	client *rpc.Client
 }
 
-func NewClient(asset types.IAsset) (*Client, error) {
-	cfg := asset.GetChain()
+func NewClient(cfg *types.ChainConfig) (*Client, error) {
 	endpoint := cfg.URL
 	if endpoint == "" {
 		endpoint = rpc.MainNetBeta_RPC
 	}
 	client := rpc.New(endpoint)
-	return &Client{Asset: asset, client: client}, nil
+	return &Client{cfg: cfg, client: client}, nil
 }
 
 func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*tx_input.TxInput, error) {
@@ -50,20 +49,19 @@ func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (types.TxInput, error) {
-	txInput, err := client.FetchBaseInput(ctx, args.From)
+	txInput, err := client.FetchBaseInput(ctx, args.GetFrom())
 	if err != nil {
 		return nil, err
 	}
 
-	if args.ContractAddress == nil {
+	asset, _ := args.GetAsset()
+	if asset == nil {
 		return txInput, nil
 	}
 
-	contract := *args.ContractAddress
-
-	mint, err := solana.PublicKeyFromBase58(string(*args.ContractAddress))
+	mint, err := solana.PublicKeyFromBase58(string(asset.GetContract()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid mint address: %s", string(contract))
+		return nil, errors.Wrapf(err, "invalid mint address: %s", string(asset.GetContract()))
 	}
 
 	mintInfo, err := client.client.GetAccountInfo(ctx, mint)
@@ -73,7 +71,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	txInput.TokenProgram = mintInfo.Value.Owner
 
 	// get account info - check if to is an owner or ata
-	accountTo, err := solana.PublicKeyFromBase58(string(args.To))
+	accountTo, err := solana.PublicKeyFromBase58(string(args.GetTo()))
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +88,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	// for tokens, get ata account info
 	ataTo := accountTo
 	if !txInput.ToIsATA {
-		ataToStr, err := solana_types.FindAssociatedTokenAddress(string(args.To), string(contract), mintInfo.Value.Owner)
+		ataToStr, err := solana_types.FindAssociatedTokenAddress(string(args.GetTo()), string(asset.GetContract()), mintInfo.Value.Owner)
 		if err != nil {
 			return nil, err
 		}
@@ -104,8 +102,8 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	}
 
 	// Fetch all token accounts as if they are utxo
-	if contract != "" {
-		tokenAccounts, err := client.GetTokenAccountsByOwner(ctx, string(args.From), string(contract))
+	if asset.GetContract() != "" {
+		tokenAccounts, err := client.GetTokenAccountsByOwner(ctx, string(args.GetFrom()), string(asset.GetContract()))
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +159,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		)
 	}
 	// apply multiplier
-	txInput.PrioritizationFee = txInput.PrioritizationFee.ApplyGasPriceMultiplier(client.Asset.GetChain())
+	txInput.PrioritizationFee = txInput.PrioritizationFee.ApplyGasPriceMultiplier(client.cfg)
 
 	return txInput, nil
 }

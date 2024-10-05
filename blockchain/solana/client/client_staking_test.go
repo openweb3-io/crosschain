@@ -106,7 +106,7 @@ func TestFetchStakingInput(t *testing.T) {
 				xc_types.SOL,
 				from,
 				xc_types.NewBigIntFromUint64(1000),
-				builder.OptionValidator(v.validator),
+				builder.WithValidator(v.validator),
 			)
 
 			require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestFetchUnstakingInput(t *testing.T) {
 				xc_types.SOL,
 				from,
 				xc_types.NewBigIntFromUint64(100000000),
-				builder.OptionValidator(v.validator),
+				builder.WithValidator(v.validator),
 			)
 
 			require.NoError(t, err)
@@ -309,7 +309,7 @@ func TestFetchWithdrawInput(t *testing.T) {
 			from := xc_types.Address("4ixwJt7DDGUV3xxi3mvZuEjLn4kDC39ogknnHQ4Crv5a")
 			options := []builder.BuilderOption{}
 			if v.validator != "" {
-				options = append(options, builder.OptionValidator(v.validator))
+				options = append(options, builder.WithValidator(v.validator))
 			}
 
 			args, err := builder.NewStakeArgs(

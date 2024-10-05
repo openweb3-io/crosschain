@@ -49,15 +49,12 @@ func NewClient(
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
 	input := new(TxInput)
-	input.From = args.From
-	input.To = args.To
-	input.ContractAddress = args.ContractAddress
-	input.Amount = &args.Amount
+	input.Args = args
 
 	// Getting blockhash details from the CreateTransfer endpoint as TRON uses an unusual hashing algorithm (SHA2256SM3), so we can't do a minimal
 	// retrieval and just get the blockheaders
 
-	tx, err := client.client.Transfer(string(input.From), string(input.To), input.Amount.Int().Int64())
+	tx, err := client.client.Transfer(string(args.GetFrom()), string(args.GetTo()), args.GetAmount().Int().Int64())
 	// dummyTx, err := client.client.CreateTransaction(string(args.GetFrom()), string(args.GetTo()), 5)
 	if err != nil {
 		return nil, err
@@ -94,6 +91,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 	_tx := tx.(*Tx)
 
 	input := _tx.input
+	args := input.Args
 
 	bandwithUsage := types.NewBigIntFromInt64(200)
 	/*
@@ -119,16 +117,17 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 		}
 	}
 
-	if input.ContractAddress == nil {
+	asset, _ := args.GetAsset()
+	if asset == nil || asset.GetContract() == "" {
 		//普通trx转账只需要带宽
 		totalCost := (&transactionFee).Mul(&bandwithUsage)
 		return &totalCost, nil
 	} else {
 		estimate, err := a.client.EstimateEnergy(
-			string(input.From),
-			string(*input.ContractAddress),
+			string(args.GetFrom()),
+			string(asset.GetContract()),
 			"transfer(address,uint256)",
-			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, input.To, input.Amount),
+			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, args.GetTo(), args.GetAmount()),
 			0, "", 0,
 		)
 		if err != nil {

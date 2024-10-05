@@ -24,10 +24,8 @@ type TxBuilder struct {
 	Asset types.IAsset
 }
 
-func NewTxBuilder(asset types.IAsset) (*TxBuilder, error) {
-	return &TxBuilder{
-		Asset: asset,
-	}, nil
+func NewTxBuilder() (*TxBuilder, error) {
+	return &TxBuilder{}, nil
 }
 
 func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {

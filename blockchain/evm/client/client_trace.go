@@ -61,7 +61,7 @@ func (client *Client) TraceEthMovements(ctx context.Context, txHash common.Hash)
 	traces := FlattenTraceResult(result, []*TraceTransactionResult{})
 	sourcesAndDests := tx.SourcesAndDests{}
 	zero := big.NewInt(0)
-	native := client.Asset.GetChain().Chain
+	native := client.Chain.Chain
 
 	for _, trace := range traces {
 		if trace.Value.ToInt().Cmp(zero) > 0 {

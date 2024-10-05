@@ -16,6 +16,8 @@ type builderOptions struct {
 	validator    *string
 	stakeOwner   *xc_types.Address
 	stakeAccount *string
+
+	asset *xc_types.IAsset
 }
 
 // All ArgumentBuilders should provide base arguments for transactions
@@ -49,27 +51,29 @@ func (opts *builderOptions) GetValidator() (string, bool)            { return ge
 func (opts *builderOptions) GetStakeOwner() (xc_types.Address, bool) { return get(opts.stakeOwner) }
 func (opts *builderOptions) GetStakeAccount() (string, bool)         { return get(opts.stakeAccount) }
 
+func (opts *builderOptions) GetAsset() (xc_types.IAsset, bool) { return get(opts.asset) }
+
 type BuilderOption func(opts *builderOptions) error
 
-func OptionMemo(memo string) BuilderOption {
+func WithMemo(memo string) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.memo = &memo
 		return nil
 	}
 }
-func OptionTimestamp(ts int64) BuilderOption {
+func WithTimestamp(ts int64) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.timestamp = &ts
 		return nil
 	}
 }
-func OptionPriority(priority xc_types.GasFeePriority) BuilderOption {
+func WithPriority(priority xc_types.GasFeePriority) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.gasFeePriority = &priority
 		return nil
 	}
 }
-func OptionPublicKey(publicKey []byte) BuilderOption {
+func WithPublicKey(publicKey []byte) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.publicKey = &publicKey
 		return nil
@@ -77,21 +81,28 @@ func OptionPublicKey(publicKey []byte) BuilderOption {
 }
 
 // Set an alternative owner of the stake from the from address
-func OptionStakeOwner(owner xc_types.Address) BuilderOption {
+func WithStakeOwner(owner xc_types.Address) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.stakeOwner = &owner
 		return nil
 	}
 }
-func OptionValidator(validator string) BuilderOption {
+func WithValidator(validator string) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.validator = &validator
 		return nil
 	}
 }
-func OptionStakeAccount(account string) BuilderOption {
+func WithStakeAccount(account string) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.stakeAccount = &account
+		return nil
+	}
+}
+
+func WithAsset(asset xc_types.IAsset) BuilderOption {
+	return func(opts *builderOptions) error {
+		opts.asset = &asset
 		return nil
 	}
 }

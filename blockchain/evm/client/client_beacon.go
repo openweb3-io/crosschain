@@ -106,7 +106,7 @@ func (cli *Client) Post(path string, requestBody any, response any) error {
 }
 func (cli *Client) Send(method string, path string, requestBody any, response any) error {
 	path = strings.TrimPrefix(path, "/")
-	baseUrl := cli.Asset.GetChain().URL
+	baseUrl := cli.Chain.URL
 	baseUrl = strings.TrimSuffix(baseUrl, "/")
 
 	url := fmt.Sprintf("%s/%s", baseUrl, path)
@@ -159,7 +159,7 @@ func (cli *Client) Send(method string, path string, requestBody any, response an
 		if errorResponse.Message != "" {
 			return fmt.Errorf("%s", errorResponse.Message)
 		}
-		logrus.WithField("body", string(body)).WithField("chain", cli.Asset.GetChain().Chain).Warn("unknown beacon api error")
+		logrus.WithField("body", string(body)).WithField("chain", cli.Chain.Chain).Warn("unknown beacon api error")
 		return fmt.Errorf("unknown beacon api error (%d)", resp.StatusCode)
 	}
 }

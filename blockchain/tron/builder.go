@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,7 +28,8 @@ func NewTxBuilder(chain *types.ChainConfig) *TxBuilder {
 func (b *TxBuilder) BuildTransfer(input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
 
-	if txInput.ContractAddress != nil {
+	asset, _ := txInput.Args.GetAsset()
+	if asset == nil || asset.GetContract() == "" {
 		return b.BuildNativeTransfer(input)
 	} else {
 		return b.BuildTokenTransfer(input)
@@ -36,18 +38,19 @@ func (b *TxBuilder) BuildTransfer(input types.TxInput) (types.Tx, error) {
 
 func (b *TxBuilder) BuildNativeTransfer(input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
+	args := txInput.Args
 
-	from_bytes, err := common.DecodeCheck(string(txInput.From))
+	from_bytes, err := common.DecodeCheck(string(args.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
-	to_bytes, err := common.DecodeCheck(string(txInput.To))
+	to_bytes, err := common.DecodeCheck(string(args.GetTo()))
 	if err != nil {
 		return nil, err
 	}
 
 	params := &core.TransferContract{}
-	params.Amount = txInput.Amount.Int().Int64()
+	params.Amount = args.GetAmount().Int().Int64()
 	params.OwnerAddress = from_bytes
 	params.ToAddress = to_bytes
 
@@ -82,18 +85,23 @@ func (b *TxBuilder) BuildNativeTransfer(input types.TxInput) (types.Tx, error) {
 
 func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
+	txArgs := txInput.Args
+	asset, _ := txArgs.GetAsset()
+	if asset == nil {
+		return nil, errors.New("asset needed")
+	}
 
-	from_bytes, _, err := base58.CheckDecode(string(txInput.From))
+	from_bytes, _, err := base58.CheckDecode(string(txArgs.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
 
-	to_bytes, _, err := base58.CheckDecode(string(txInput.To))
+	to_bytes, _, err := base58.CheckDecode(string(txArgs.GetTo()))
 	if err != nil {
 		return nil, err
 	}
 
-	contract_bytes, _, err := base58.CheckDecode(string(*txInput.ContractAddress))
+	contract_bytes, _, err := base58.CheckDecode(string(asset.GetContract()))
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +125,7 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 
 	paramBz, err := args.PackValues([]interface{}{
 		eth_common.BytesToAddress(to_bytes),
-		txInput.Amount.Int(),
+		txArgs.GetAmount().Int(),
 	})
 	methodSig := Signature("transfer(address,uint256)")
 	data := append(methodSig, paramBz...)

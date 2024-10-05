@@ -55,40 +55,39 @@ func NewClient(cfg xc_types.IAsset) (*Client, error) {
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
 	acc, err := client.client.GetAccount(ctx, tonapi.GetAccountParams{
-		AccountID: string(args.From),
+		AccountID: string(args.GetFrom()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	seq, err := client.client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
-		AccountID: string(args.From),
+		AccountID: string(args.GetFrom()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	input := &TxInput{
-		Timestamp:       333,
+		Timestamp:       time.Now().Unix(),
 		AccountStatus:   acc.Status,
 		TonBalance:      xc_types.NewBigIntFromInt64(acc.GetBalance()),
 		Seq:             uint32(seq.Seqno),
 		EstimatedMaxFee: xc_types.NewBigIntFromInt64(0), // TODO
-		From:            args.From,
-		To:              args.To,
-		TokenDecimals:   args.TokenDecimals,
-		Amount:          args.Amount,
-		Memo:            args.Memo,
-		ContractAddress: args.ContractAddress,
+		Args:            args,
+	}
+	if memo, ok := args.GetMemo(); ok {
+		input.Memo = memo
 	}
 
-	if input.ContractAddress != nil {
-		input.TokenWallet, err = client.GetJettonWallet(ctx, args.From, xc_types.ContractAddress(*args.ContractAddress))
+	asset, _ := args.GetAsset()
+	if asset != nil && asset.GetContract() != "" {
+		input.TokenWallet, err = client.GetJettonWallet(ctx, args.GetFrom(), asset.GetContract())
 		if err != nil {
 			return input, err
 		}
 
-		maxFee, err := client.EstimateMaxFee(ctx, args.From, args.To, input.TokenWallet, args.TokenDecimals, args.Memo, input.Seq)
+		maxFee, err := client.EstimateMaxFee(ctx, args.GetFrom(), args.GetTo(), input.TokenWallet, asset.GetDecimals(), input.Memo, input.Seq)
 		if err != nil {
 			return input, err
 		}
@@ -196,7 +195,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 	return &gas, nil
 }
 
-func (a *Client) GetBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.Address) (*types.BigInt, error) {
+func (a *Client) GetBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.ContractAddress) (*types.BigInt, error) {
 	jettonBalance, err := a.client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(ownerAddress),
 		JettonID:  string(assetAddr),

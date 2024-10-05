@@ -44,7 +44,7 @@ func init() {
 
 // Client for EVM
 type Client struct {
-	Asset       xc.IAsset
+	Chain       *xc.ChainConfig
 	EthClient   *ethclient.Client
 	ChainId     *big.Int
 	Interceptor *utils.HttpInterceptor
@@ -55,14 +55,6 @@ var _ xclient.IClient = &Client{}
 // Ethereum does not support full delegated staking, so we can only report balance information.
 // A 3rd party 'staking provider' is required to do the rest.
 var _ xclient.StakingClient = &Client{}
-
-func configToEVMClientURL(cfgI xc.IAsset) string {
-	cfg := cfgI.GetChain()
-	if cfg.Provider == "infura" {
-		return cfg.URL + "/" + cfg.AuthSecret
-	}
-	return cfg.URL
-}
 
 func ReplaceIncompatiableEvmResponses(body []byte) []byte {
 	bodyStr := string(body)
@@ -97,24 +89,21 @@ func ReplaceIncompatiableEvmResponses(body []byte) []byte {
 }
 
 // NewClient returns a new EVM Client
-func NewClient(asset xc.IAsset) (*Client, error) {
-	nativeAsset := asset.GetChain()
-	url := configToEVMClientURL(asset)
-
+func NewClient(cfg *xc.ChainConfig) (*Client, error) {
 	// c, err := rpc.DialContext(context.Background(), url)
 	interceptor := utils.NewHttpInterceptor(ReplaceIncompatiableEvmResponses)
 	// {http.DefaultTransport, false}
 	httpClient := &http.Client{
 		Transport: interceptor,
 	}
-	c, err := rpc.DialHTTPWithClient(url, httpClient)
+	c, err := rpc.DialHTTPWithClient(cfg.URL, httpClient)
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("dialing url: %v", nativeAsset.URL))
+		return nil, fmt.Errorf(fmt.Sprintf("dialing url: %v", cfg.URL))
 	}
 
 	client := ethclient.NewClient(c)
 	return &Client{
-		Asset:       asset,
+		Chain:       cfg,
 		EthClient:   client,
 		ChainId:     nil,
 		Interceptor: interceptor,
@@ -141,7 +130,7 @@ func (client *Client) SubmitTx(ctx context.Context, trans xc.Tx) error {
 
 // FetchLegacyTxInfo returns tx info for a EVM tx
 func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHashStr xc.TxHash) (xc.LegacyTxInfo, error) {
-	nativeAsset := client.Asset.GetChain()
+	nativeAsset := client.Chain
 	txHashHex := address.TrimPrefixes(string(txHashStr))
 	txHash := common.HexToHash(txHashHex)
 
@@ -295,7 +284,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHashStr xc.TxHash
 			// assume 32 ether
 			inc, _ := xc.NewAmountHumanReadableFromStr("32")
 			result.AddStakeEvent(&xclient.Unstake{
-				Balance:   inc.ToBlockchain(client.Asset.GetChain().Decimals),
+				Balance:   inc.ToBlockchain(client.Chain.Decimals),
 				Validator: normalize.NormalizeAddressString(hex.EncodeToString(exitLog.Pubkey), nativeAsset.Chain),
 				Address:   normalize.NormalizeAddressString(hex.EncodeToString(exitLog.Caller[:]), nativeAsset.Chain),
 			})
@@ -310,7 +299,7 @@ func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xcl
 	if err != nil {
 		return xclient.TxInfo{}, err
 	}
-	chain := client.Asset.GetChain().Chain
+	chain := client.Chain.Chain
 
 	// remap to new tx
 	return xclient.TxInfoFromLegacy(chain, legacyTx, xclient.Account), nil
@@ -334,31 +323,12 @@ func (client *Client) FetchNativeBalance(ctx context.Context, addr xc.Address) (
 // Fetch the balance of the asset that this client is configured for
 func (client *Client) FetchBalance(ctx context.Context, addr xc.Address) (*xc.BigInt, error) {
 	// native
-	if _, ok := client.Asset.(*xc.ChainConfig); ok {
-		return client.FetchNativeBalance(ctx, addr)
-	}
-
-	// token
-	contract := client.Asset.GetContract()
-	zero := xc.NewBigIntFromUint64(0)
-	tokenAddress, _ := address.FromHex(xc.Address(contract))
-	instance, err := erc20.NewErc20(tokenAddress, client.EthClient)
-	if err != nil {
-		return &zero, err
-	}
-
-	dstAddress, _ := address.FromHex(addr)
-	balance, err := instance.BalanceOf(&bind.CallOpts{}, dstAddress)
-	if err != nil {
-		return &zero, err
-	}
-	return (*xc.BigInt)(balance), nil
+	return client.FetchNativeBalance(ctx, addr)
 }
 
 // Fetch the balance of the asset that this client is configured for
-func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, contractAddr xc.Address) (*xc.BigInt, error) {
+func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, contract xc.Address) (*xc.BigInt, error) {
 	// token
-	contract := client.Asset.GetContract()
 	zero := xc.NewBigIntFromUint64(0)
 	tokenAddress, _ := address.FromHex(xc.Address(contract))
 	instance, err := erc20.NewErc20(tokenAddress, client.EthClient)

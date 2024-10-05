@@ -1,6 +1,7 @@
 package ton
 
 import (
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/shopspring/decimal"
 	"github.com/tonkeeper/tonapi-go"
@@ -16,12 +17,7 @@ type TxInput struct {
 	EstimatedMaxFee xc_types.BigInt
 	TonBalance      xc_types.BigInt
 
-	From            xc_types.Address
-	To              xc_types.Address
-	TokenDecimals   int32
-	Network         string
-	Amount          xc_types.BigInt
-	ContractAddress *xc_types.Address
+	Args *xcbuilder.TransferArgs
 }
 
 func NewTxInput() *TxInput {

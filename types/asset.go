@@ -142,7 +142,7 @@ func (asset *ChainConfig) GetChain() *ChainConfig {
 	return asset
 }
 
-func (native *ChainConfig) GetContract() string {
+func (native *ChainConfig) GetContract() ContractAddress {
 	return ""
 }
 
@@ -150,17 +150,17 @@ type AssetID string
 
 type IAsset interface {
 	ID() AssetID
-	GetContract() string
+	GetContract() ContractAddress
 	GetDecimals() int32
 	GetChain() *ChainConfig
 }
 
 type TokenAssetConfig struct {
-	Asset       string       `yaml:"asset,omitempty"`
-	Chain       NativeAsset  `yaml:"chain,omitempty"`
-	Decimals    int32        `yaml:"decimals,omitempty"`
-	Contract    string       `yaml:"contract,omitempty"`
-	ChainConfig *ChainConfig `yaml:"-"`
+	Asset       string          `yaml:"asset,omitempty"`
+	Chain       NativeAsset     `yaml:"chain,omitempty"`
+	Decimals    int32           `yaml:"decimals,omitempty"`
+	Contract    ContractAddress `yaml:"contract,omitempty"`
+	ChainConfig *ChainConfig    `yaml:"-"`
 }
 
 func (c *TokenAssetConfig) String() string {
@@ -182,7 +182,7 @@ func (asset *TokenAssetConfig) GetDecimals() int32 {
 	return asset.Decimals
 }
 
-func (asset *TokenAssetConfig) GetContract() string {
+func (asset *TokenAssetConfig) GetContract() ContractAddress {
 	return asset.Contract
 }
 

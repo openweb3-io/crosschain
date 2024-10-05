@@ -32,6 +32,8 @@ func (args *StakeArgs) GetValidator() (string, bool)            { return args.op
 func (args *StakeArgs) GetStakeOwner() (xc_types.Address, bool) { return args.options.GetStakeOwner() }
 func (args *StakeArgs) GetStakeAccount() (string, bool)         { return args.options.GetStakeAccount() }
 
+func (args *StakeArgs) GetAsset() (xc_types.IAsset, bool) { return args.options.GetAsset() }
+
 func NewStakeArgs(chain xc_types.NativeAsset, from xc_types.Address, amount xc_types.BigInt, options ...BuilderOption) (StakeArgs, error) {
 	builderOptions := builderOptions{}
 	args := StakeArgs{
