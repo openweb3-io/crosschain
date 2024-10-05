@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/cordialsys/crosschain/client/services"
+	"github.com/openweb3-io/crosschain/client/services"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,10 +42,7 @@ func NewClient(chain string, cfg *services.TwinstakeConfig) (*Client, error) {
 	username := cfg.Username
 	region := cfg.Region
 	clientId := cfg.ClientId
-	password, err := cfg.Password.Load()
-	if err != nil {
-		return nil, fmt.Errorf("could not load twinstake api password: %v", err)
-	}
+	password := cfg.Password
 
 	return &Client{
 		Chain:    chain,
