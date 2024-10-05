@@ -2,6 +2,7 @@ package types
 
 type TxInput interface {
 	GetBlockchain() Blockchain
+	TxInputConflicts
 	TxInputGasFeeMultiplier
 }
 

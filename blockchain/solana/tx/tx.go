@@ -4,8 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	bin "github.com/gagliardetto/binary"
+	"github.com/gagliardetto/solana-go/programs/stake"
+
 	"github.com/gagliardetto/solana-go"
 	solana_sdk "github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/openweb3-io/crosschain/types"
 )
@@ -89,4 +93,85 @@ func NewTxFrom(solTx *solana.Transaction) *Tx {
 		SolTx: solTx,
 	}
 	return tx
+}
+
+type SolanaInstruction interface {
+	Obtain(def *bin.VariantDefinition) (typeID bin.TypeID, typeName string, impl interface{})
+}
+
+func getall[T any, Y SolanaInstruction](
+	decoder func(accounts []*solana.AccountMeta, data []byte) (Y, error),
+	solanaProgram solana.PublicKey,
+	solTx *solana.Transaction,
+) []T {
+	results := []T{}
+	if solTx == nil {
+		return []T{}
+	}
+	message := solTx.Message
+
+	for _, instruction := range message.Instructions {
+		program, err := message.ResolveProgramIDIndex(instruction.ProgramIDIndex)
+		if err != nil {
+			continue
+		}
+		if !program.Equals(solanaProgram) {
+			continue
+		}
+		accs, err := instruction.ResolveInstructionAccounts(&message)
+		if err != nil {
+			continue
+		}
+		inst, err := decoder(accs, instruction.Data)
+		if err != nil {
+			continue
+		}
+		_, _, impl := inst.Obtain(bin.NewVariantDefinition(bin.Uint32TypeIDEncoding, nil))
+		castedInst, ok := impl.(T)
+		if !ok {
+			continue
+		}
+		results = append(results, castedInst)
+	}
+	return results
+}
+
+type CreateAccountLikeInstruction struct {
+	NewAccount solana.PublicKey
+	Lamports   uint64
+}
+
+func (tx Tx) GetCreateAccounts() []*CreateAccountLikeInstruction {
+	results := []*CreateAccountLikeInstruction{}
+	creates := getall[*system.CreateAccount](system.DecodeInstruction, solana.SystemProgramID, tx.SolTx)
+	seeds := getall[*system.CreateAccountWithSeed](system.DecodeInstruction, solana.SystemProgramID, tx.SolTx)
+	for _, acc := range creates {
+		results = append(results, &CreateAccountLikeInstruction{
+			NewAccount: acc.GetNewAccount().PublicKey,
+			Lamports:   *acc.Lamports,
+		})
+	}
+	for _, acc := range seeds {
+		results = append(results, &CreateAccountLikeInstruction{
+			NewAccount: acc.GetCreatedAccount().PublicKey,
+			Lamports:   *acc.Lamports,
+		})
+	}
+	return results
+}
+
+func (tx Tx) GetDelegateStake() []*stake.DelegateStake {
+	return getall[*stake.DelegateStake](stake.DecodeInstruction, solana.StakeProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetDeactivateStakes() []*stake.Deactivate {
+	return getall[*stake.Deactivate](stake.DecodeInstruction, solana.StakeProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetSplitStakes() []*stake.Split {
+	return getall[*stake.Split](stake.DecodeInstruction, solana.StakeProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetStakeWithdraws() []*stake.Withdraw {
+	return getall[*stake.Withdraw](stake.DecodeInstruction, solana.StakeProgramID, tx.SolTx)
 }

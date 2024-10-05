@@ -1,0 +1,162 @@
+package builder_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/gagliardetto/solana-go"
+	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
+	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	xc_types "github.com/openweb3-io/crosschain/types"
+	"github.com/stretchr/testify/require"
+)
+
+func TestNewStakingTransfer(t *testing.T) {
+
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+
+	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
+	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"
+
+	amount := xc_types.NewBigIntFromUint64(100000000)
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	require.NoError(t, err)
+
+	stakeKey, _ := solana.NewRandomPrivateKey()
+
+	input := &tx_input.StakingInput{
+		TxInput: tx_input.TxInput{
+			RecentBlockHash:   solana.MustHashFromBase58("DvLEyV2GHk86K5GojpqnRsvhfMF5kdZomKMnhVpvHyqK"),
+			PrioritizationFee: xc_types.NewBigIntFromUint64(100000),
+		},
+		ValidatorVoteAccount: solana.MustPublicKeyFromBase58(validator),
+		StakingKey:           stakeKey,
+	}
+
+	tx, err := txBuilder.Stake(args, input)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+
+	createAccounts := tx.(*Tx).GetCreateAccounts()
+	stakes := tx.(*Tx).GetDelegateStake()
+	require.Len(t, createAccounts, 1)
+	require.Len(t, stakes, 1)
+
+	// new account initialized with the amount
+	require.Equal(t, amount.Uint64(), createAccounts[0].Lamports)
+	require.Equal(t, stakeKey.PublicKey(), createAccounts[0].NewAccount)
+
+	// delegated to validator
+	require.Equal(t, input.ValidatorVoteAccount, stakes[0].GetVoteAccount().PublicKey)
+	require.Equal(t, stakeKey.PublicKey(), stakes[0].GetStakeAccount().PublicKey)
+}
+
+func TestNewUnstakeTransfer(t *testing.T) {
+
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+
+	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
+	validator := "50_000_000_000"
+
+	amount := xc_types.NewBigIntFromUint64(85_000_000_000)
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	require.NoError(t, err)
+
+	stakeKey, _ := solana.NewRandomPrivateKey()
+
+	input := &tx_input.UnstakingInput{
+		TxInput: tx_input.TxInput{
+			RecentBlockHash:   solana.MustHashFromBase58("DvLEyV2GHk86K5GojpqnRsvhfMF5kdZomKMnhVpvHyqK"),
+			PrioritizationFee: xc_types.NewBigIntFromUint64(100000),
+		},
+		StakingKey: stakeKey,
+		// 90 SOL total staked
+		EligibleStakes: []*tx_input.ExistingStake{
+			{
+				ActivationEpoch:   xc_types.NewBigIntFromUint64(650),
+				DeactivationEpoch: xc_types.NewBigIntFromUint64(18446744073709551615),
+				AmountActive:      xc_types.NewBigIntFromUint64(50_000_000_000),
+				AmountInactive:    xc_types.NewBigIntFromUint64(2282880),
+				StakeAccount:      solana.MustPublicKeyFromBase58("CCTFhyxoUHGmdQvuUxFquyYMK4H5hdqwCCN7XAXtK9HC"),
+			},
+			{
+				ActivationEpoch:   xc_types.NewBigIntFromUint64(650),
+				DeactivationEpoch: xc_types.NewBigIntFromUint64(18446744073709551615),
+				AmountActive:      xc_types.NewBigIntFromUint64(30_000_000_000),
+				AmountInactive:    xc_types.NewBigIntFromUint64(2282880),
+				StakeAccount:      solana.MustPublicKeyFromBase58("8zrSGLMdE6dK57Q7a8N8TDohmyft1MrsLYdRqhDvCerc"),
+			},
+			{
+				ActivationEpoch:   xc_types.NewBigIntFromUint64(652),
+				DeactivationEpoch: xc_types.NewBigIntFromUint64(18446744073709551615),
+				AmountActive:      xc_types.NewBigIntFromUint64(10_000_000_000),
+				AmountInactive:    xc_types.NewBigIntFromUint64(2282880),
+				StakeAccount:      solana.MustPublicKeyFromBase58("6LFjBX1yUwSr8SWsyZUc5okZiVo8ZdmVQ9keJAazRmnh"),
+			},
+		},
+	}
+
+	tx, err := txBuilder.Unstake(args, input)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+
+	deactivates := tx.(*Tx).GetDeactivateStakes()
+	require.Len(t, deactivates, 3)
+	require.Equal(t, input.EligibleStakes[0].StakeAccount, deactivates[0].GetStakeAccount().PublicKey)
+	require.Equal(t, input.EligibleStakes[1].StakeAccount, deactivates[1].GetStakeAccount().PublicKey)
+	require.Equal(t, input.EligibleStakes[2].StakeAccount, deactivates[2].GetStakeAccount().PublicKey)
+
+	splits := tx.(*Tx).GetSplitStakes()
+	require.Len(t, splits, 1)
+	// 5 SOL remainder to be split (along with the inactive stakes)
+	require.EqualValues(t, 5_000_000_000+2282880*3, *splits[0].Lamports)
+
+}
+func TestNewWithdrawTransfer(t *testing.T) {
+
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+
+	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
+	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"
+
+	amount := xc_types.NewBigIntFromUint64(10000000)
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	require.NoError(t, err)
+
+	input := &tx_input.WithdrawInput{
+		TxInput: tx_input.TxInput{
+			RecentBlockHash:   solana.MustHashFromBase58("DvLEyV2GHk86K5GojpqnRsvhfMF5kdZomKMnhVpvHyqK"),
+			PrioritizationFee: xc_types.NewBigIntFromUint64(100000),
+		},
+		EligibleStakes: []*tx_input.ExistingStake{
+			{
+				ActivationEpoch:   xc_types.NewBigIntFromUint64(649),
+				DeactivationEpoch: xc_types.NewBigIntFromUint64(650),
+				AmountActive:      xc_types.NewBigIntFromUint64(0),
+				AmountInactive:    xc_types.NewBigIntFromUint64(3000280),
+				StakeAccount:      solana.MustPublicKeyFromBase58("8zrSGLMdE6dK57Q7a8N8TDohmyft1MrsLYdRqhDvCerc"),
+			},
+			{
+				ActivationEpoch:   xc_types.NewBigIntFromUint64(650),
+				DeactivationEpoch: xc_types.NewBigIntFromUint64(650),
+				AmountActive:      xc_types.NewBigIntFromUint64(0),
+				AmountInactive:    xc_types.NewBigIntFromUint64(10000000),
+				StakeAccount:      solana.MustPublicKeyFromBase58("6LFjBX1yUwSr8SWsyZUc5okZiVo8ZdmVQ9keJAazRmnh"),
+			},
+		},
+	}
+
+	tx, err := txBuilder.Withdraw(args, input)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+
+	withdrawals := tx.(*Tx).GetStakeWithdraws()
+	require.Len(t, withdrawals, 2)
+	require.Equal(t, input.EligibleStakes[0].StakeAccount, withdrawals[0].GetStakeAccount().PublicKey)
+	require.Equal(t, input.EligibleStakes[1].StakeAccount, withdrawals[1].GetStakeAccount().PublicKey)
+	total := (*withdrawals[0].Lamports) + (*withdrawals[1].Lamports)
+	fmt.Println(amount.Uint64())
+	fmt.Println(total)
+	require.EqualValues(t, amount.Uint64(), total)
+}
