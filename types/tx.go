@@ -9,7 +9,7 @@ const (
 	TxStatusFailure TxStatus = 1
 )
 
-type TxHash []byte
+type TxHash string
 
 type TxSignature []byte
 

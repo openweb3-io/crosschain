@@ -110,9 +110,14 @@ func (staking *StakingConfig) Enabled() bool {
 }
 
 type ChainConfig struct {
-	Blockchain         Blockchain  `yaml:"blockchain,omitempty"` // chain
-	Chain              NativeAsset `yaml:"chain,omitempty"`      // chainId
-	Network            string      // network
+	Blockchain       Blockchain  `yaml:"blockchain,omitempty"` // chain
+	Chain            NativeAsset `yaml:"chain,omitempty"`      // chainId
+	ChainCoin        string      `yaml:"chain_coin,omitempty"`
+	ChainPrefix      string      `yaml:"chain_prefix,omitempty"`
+	ChainTransferTax float64     `yaml:"chain_transfer_tax,omitempty"`
+	GasCoin          string      `yaml:"gas_coin,omitempty"`
+
+	Network            string // network
 	URL                string
 	ChainGasMultiplier float64 `yaml:"chain_gas_multiplier,omitempty"`
 	ChainMaxGasPrice   float64 `yaml:"chain_max_gas_price,omitempty"`
@@ -120,6 +125,8 @@ type ChainConfig struct {
 	Decimals           int32   `yaml:"decimals,omitempty"`
 	Provider           string  `yaml:"provider,omitempty"`
 	ChainID            int64   `yaml:"chain_id,omitempty"`
+	ChainCoinHDPath    uint32  `yaml:"chain_coin_hd_path,omitempty"`
+	ChainIDStr         string  `yaml:"chain_id_str,omitempty"`
 
 	ExplorerURL string `yaml:"explorer_url,omitempty"`
 	NoGasFees   bool   `yaml:"no_gas_fees,omitempty"`
@@ -147,6 +154,10 @@ func (native *ChainConfig) GetContract() ContractAddress {
 	return ""
 }
 
+func (native *ChainConfig) GetAssetSymbol() string {
+	return string(native.Chain)
+}
+
 type AssetID string
 
 type IAsset interface {
@@ -154,6 +165,7 @@ type IAsset interface {
 	GetContract() ContractAddress
 	GetDecimals() int32
 	GetChain() *ChainConfig
+	GetAssetSymbol() string
 }
 
 type TokenAssetConfig struct {
@@ -176,7 +188,11 @@ func (c *TokenAssetConfig) String() string {
 }
 
 func (asset *TokenAssetConfig) ID() AssetID {
-	return AssetID("not impl")
+	return GetAssetIDFromAsset(asset.Asset, asset.Chain)
+}
+
+func (asset *TokenAssetConfig) GetChain() *ChainConfig {
+	return asset.ChainConfig
 }
 
 func (asset *TokenAssetConfig) GetDecimals() int32 {
@@ -187,8 +203,8 @@ func (asset *TokenAssetConfig) GetContract() ContractAddress {
 	return asset.Contract
 }
 
-func (asset *TokenAssetConfig) GetChain() *ChainConfig {
-	return asset.ChainConfig
+func (token *TokenAssetConfig) GetAssetSymbol() string {
+	return token.Asset
 }
 
 func LegacyParseAssetAndNativeAsset(asset string, nativeAsset string) (string, NativeAsset) {
