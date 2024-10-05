@@ -232,7 +232,6 @@ func TestSubmitTxErr(t *testing.T) {
 }
 
 func TestFetchTxInfo(t *testing.T) {
-
 	vectors := []struct {
 		chain *xc.ChainConfig
 		tx    string
