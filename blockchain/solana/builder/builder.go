@@ -40,7 +40,7 @@ func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
 func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
-	contract := b.Asset.GetContract()
+	contract := txInput.Asset.GetContract()
 	if contract == "" {
 		return nil, errors.New("contract missing")
 	}

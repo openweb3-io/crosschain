@@ -14,13 +14,13 @@ import (
 
 func TestNewStakingTransfer(t *testing.T) {
 
-	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+	txBuilder, _ := builder.NewTxBuilder()
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"
 
 	amount := xc_types.NewBigIntFromUint64(100000000)
-	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.WithValidator(validator))
 	require.NoError(t, err)
 
 	stakeKey, _ := solana.NewRandomPrivateKey()
@@ -54,13 +54,13 @@ func TestNewStakingTransfer(t *testing.T) {
 
 func TestNewUnstakeTransfer(t *testing.T) {
 
-	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+	txBuilder, _ := builder.NewTxBuilder()
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "50_000_000_000"
 
 	amount := xc_types.NewBigIntFromUint64(85_000_000_000)
-	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.WithValidator(validator))
 	require.NoError(t, err)
 
 	stakeKey, _ := solana.NewRandomPrivateKey()
@@ -115,13 +115,13 @@ func TestNewUnstakeTransfer(t *testing.T) {
 }
 func TestNewWithdrawTransfer(t *testing.T) {
 
-	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
+	txBuilder, _ := builder.NewTxBuilder()
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"
 
 	amount := xc_types.NewBigIntFromUint64(10000000)
-	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.OptionValidator(validator))
+	args, err := xcbuilder.NewStakeArgs(xc_types.SOL, from, amount, xcbuilder.WithValidator(validator))
 	require.NoError(t, err)
 
 	input := &tx_input.WithdrawInput{
