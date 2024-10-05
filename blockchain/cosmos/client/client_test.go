@@ -103,7 +103,6 @@ func TestFetchTxInput(t *testing.T) {
 				`{"jsonrpc":"2.0","id":4,"result":{"response":{"code":0,"log":"","info":"","index":"0","key":null,"value":"ChZ7ImJhbGFuY2UiOiI0Mzk4NDEyNyJ9","proofOps":null,"height":"12817698","codespace":""}}}`,
 			},
 			&TxInput{
-				TxInputEnvelope:     xc.TxInputEnvelope{Type: "cosmos"},
 				LegacyFromPublicKey: ignoreError(base64.StdEncoding.DecodeString("AreNsVEsIEpsORnscZlxzo7Xha4JRK0a7v6rJwPR5U0C")),
 				AccountNumber:       1442,
 				Sequence:            4,
@@ -588,7 +587,7 @@ func TestFetchBalance(t *testing.T) {
 		}
 
 		from := xc.Address(v.address)
-		balance, err := client.FetchBalanceForAsset(context.Background(), from, asset)
+		balance, err := client.FetchBalanceForAsset(context.Background(), from, asset.GetContract())
 
 		if v.err != "" {
 			require.Equal(t, "0", balance.String())
