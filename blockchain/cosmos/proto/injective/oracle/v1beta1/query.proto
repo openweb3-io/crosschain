@@ -228,7 +228,7 @@ message QueryOracleVolatilityRequest {
 // RPC method.
 message QueryOracleVolatilityResponse {
   string volatility = 1
-      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec" ];
+      [ (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec" ];
   MetadataStatistics history_metadata = 2;
   repeated PriceRecord raw_history = 3;
 }
@@ -255,24 +255,24 @@ message QueryOraclePriceRequest {
 
 message PricePairState {
   string pair_price = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
   string base_price = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
   string quote_price = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 
   string base_cumulative_price = 4 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
   string quote_cumulative_price = 5 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 

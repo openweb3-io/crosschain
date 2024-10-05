@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -84,7 +84,7 @@ type Valset struct {
 	Nonce        uint64                                 `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	Members      []*BridgeValidator                     `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	Height       uint64                                 `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-	RewardAmount github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,4,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"reward_amount"`
+	RewardAmount cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"reward_amount"`
 	// the reward token in it's Ethereum hex address representation
 	RewardToken string `protobuf:"bytes,5,opt,name=reward_token,json=rewardToken,proto3" json:"reward_token,omitempty"`
 }

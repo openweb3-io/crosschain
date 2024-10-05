@@ -6,7 +6,7 @@ package types
 import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-sdk/types"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -27,7 +27,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type SetChainlinkPriceEvent struct {
 	FeedId    string                                 `protobuf:"bytes,1,opt,name=feed_id,json=feedId,proto3" json:"feed_id,omitempty"`
-	Answer    github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
+	Answer    cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"answer"`
 	Timestamp uint64                                 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
@@ -82,7 +82,7 @@ func (m *SetChainlinkPriceEvent) GetTimestamp() uint64 {
 type SetBandPriceEvent struct {
 	Relayer     string                                 `protobuf:"bytes,1,opt,name=relayer,proto3" json:"relayer,omitempty"`
 	Symbol      string                                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Price       github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price       cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 	ResolveTime uint64                                 `protobuf:"varint,4,opt,name=resolve_time,json=resolveTime,proto3" json:"resolve_time,omitempty"`
 	RequestId   uint64                                 `protobuf:"varint,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 }
@@ -151,7 +151,7 @@ func (m *SetBandPriceEvent) GetRequestId() uint64 {
 type SetBandIBCPriceEvent struct {
 	Relayer     string                                   `protobuf:"bytes,1,opt,name=relayer,proto3" json:"relayer,omitempty"`
 	Symbols     []string                                 `protobuf:"bytes,2,rep,name=symbols,proto3" json:"symbols,omitempty"`
-	Prices      []github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,rep,name=prices,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"prices"`
+	Prices      []cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,rep,name=prices,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"prices"`
 	ResolveTime uint64                                   `protobuf:"varint,4,opt,name=resolve_time,json=resolveTime,proto3" json:"resolve_time,omitempty"`
 	RequestId   uint64                                   `protobuf:"varint,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	ClientId    int64                                    `protobuf:"varint,6,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
@@ -378,7 +378,7 @@ type SetPriceFeedPriceEvent struct {
 	Base    string `protobuf:"bytes,2,opt,name=base,proto3" json:"base,omitempty"`
 	Quote   string `protobuf:"bytes,3,opt,name=quote,proto3" json:"quote,omitempty"`
 	// price defines the price of the oracle base and quote
-	Price github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 }
 
 func (m *SetPriceFeedPriceEvent) Reset()         { *m = SetPriceFeedPriceEvent{} }
@@ -439,7 +439,7 @@ type SetProviderPriceEvent struct {
 	Provider string                                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
 	Relayer  string                                 `protobuf:"bytes,2,opt,name=relayer,proto3" json:"relayer,omitempty"`
 	Symbol   string                                 `protobuf:"bytes,3,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Price    github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price    cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 }
 
 func (m *SetProviderPriceEvent) Reset()         { *m = SetProviderPriceEvent{} }
@@ -498,7 +498,7 @@ func (m *SetProviderPriceEvent) GetSymbol() string {
 
 type SetCoinbasePriceEvent struct {
 	Symbol    string                                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Price     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price     cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 	Timestamp uint64                                 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
@@ -1775,7 +1775,7 @@ func (m *SetBandIBCPriceEvent) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v cosmossdk_io_math.LegacyDec
 			m.Prices = append(m.Prices, v)
 			if err := m.Prices[len(m.Prices)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

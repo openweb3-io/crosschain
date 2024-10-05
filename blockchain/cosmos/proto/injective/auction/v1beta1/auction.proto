@@ -13,7 +13,7 @@ message Params {
   int64 auction_period = 1;
   // min_next_bid_increment_rate defines the minimum increment rate for new bids
   string min_next_bid_increment_rate = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 }

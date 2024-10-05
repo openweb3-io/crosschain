@@ -5,12 +5,13 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -300,7 +301,7 @@ type EventValsetUpdateRequest struct {
 	ValsetNonce   uint64                                 `protobuf:"varint,1,opt,name=valset_nonce,json=valsetNonce,proto3" json:"valset_nonce,omitempty"`
 	ValsetHeight  uint64                                 `protobuf:"varint,2,opt,name=valset_height,json=valsetHeight,proto3" json:"valset_height,omitempty"`
 	ValsetMembers []*BridgeValidator                     `protobuf:"bytes,3,rep,name=valset_members,json=valsetMembers,proto3" json:"valset_members,omitempty"`
-	RewardAmount  github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,4,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"reward_amount"`
+	RewardAmount  cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"reward_amount"`
 	RewardToken   string                                 `protobuf:"bytes,5,opt,name=reward_token,json=rewardToken,proto3" json:"reward_token,omitempty"`
 }
 
@@ -658,7 +659,7 @@ type EventDepositClaim struct {
 	EthereumSender      string                                 `protobuf:"bytes,4,opt,name=ethereum_sender,json=ethereumSender,proto3" json:"ethereum_sender,omitempty"`
 	CosmosReceiver      string                                 `protobuf:"bytes,5,opt,name=cosmos_receiver,json=cosmosReceiver,proto3" json:"cosmos_receiver,omitempty"`
 	TokenContract       string                                 `protobuf:"bytes,6,opt,name=token_contract,json=tokenContract,proto3" json:"token_contract,omitempty"`
-	Amount              github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,7,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"amount"`
+	Amount              cosmossdk_io_math.Int `protobuf:"bytes,7,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"amount"`
 	OrchestratorAddress string                                 `protobuf:"bytes,8,opt,name=orchestrator_address,json=orchestratorAddress,proto3" json:"orchestrator_address,omitempty"`
 	Data                string                                 `protobuf:"bytes,9,opt,name=data,proto3" json:"data,omitempty"`
 }
@@ -950,7 +951,7 @@ type EventValsetUpdateClaim struct {
 	AttestationId       []byte                                 `protobuf:"bytes,3,opt,name=attestation_id,json=attestationId,proto3" json:"attestation_id,omitempty"`
 	ValsetNonce         uint64                                 `protobuf:"varint,4,opt,name=valset_nonce,json=valsetNonce,proto3" json:"valset_nonce,omitempty"`
 	ValsetMembers       []*BridgeValidator                     `protobuf:"bytes,5,rep,name=valset_members,json=valsetMembers,proto3" json:"valset_members,omitempty"`
-	RewardAmount        github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,6,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"reward_amount"`
+	RewardAmount        cosmossdk_io_math.Int `protobuf:"bytes,6,opt,name=reward_amount,json=rewardAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"reward_amount"`
 	RewardToken         string                                 `protobuf:"bytes,7,opt,name=reward_token,json=rewardToken,proto3" json:"reward_token,omitempty"`
 	OrchestratorAddress string                                 `protobuf:"bytes,8,opt,name=orchestrator_address,json=orchestratorAddress,proto3" json:"orchestrator_address,omitempty"`
 }

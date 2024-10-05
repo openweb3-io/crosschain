@@ -7,6 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -165,7 +166,7 @@ type QueryCurrentAuctionBasketResponse struct {
 	// highestBidder describes highest bidder on current round
 	HighestBidder string `protobuf:"bytes,4,opt,name=highestBidder,proto3" json:"highestBidder,omitempty"`
 	// highestBidAmount describes highest bid amount on current round
-	HighestBidAmount github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,5,opt,name=highestBidAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"highestBidAmount"`
+	HighestBidAmount cosmossdk_io_math.Int `protobuf:"bytes,5,opt,name=highestBidAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"highestBidAmount"`
 }
 
 func (m *QueryCurrentAuctionBasketResponse) Reset()         { *m = QueryCurrentAuctionBasketResponse{} }

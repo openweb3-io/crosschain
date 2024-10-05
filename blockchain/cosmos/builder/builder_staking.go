@@ -3,6 +3,7 @@ package builder
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -30,7 +31,7 @@ func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc.StakeTxInput
 	msg := &stakingtypes.MsgDelegate{
 		DelegatorAddress: string(from),
 		ValidatorAddress: validatorAddress,
-		Amount:           types.NewCoin(denom, types.NewIntFromBigInt(amount.Int())),
+		Amount:           types.NewCoin(denom, math.NewIntFromBigInt(amount.Int())),
 	}
 
 	fees := txBuilder.calculateFees(amount, &stakeInput.TxInput, false)

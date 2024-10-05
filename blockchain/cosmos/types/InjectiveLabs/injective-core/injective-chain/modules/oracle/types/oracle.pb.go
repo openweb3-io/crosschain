@@ -5,13 +5,14 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -186,7 +187,7 @@ func (m *OracleInfo) GetScaleFactor() uint32 {
 
 type ChainlinkPriceState struct {
 	FeedId     string                                 `protobuf:"bytes,1,opt,name=feed_id,json=feedId,proto3" json:"feed_id,omitempty"`
-	Answer     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"answer"`
+	Answer     cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=answer,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"answer"`
 	Timestamp  uint64                                 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	PriceState PriceState                             `protobuf:"bytes,4,opt,name=price_state,json=priceState,proto3" json:"price_state"`
 }
@@ -247,7 +248,7 @@ func (m *ChainlinkPriceState) GetPriceState() PriceState {
 
 type BandPriceState struct {
 	Symbol      string                                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Rate        github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=rate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"rate"`
+	Rate        cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=rate,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"rate"`
 	ResolveTime uint64                                 `protobuf:"varint,3,opt,name=resolve_time,json=resolveTime,proto3" json:"resolve_time,omitempty"`
 	Request_ID  uint64                                 `protobuf:"varint,4,opt,name=request_ID,json=requestID,proto3" json:"request_ID,omitempty"`
 	PriceState  PriceState                             `protobuf:"bytes,5,opt,name=price_state,json=priceState,proto3" json:"price_state"`
@@ -591,7 +592,7 @@ func (m *PriceFeedInfo) GetQuote() string {
 }
 
 type PriceFeedPrice struct {
-	Price github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 }
 
 func (m *PriceFeedPrice) Reset()         { *m = PriceFeedPrice{} }
@@ -709,8 +710,8 @@ func (m *CoinbasePriceState) GetPriceState() PriceState {
 }
 
 type PriceState struct {
-	Price           github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
-	CumulativePrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=cumulative_price,json=cumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"cumulative_price"`
+	Price           cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
+	CumulativePrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=cumulative_price,json=cumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"cumulative_price"`
 	Timestamp       int64                                  `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
@@ -756,9 +757,9 @@ func (m *PriceState) GetTimestamp() int64 {
 
 type PythPriceState struct {
 	PriceId     string                                 `protobuf:"bytes,1,opt,name=price_id,json=priceId,proto3" json:"price_id,omitempty"`
-	EmaPrice    github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=ema_price,json=emaPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"ema_price"`
-	EmaConf     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=ema_conf,json=emaConf,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"ema_conf"`
-	Conf        github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=conf,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"conf"`
+	EmaPrice    cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=ema_price,json=emaPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"ema_price"`
+	EmaConf     cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=ema_conf,json=emaConf,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"ema_conf"`
+	Conf        cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=conf,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"conf"`
 	PublishTime uint64                                 `protobuf:"varint,5,opt,name=publish_time,json=publishTime,proto3" json:"publish_time,omitempty"`
 	PriceState  PriceState                             `protobuf:"bytes,6,opt,name=price_state,json=priceState,proto3" json:"price_state"`
 }
@@ -1196,7 +1197,7 @@ func (m *PriceRecords) GetLatestPriceRecords() []*PriceRecord {
 
 type PriceRecord struct {
 	Timestamp int64                                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Price     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price     cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 }
 
 func (m *PriceRecord) Reset()         { *m = PriceRecord{} }
@@ -1251,20 +1252,20 @@ type MetadataStatistics struct {
 	// For trades, the mean is the VWAP computed over the grouped trade records ∑
 	// (price * quantity) / ∑ quantity For oracle prices, the mean is computed
 	// over the price records ∑ (price) / prices_count
-	Mean github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=mean,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"mean"`
+	Mean cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=mean,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"mean"`
 	// TWAP refers to the time-weighted average price which equals ∑ (price_i *
 	// ∆t_i) / ∑ ∆t_i where ∆t_i = t_i - t_{i-1}
-	Twap github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=twap,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"twap"`
+	Twap cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=twap,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"twap"`
 	// FirstTimestamp is the timestamp of the oldest record considered
 	FirstTimestamp int64 `protobuf:"varint,5,opt,name=first_timestamp,json=firstTimestamp,proto3" json:"first_timestamp,omitempty"`
 	// LastTimestamp is the timestamp of the youngest record considered
 	LastTimestamp int64 `protobuf:"varint,6,opt,name=last_timestamp,json=lastTimestamp,proto3" json:"last_timestamp,omitempty"`
 	// MinPrice refers to the smallest individual raw price considered
-	MinPrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,7,opt,name=min_price,json=minPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_price"`
+	MinPrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,7,opt,name=min_price,json=minPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"min_price"`
 	// MaxPrice refers to the largest individual raw price considered
-	MaxPrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,8,opt,name=max_price,json=maxPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"max_price"`
+	MaxPrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,8,opt,name=max_price,json=maxPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"max_price"`
 	// MedianPrice refers to the median individual raw price considered
-	MedianPrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,9,opt,name=median_price,json=medianPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"median_price"`
+	MedianPrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,9,opt,name=median_price,json=medianPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"median_price"`
 }
 
 func (m *MetadataStatistics) Reset()         { *m = MetadataStatistics{} }

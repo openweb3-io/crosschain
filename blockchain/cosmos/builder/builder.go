@@ -1,16 +1,20 @@
 package builder
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 
+	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/tx/signing"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/address"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx"
@@ -19,15 +23,13 @@ import (
 	localcodectypes "github.com/openweb3-io/crosschain/blockchain/cosmos/types"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc "github.com/openweb3-io/crosschain/types"
-
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 var DefaultMaxTotalFeeHuman, _ = xc.NewAmountHumanReadableFromStr("2")
 
 // TxBuilder for Cosmos
 type TxBuilder struct {
-	xc.TxBuilder
+	xcbuilder.TxBuilder
 	Chain           *xc.ChainConfig
 	CosmosTxConfig  client.TxConfig
 	CosmosTxBuilder client.TxBuilder
@@ -104,7 +106,7 @@ func (txBuilder TxBuilder) NewTokenTransfer(from xc.Address, to xc.Address, amou
 // x/bank MsgSend transfer
 func (txBuilder TxBuilder) NewBankTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
-	// amountInt := big.Int(amount)
+	amountInt := big.Int(amount)
 
 	if txInput.GasLimit == 0 {
 		txInput.GasLimit = gas.NativeTransferGasLimit
@@ -117,7 +119,7 @@ func (txBuilder TxBuilder) NewBankTransfer(from xc.Address, to xc.Address, amoun
 		Amount: types.Coins{
 			{
 				Denom:  denom,
-				Amount: types.NewIntFromBigInt(&amountInt),
+				Amount: math.NewIntFromBigInt(&amountInt),
 			},
 		},
 	}
@@ -190,7 +192,7 @@ func (txBuilder TxBuilder) calculateFees(amount xc.BigInt, input *tx_input.TxInp
 	feeCoins := types.Coins{
 		{
 			Denom:  gasDenom,
-			Amount: types.NewIntFromUint64(uint64(input.GasPrice * float64(input.GasLimit))),
+			Amount: math.NewIntFromUint64(uint64(input.GasPrice * float64(input.GasLimit))),
 		},
 	}
 	if includeTax {
@@ -201,7 +203,7 @@ func (txBuilder TxBuilder) calculateFees(amount xc.BigInt, input *tx_input.TxInp
 			if token, ok := asset.(*xc.TokenAssetConfig); ok && token.Contract != "" {
 				taxDenom = string(token.Contract)
 			}
-			taxStr, _ := types.NewIntFromString(tax.String())
+			taxStr, _ := math.NewIntFromString(tax.String())
 			// cannot add two coins that are the same so must check
 			if feeCoins[0].Denom == taxDenom {
 				// add to existing
@@ -243,7 +245,7 @@ func (txBuilder TxBuilder) createTxWithMsg(input *tx_input.TxInput, msg types.Ms
 
 	cosmosBuilder.SetFeeAmount(fees)
 
-	sigMode := signingtypes.SignMode_SIGN_MODE_DIRECT
+	sigMode := signingv1beta1.SignMode_SIGN_MODE_DIRECT
 	sigsV2 := []signingtypes.SignatureV2{
 		{
 			PubKey: address.GetPublicKey(asset.GetChain(), args.FromPublicKey),
@@ -269,7 +271,7 @@ func (txBuilder TxBuilder) createTxWithMsg(input *tx_input.TxInput, msg types.Ms
 		ChainID:       chainId,
 		Sequence:      input.Sequence,
 	}
-	sighashData, err := cosmosTxConfig.SignModeHandler().GetSignBytes(sigMode, signerData, cosmosBuilder.GetTx())
+	sighashData, err := cosmosTxConfig.SignModeHandler().GetSignBytes(context.Background(), sigMode, signerData, cosmosBuilder.GetTx())
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -37,7 +37,7 @@ type MsgRelayProviderPrices struct {
 	Sender   string                                   `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
 	Provider string                                   `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
 	Symbols  []string                                 `protobuf:"bytes,3,rep,name=symbols,proto3" json:"symbols,omitempty"`
-	Prices   []github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,rep,name=prices,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"prices"`
+	Prices   []cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,rep,name=prices,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"prices"`
 }
 
 func (m *MsgRelayProviderPrices) Reset()         { *m = MsgRelayProviderPrices{} }
@@ -116,7 +116,7 @@ type MsgRelayPriceFeedPrice struct {
 	Base   []string `protobuf:"bytes,2,rep,name=base,proto3" json:"base,omitempty"`
 	Quote  []string `protobuf:"bytes,3,rep,name=quote,proto3" json:"quote,omitempty"`
 	// price defines the price of the oracle base and quote
-	Price []github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,rep,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"price"`
+	Price []cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,rep,name=price,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"price"`
 }
 
 func (m *MsgRelayPriceFeedPrice) Reset()         { *m = MsgRelayPriceFeedPrice{} }
@@ -1968,7 +1968,7 @@ func (m *MsgRelayProviderPrices) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v cosmossdk_io_math.LegacyDec
 			m.Prices = append(m.Prices, v)
 			if err := m.Prices[len(m.Prices)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -2200,7 +2200,7 @@ func (m *MsgRelayPriceFeedPrice) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v cosmossdk_io_math.LegacyDec
 			m.Price = append(m.Price, v)
 			if err := m.Price[len(m.Price)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

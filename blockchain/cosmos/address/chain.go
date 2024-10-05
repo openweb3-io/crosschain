@@ -9,7 +9,7 @@ import (
 )
 
 func IsEVMOS(asset *xc.ChainConfig) bool {
-	return xc.Driver(asset.Driver) == xc.DriverCosmosEvmos
+	return xc.Blockchain(asset.Blockchain) == xc.BlockchainCosmosEvmos
 }
 
 func GetPublicKey(asset *xc.ChainConfig, publicKeyBytes []byte) cryptotypes.PubKey {

@@ -51,7 +51,7 @@ message MsgRelayProviderPrices {
   string provider = 2;
   repeated string symbols = 3;
   repeated string prices = 4 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 }
@@ -72,7 +72,7 @@ message MsgRelayPriceFeedPrice {
 
   // price defines the price of the oracle base and quote
   repeated string price = 4 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 }

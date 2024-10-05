@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -1118,7 +1118,7 @@ func (m *QueryOracleVolatilityRequest) GetOracleHistoryOptions() *OracleHistoryO
 // QueryOracleVolatilityResponse is the response type for Query/OracleVolatility
 // RPC method.
 type QueryOracleVolatilityResponse struct {
-	Volatility      *github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=volatility,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"volatility,omitempty"`
+	Volatility      *cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=volatility,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"volatility,omitempty"`
 	HistoryMetadata *MetadataStatistics                     `protobuf:"bytes,2,opt,name=history_metadata,json=historyMetadata,proto3" json:"history_metadata,omitempty"`
 	RawHistory      []*PriceRecord                          `protobuf:"bytes,3,rep,name=raw_history,json=rawHistory,proto3" json:"raw_history,omitempty"`
 }
@@ -1401,11 +1401,11 @@ func (m *QueryOraclePriceRequest) GetQuote() string {
 }
 
 type PricePairState struct {
-	PairPrice            github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=pair_price,json=pairPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"pair_price"`
-	BasePrice            github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=base_price,json=basePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"base_price"`
-	QuotePrice           github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=quote_price,json=quotePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"quote_price"`
-	BaseCumulativePrice  github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=base_cumulative_price,json=baseCumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"base_cumulative_price"`
-	QuoteCumulativePrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=quote_cumulative_price,json=quoteCumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"quote_cumulative_price"`
+	PairPrice            cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=pair_price,json=pairPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"pair_price"`
+	BasePrice            cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=base_price,json=basePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"base_price"`
+	QuotePrice           cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=quote_price,json=quotePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"quote_price"`
+	BaseCumulativePrice  cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=base_cumulative_price,json=baseCumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"base_cumulative_price"`
+	QuoteCumulativePrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,5,opt,name=quote_cumulative_price,json=quoteCumulativePrice,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"quote_cumulative_price"`
 	BaseTimestamp        int64                                  `protobuf:"varint,6,opt,name=base_timestamp,json=baseTimestamp,proto3" json:"base_timestamp,omitempty"`
 	QuoteTimestamp       int64                                  `protobuf:"varint,7,opt,name=quote_timestamp,json=quoteTimestamp,proto3" json:"quote_timestamp,omitempty"`
 }
@@ -5801,7 +5801,7 @@ func (m *QueryOracleVolatilityResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Dec
+			var v cosmossdk_io_math.LegacyDec
 			m.Volatility = &v
 			if err := m.Volatility.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

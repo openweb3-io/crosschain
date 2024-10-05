@@ -60,7 +60,7 @@ message QueryCurrentAuctionBasketResponse {
   string highestBidder = 4;
   // highestBidAmount describes highest bid amount on current round
   string highestBidAmount = 5 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 }

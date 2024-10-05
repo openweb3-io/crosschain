@@ -28,7 +28,7 @@ func TestGetAddressFromPublicKey(t *testing.T) {
 }
 
 func TestGetAddressFromPublicKeyEvmos(t *testing.T) {
-	builder, _ := address.NewAddressBuilder(&xc.ChainConfig{Chain: "XPLA", ChainPrefix: "xpla", Driver: xc.DriverCosmosEvmos})
+	builder, _ := address.NewAddressBuilder(&xc.ChainConfig{Chain: "XPLA", ChainPrefix: "xpla", Blockchain: xc.BlockchainCosmosEvmos})
 	bytes, _ := hex.DecodeString("02E8445082A72F29B75CA48748A914DF60622A609CACFCE8ED0E35804560741D29")
 	address, err := builder.GetAddressFromPublicKey(bytes)
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestGetAddressFromPublicKeyErr(t *testing.T) {
 	// ethermint doesn't check if pubkey is on the curve,
 	// but it attempts to decompress the point to generate the address
 	// therefore indirectly it catches the error
-	builder, _ = address.NewAddressBuilder(&xc.ChainConfig{Chain: "XPLA", ChainPrefix: "xpla", Driver: xc.DriverCosmosEvmos})
+	builder, _ = address.NewAddressBuilder(&xc.ChainConfig{Chain: "XPLA", ChainPrefix: "xpla", Blockchain: xc.BlockchainCosmosEvmos})
 	bytes, _ = hex.DecodeString("001122334455667788990011223344556677889900112233445566778899001122")
 	derivedAddress, err = builder.GetAddressFromPublicKey(bytes)
 	require.ErrorContains(t, err, "addresses cannot be empty")
@@ -89,7 +89,7 @@ func TestKeyDerivation(t *testing.T) {
 		NativeAsset     xc.NativeAsset
 		Mnemonic        string
 		Address         string
-		Driver          xc.Driver
+		Blockchain      xc.Blockchain
 	}
 	for _, tc := range []testcase{
 		{
@@ -98,7 +98,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "SEI",
 			Mnemonic:        "protect scorpion scorpion answer joy question hollow short despair cube lumber stable toilet hat inflict fresh pigeon firm model foot excite broom dice gather",
 			Address:         "sei1auf4yetx9z3lq5f93d8p8mm4j3lpt9s077m455",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 		{
 			ChainCoinHDPath: 60,
@@ -106,7 +106,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "INJ",
 			Mnemonic:        "captain dial clerk knee milk depart canyon stomach example smoke nominee vicious zero between enjoy outside exile original toddler casual broken roast episode car",
 			Address:         "inj12szvunq39ky0lq20t9cy3tcs49n8k56v9q38fj",
-			Driver:          xc.DriverCosmosEvmos,
+			Blockchain:      xc.BlockchainCosmosEvmos,
 		},
 		{
 			ChainCoinHDPath: 60,
@@ -114,7 +114,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "XPLA",
 			Mnemonic:        "script mercy language economy cat demand fruit page green license device air fatigue neither release mansion actor bitter latin toddler bright expand please salute",
 			Address:         "xpla18tqp4j6ndm9fmly4t5mzgwh5zeg9rqrpm7zfnp",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 		{
 			ChainCoinHDPath: 330,
@@ -122,7 +122,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "LUNA",
 			Mnemonic:        "deer cotton advice flight female rotate health pond fortune guide soft brother broken sad gym pony rain lonely avoid chicken carpet trash tuna clean",
 			Address:         "terra1evfrnqr9l5yxjp7ejektl2xmjdqlz08tuundzw",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 		{
 			ChainCoinHDPath: 118,
@@ -130,7 +130,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "TIA",
 			Mnemonic:        "kid unique sadness clap embody grit sure couch crack muffin neutral rule cotton market apology cute brass laundry rural social exile peasant expand useless",
 			Address:         "celestia1cl5k4awzka64ck974j4kshzezhmznpg66724xj",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 		{
 			ChainCoinHDPath: 118,
@@ -138,7 +138,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "ATOM",
 			Mnemonic:        "tide wage unit rack permit parent easy theme require focus honey connect intact furnace device tiger enter often cycle immense wire either better crush",
 			Address:         "cosmos18jfym2e7gt7a5eclgawp4lwgh6n7ud77ak6vzt",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 		{
 			ChainCoinHDPath: 1,
@@ -146,7 +146,7 @@ func TestKeyDerivation(t *testing.T) {
 			NativeAsset:     "HASH",
 			Mnemonic:        "increase embark dice perfect october camera cousin matrix congress prosper fix what shiver staff undo airport master shadow swift level arch push industry gauge",
 			Address:         "tp1x0wf90nl6rymz26d73l8hesk7neag82ka2zsv6",
-			Driver:          xc.DriverCosmos,
+			Blockchain:      xc.BlockchainCosmos,
 		},
 	} {
 
@@ -154,9 +154,9 @@ func TestKeyDerivation(t *testing.T) {
 			ChainCoinHDPath: uint32(tc.ChainCoinHDPath),
 			ChainPrefix:     tc.ChainPrefix,
 			Chain:           tc.NativeAsset,
-			Driver:          tc.Driver,
+			Blockchain:      tc.Blockchain,
 		}
-		s, err := signer.New(tc.NativeAsset.Driver(), tc.Mnemonic, asset)
+		s, err := signer.New(tc.NativeAsset.Blockchain(), tc.Mnemonic, asset)
 		require.NoError(t, err)
 		pubkey, err := s.PublicKey()
 		require.NoError(t, err)
@@ -169,7 +169,7 @@ func TestKeyDerivation(t *testing.T) {
 			// try to discover what the derivation path is
 			for i := 0; i < 512; i++ {
 				asset.ChainCoinHDPath = uint32(i)
-				s, _ = signer.New(tc.NativeAsset.Driver(), tc.Mnemonic, asset)
+				s, _ = signer.New(tc.NativeAsset.Blockchain(), tc.Mnemonic, asset)
 				pubkey, _ = s.PublicKey()
 				builder, _ = address.NewAddressBuilder(asset)
 				otherAddress, _ := builder.GetAddressFromPublicKey(pubkey)
@@ -186,26 +186,26 @@ func TestKeyDerivation(t *testing.T) {
 }
 
 func TestIsEVMOS(t *testing.T) {
-	is := address.IsEVMOS(&xc.ChainConfig{Chain: "ETH", Driver: xc.DriverEVM})
+	is := address.IsEVMOS(&xc.ChainConfig{Chain: "ETH", Blockchain: xc.BlockchainEVM})
 	require.False(t, is)
 
-	is = address.IsEVMOS(&xc.ChainConfig{Chain: "ATOM", Driver: xc.DriverCosmos})
+	is = address.IsEVMOS(&xc.ChainConfig{Chain: "ATOM", Blockchain: xc.BlockchainCosmos})
 	require.False(t, is)
 
-	is = address.IsEVMOS(&xc.ChainConfig{Chain: "LUNA", Driver: xc.DriverCosmos})
+	is = address.IsEVMOS(&xc.ChainConfig{Chain: "LUNA", Blockchain: xc.BlockchainCosmos})
 	require.False(t, is)
 
-	is = address.IsEVMOS(&xc.ChainConfig{Chain: "XPLA", Driver: xc.DriverCosmos})
+	is = address.IsEVMOS(&xc.ChainConfig{Chain: "XPLA", Blockchain: xc.BlockchainCosmos})
 	require.False(t, is)
 
-	is = address.IsEVMOS(&xc.ChainConfig{Chain: "XPLA", Driver: xc.DriverCosmosEvmos})
+	is = address.IsEVMOS(&xc.ChainConfig{Chain: "XPLA", Blockchain: xc.BlockchainCosmosEvmos})
 	require.True(t, is)
 }
 
 func TestGetPublicKey(t *testing.T) {
-	pubKey := address.GetPublicKey(&xc.ChainConfig{Driver: xc.DriverCosmos}, []byte{})
+	pubKey := address.GetPublicKey(&xc.ChainConfig{Blockchain: xc.BlockchainCosmos}, []byte{})
 	require.Exactly(t, &secp256k1.PubKey{Key: []byte{}}, pubKey)
 
-	pubKey = address.GetPublicKey(&xc.ChainConfig{Driver: xc.DriverCosmosEvmos}, []byte{})
+	pubKey = address.GetPublicKey(&xc.ChainConfig{Blockchain: xc.BlockchainCosmosEvmos}, []byte{})
 	require.Exactly(t, &ethsecp256k1.PubKey{Key: []byte{}}, pubKey)
 }

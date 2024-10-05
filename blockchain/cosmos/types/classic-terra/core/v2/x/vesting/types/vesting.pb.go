@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -68,7 +68,7 @@ var xxx_messageInfo_LazyGradedVestingAccount proto.InternalMessageInfo
 type Schedule struct {
 	StartTime int64                                  `protobuf:"varint,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty" yaml:"start_time"`
 	EndTime   int64                                  `protobuf:"varint,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty" yaml:"end_time"`
-	Ratio     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=ratio,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"ratio" yaml:"ratio"`
+	Ratio     cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=ratio,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"ratio" yaml:"ratio"`
 }
 
 func (m *Schedule) Reset()         { *m = Schedule{} }

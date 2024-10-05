@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -71,7 +71,7 @@ func (m *IDSet) GetIds() []uint64 {
 
 type BatchFees struct {
 	Token     string                                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TotalFees github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=total_fees,json=totalFees,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"total_fees"`
+	TotalFees cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=total_fees,json=totalFees,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Int" json:"total_fees"`
 }
 
 func (m *BatchFees) Reset()         { *m = BatchFees{} }

@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -36,12 +36,12 @@ type Params struct {
 	TargetBatchTimeout            uint64                                 `protobuf:"varint,8,opt,name=target_batch_timeout,json=targetBatchTimeout,proto3" json:"target_batch_timeout,omitempty"`
 	AverageBlockTime              uint64                                 `protobuf:"varint,9,opt,name=average_block_time,json=averageBlockTime,proto3" json:"average_block_time,omitempty"`
 	AverageEthereumBlockTime      uint64                                 `protobuf:"varint,10,opt,name=average_ethereum_block_time,json=averageEthereumBlockTime,proto3" json:"average_ethereum_block_time,omitempty"`
-	SlashFractionValset           github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,11,opt,name=slash_fraction_valset,json=slashFractionValset,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"slash_fraction_valset"`
-	SlashFractionBatch            github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,12,opt,name=slash_fraction_batch,json=slashFractionBatch,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"slash_fraction_batch"`
-	SlashFractionClaim            github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,13,opt,name=slash_fraction_claim,json=slashFractionClaim,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"slash_fraction_claim"`
-	SlashFractionConflictingClaim github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,14,opt,name=slash_fraction_conflicting_claim,json=slashFractionConflictingClaim,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"slash_fraction_conflicting_claim"`
+	SlashFractionValset           cosmossdk_io_math.LegacyDec `protobuf:"bytes,11,opt,name=slash_fraction_valset,json=slashFractionValset,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"slash_fraction_valset"`
+	SlashFractionBatch            cosmossdk_io_math.LegacyDec `protobuf:"bytes,12,opt,name=slash_fraction_batch,json=slashFractionBatch,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"slash_fraction_batch"`
+	SlashFractionClaim            cosmossdk_io_math.LegacyDec `protobuf:"bytes,13,opt,name=slash_fraction_claim,json=slashFractionClaim,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"slash_fraction_claim"`
+	SlashFractionConflictingClaim cosmossdk_io_math.LegacyDec `protobuf:"bytes,14,opt,name=slash_fraction_conflicting_claim,json=slashFractionConflictingClaim,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"slash_fraction_conflicting_claim"`
 	UnbondSlashingValsetsWindow   uint64                                 `protobuf:"varint,15,opt,name=unbond_slashing_valsets_window,json=unbondSlashingValsetsWindow,proto3" json:"unbond_slashing_valsets_window,omitempty"`
-	SlashFractionBadEthSignature  github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,16,opt,name=slash_fraction_bad_eth_signature,json=slashFractionBadEthSignature,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"slash_fraction_bad_eth_signature"`
+	SlashFractionBadEthSignature  cosmossdk_io_math.LegacyDec `protobuf:"bytes,16,opt,name=slash_fraction_bad_eth_signature,json=slashFractionBadEthSignature,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"slash_fraction_bad_eth_signature"`
 	CosmosCoinDenom               string                                 `protobuf:"bytes,17,opt,name=cosmos_coin_denom,json=cosmosCoinDenom,proto3" json:"cosmos_coin_denom,omitempty"`
 	CosmosCoinErc20Contract       string                                 `protobuf:"bytes,18,opt,name=cosmos_coin_erc20_contract,json=cosmosCoinErc20Contract,proto3" json:"cosmos_coin_erc20_contract,omitempty"`
 	ClaimSlashingEnabled          bool                                   `protobuf:"varint,19,opt,name=claim_slashing_enabled,json=claimSlashingEnabled,proto3" json:"claim_slashing_enabled,omitempty"`

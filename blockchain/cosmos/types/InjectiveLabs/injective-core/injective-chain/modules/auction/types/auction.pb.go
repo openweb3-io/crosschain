@@ -6,6 +6,7 @@ package types
 import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	cosmossdk_io_math "cosmossdk.io/math"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -29,7 +30,7 @@ type Params struct {
 	// auction_period_duration defines the auction period duration
 	AuctionPeriod int64 `protobuf:"varint,1,opt,name=auction_period,json=auctionPeriod,proto3" json:"auction_period,omitempty"`
 	// min_next_bid_increment_rate defines the minimum increment rate for new bids
-	MinNextBidIncrementRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=min_next_bid_increment_rate,json=minNextBidIncrementRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_next_bid_increment_rate"`
+	MinNextBidIncrementRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,2,opt,name=min_next_bid_increment_rate,json=minNextBidIncrementRate,proto3,customtype=github.com/cosmos/cosmos-sdk/math.Dec" json:"min_next_bid_increment_rate"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
