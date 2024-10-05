@@ -8,7 +8,7 @@ import (
 	compute_budget "github.com/gagliardetto/solana-go/programs/compute-budget"
 	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/programs/token"
-	xc_solana "github.com/openweb3-io/crosschain/blockchain/solana"
+	"github.com/openweb3-io/crosschain/blockchain/solana/tx"
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	"github.com/openweb3-io/crosschain/types"
@@ -24,10 +24,10 @@ type TxBuilder struct {
 	Asset types.IAsset
 }
 
-func NewTxBuilder(asset types.IAsset) *TxBuilder {
+func NewTxBuilder(asset types.IAsset) (*TxBuilder, error) {
 	return &TxBuilder{
 		Asset: asset,
-	}
+	}, nil
 }
 
 func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
@@ -166,7 +166,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 	return b.buildSolanaTx(instructions, accountFrom, txInput)
 }
 
-func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, accountFrom solana.PublicKey, txInput *tx_input.TxInput) (*xc_solana.Tx, error) {
+func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, accountFrom solana.PublicKey, txInput *tx_input.TxInput) (*tx.Tx, error) {
 	tx1, err := solana.NewTransaction(
 		instructions,
 		txInput.RecentBlockHash,
@@ -175,7 +175,7 @@ func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, acco
 	if err != nil {
 		return nil, err
 	}
-	return &xc_solana.Tx{
+	return &tx.Tx{
 		SolTx: tx1,
 	}, nil
 }
@@ -206,7 +206,7 @@ func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
 		instructions = append(instructions, compute_budget.NewSetComputeUnitPriceInstruction(prioprityFee).Build())
 	}
 
-	tx, err := solana.NewTransaction(
+	solTx, err := solana.NewTransaction(
 		instructions,
 		txInput.RecentBlockHash,
 	)
@@ -214,7 +214,7 @@ func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
 		return nil, err
 	}
 
-	return &xc_solana.Tx{
-		SolTx: tx,
+	return &tx.Tx{
+		SolTx: solTx,
 	}, nil
 }

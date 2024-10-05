@@ -9,10 +9,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gagliardetto/solana-go"
-	solana_sdk "github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
-	xc_solana "github.com/openweb3-io/crosschain/blockchain/solana"
 	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
+	"github.com/openweb3-io/crosschain/blockchain/solana/tx"
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
@@ -24,15 +23,14 @@ type Client struct {
 	client *rpc.Client
 }
 
-func NewClient(asset types.IAsset) *Client {
+func NewClient(asset types.IAsset) (*Client, error) {
 	cfg := asset.GetChain()
-
 	endpoint := cfg.URL
 	if endpoint == "" {
 		endpoint = rpc.MainNetBeta_RPC
 	}
 	client := rpc.New(endpoint)
-	return &Client{Asset: asset, client: client}
+	return &Client{Asset: asset, client: client}, nil
 }
 
 func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*tx_input.TxInput, error) {
@@ -168,9 +166,9 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	return txInput, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
-	_tx := tx.(*xc_solana.Tx)
-	solanaTx := _tx.SolTx
+func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, error) {
+	tx := _tx.(*tx.Tx)
+	solanaTx := tx.SolTx
 
 	feeCalc, err := a.client.GetFeeForMessage(ctx, solanaTx.Message.ToBase64(), rpc.CommitmentFinalized)
 	if err != nil {
@@ -184,7 +182,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 }
 
 func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
-	tx := _tx.(*xc_solana.Tx)
+	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 
 	payload, err := solanaTx.MarshalBinary()
@@ -197,7 +195,7 @@ func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
 }
 
 func (a *Client) FetchBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
-	addr := solana_sdk.MustPublicKeyFromBase58(string(address))
+	addr := solana.MustPublicKeyFromBase58(string(address))
 	if contractAddress == nil {
 		out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)
 		if err != nil {
@@ -206,8 +204,8 @@ func (a *Client) FetchBalance(ctx context.Context, address types.Address, contra
 		balance := types.NewBigIntFromUint64(out.Value)
 		return &balance, nil
 	} else {
-		mint := solana_sdk.MustPublicKeyFromBase58(string(*contractAddress))
-		associated, _, err := solana_sdk.FindAssociatedTokenAddress(addr, mint)
+		mint := solana.MustPublicKeyFromBase58(string(*contractAddress))
+		associated, _, err := solana.FindAssociatedTokenAddress(addr, mint)
 		if err != nil {
 			return nil, err
 		}

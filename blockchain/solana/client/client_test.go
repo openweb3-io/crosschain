@@ -28,16 +28,18 @@ var (
 	recipientPrivateKey solana_sdk.PrivateKey
 )
 
-type SolanaTestSuite struct {
+type ClientTestSuite struct {
 	suite.Suite
 	client *client.Client
 }
 
-func (suite *SolanaTestSuite) SetupTest() {
+func (suite *ClientTestSuite) SetupTest() {
 	//testnet
-	suite.client = client.NewClient(&types.ChainConfig{
+	client, err := client.NewClient(&types.ChainConfig{
 		URL: rpc.TestNet_RPC,
 	})
+	suite.Require().NoError(err)
+	suite.client = client
 
 	senderPrivateKey = solana_sdk.MustPrivateKeyFromBase58(senderPrivkeyStr)
 	fmt.Printf("sender address: %s \nprivate: %s\n", senderPrivateKey.PublicKey(), senderPrivateKey)
@@ -48,16 +50,17 @@ func (suite *SolanaTestSuite) SetupTest() {
 
 }
 
-func TestSolanaTestSuite(t *testing.T) {
-	suite.Run(t, new(SolanaTestSuite))
+func TestClientTestSuite(t *testing.T) {
+	suite.Run(t, new(ClientTestSuite))
 }
 
-func (suite *SolanaTestSuite) TestTranfser() {
+func (suite *ClientTestSuite) TestTranfser() {
 	ctx := context.Background()
 
 	asset := &types.TokenAssetConfig{}
 
-	builder := builder.NewTxBuilder(asset)
+	builder, err := builder.NewTxBuilder(asset)
+	suite.Require().NoError(err)
 
 	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
 		From:   types.Address(senderPrivateKey.PublicKey().String()),
@@ -92,7 +95,7 @@ func (suite *SolanaTestSuite) TestTranfser() {
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *SolanaTestSuite) TestSPLTranfser(t *testing.T) {
+func (suite *ClientTestSuite) TestSPLTranfser(t *testing.T) {
 	ctx := context.Background()
 
 	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
@@ -102,10 +105,11 @@ func (suite *SolanaTestSuite) TestSPLTranfser(t *testing.T) {
 	})
 	suite.Require().NoError(err)
 
-	builder := builder.NewTxBuilder(&types.TokenAssetConfig{
+	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
 		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 		Decimals: 6,
 	})
+	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)
 	suite.Require().NoError(err)
@@ -133,7 +137,7 @@ func (suite *SolanaTestSuite) TestSPLTranfser(t *testing.T) {
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *SolanaTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
+func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 	ctx := context.Background()
 
 	// feePayer := recipientPrivateKey.PublicKey().String()
@@ -145,10 +149,11 @@ func (suite *SolanaTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 	})
 	suite.Require().NoError(err)
 
-	builder := builder.NewTxBuilder(&types.TokenAssetConfig{
+	builder, err := builder.NewTxBuilder(&types.TokenAssetConfig{
 		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 		Decimals: 6,
 	})
+	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)
 	suite.Require().NoError(err)
@@ -176,7 +181,7 @@ func (suite *SolanaTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *SolanaTestSuite) TestFetchBalance() {
+func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	contractAddress := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
