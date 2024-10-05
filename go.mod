@@ -11,8 +11,11 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/shopspring/decimal v1.3.1
+	github.com/sirupsen/logrus v1.9.3
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/test-go/testify v1.1.4
+	github.com/tidwall/btree v1.7.0
 	github.com/tonkeeper/tonapi-go v0.0.7
 	github.com/xssnick/tonutils-go v1.10.2
 	go.uber.org/zap v1.27.0
@@ -20,8 +23,6 @@ require (
 	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
 )
-
-replace github.com/fbsobreira/gotron-sdk => github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -85,14 +86,11 @@ require (
 	github.com/shengdoushi/base58 v1.0.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snksoft/crc v1.1.0 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091 // indirect
 	github.com/supranational/blst v0.3.13 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
-	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tonkeeper/tongo v1.7.0 // indirect
@@ -119,4 +117,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
+)
+
+replace (
+	github.com/fbsobreira/gotron-sdk => github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad
+	github.com/gagliardetto/solana-go => github.com/cordialsys/solana-go v0.0.0-20240806201447-1fef7fb8882b
 )

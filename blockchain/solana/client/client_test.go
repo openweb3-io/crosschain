@@ -1,4 +1,4 @@
-package solana_test
+package client_test
 
 import (
 	"context"
@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/openweb3-io/crosschain/blockchain/solana"
+	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
+	"github.com/openweb3-io/crosschain/blockchain/solana/client"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
+
 	"github.com/openweb3-io/crosschain/types"
 )
 
@@ -26,12 +30,12 @@ var (
 
 type SolanaTestSuite struct {
 	suite.Suite
-	client *solana.Client
+	client *client.Client
 }
 
 func (suite *SolanaTestSuite) SetupTest() {
 	//testnet
-	suite.client = solana.NewClient(&types.ChainConfig{
+	suite.client = client.NewClient(&types.ChainConfig{
 		URL: rpc.TestNet_RPC,
 	})
 
@@ -53,16 +57,16 @@ func (suite *SolanaTestSuite) TestTranfser() {
 
 	asset := &types.TokenAssetConfig{}
 
-	builder := solana.NewTxBuilder(asset)
+	builder := builder.NewTxBuilder(asset)
 
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
 		From:   types.Address(senderPrivateKey.PublicKey().String()),
 		To:     types.Address(recipientPrivateKey.PublicKey().String()), // must exist
 		Amount: types.NewBigIntFromInt64(35),
 	})
 	suite.Require().NoError(err)
 
-	tx, err := builder.NewTransfer(&input)
+	tx, err := builder.NewTransfer(input)
 	suite.Require().NoError(err)
 
 	fee, err := suite.client.EstimateGas(ctx, tx)
@@ -91,14 +95,14 @@ func (suite *SolanaTestSuite) TestTranfser() {
 func (suite *SolanaTestSuite) TestSPLTranfser(t *testing.T) {
 	ctx := context.Background()
 
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
 		From:   types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
 		To:     types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
 		Amount: types.NewBigIntFromInt64(35),
 	})
 	suite.Require().NoError(err)
 
-	builder := solana.NewTxBuilder(&types.TokenAssetConfig{
+	builder := builder.NewTxBuilder(&types.TokenAssetConfig{
 		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 		Decimals: 6,
 	})
@@ -134,14 +138,14 @@ func (suite *SolanaTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 
 	// feePayer := recipientPrivateKey.PublicKey().String()
 
-	input, err := suite.client.FetchTransferInput(ctx, &types.TransferArgs{
+	input, err := suite.client.FetchTransferInput(ctx, &xcbuilder.TransferArgs{
 		From:   types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
 		To:     types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
 		Amount: types.NewBigIntFromInt64(1),
 	})
 	suite.Require().NoError(err)
 
-	builder := solana.NewTxBuilder(&types.TokenAssetConfig{
+	builder := builder.NewTxBuilder(&types.TokenAssetConfig{
 		Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 		Decimals: 6,
 	})

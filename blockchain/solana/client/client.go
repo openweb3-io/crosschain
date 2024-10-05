@@ -1,4 +1,4 @@
-package solana
+package client
 
 import (
 	"context"
@@ -11,8 +11,11 @@ import (
 	"github.com/gagliardetto/solana-go"
 	solana_sdk "github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
-
+	xc_solana "github.com/openweb3-io/crosschain/blockchain/solana"
+	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
+	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 )
 
@@ -32,8 +35,8 @@ func NewClient(asset types.IAsset) *Client {
 	return &Client{Asset: asset, client: client}
 }
 
-func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*TxInput, error) {
-	txInput := NewTxInput()
+func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*tx_input.TxInput, error) {
+	txInput := tx_input.NewTxInput()
 
 	// get recent block hash (i.e. nonce)
 	recent, err := client.client.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
@@ -48,7 +51,7 @@ func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address
 	return txInput, nil
 }
 
-func (client *Client) FetchTransferInput(ctx context.Context, args *types.TransferArgs) (types.TxInput, error) {
+func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (types.TxInput, error) {
 	txInput, err := client.FetchBaseInput(ctx, args.From)
 	if err != nil {
 		return nil, err
@@ -113,7 +116,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *types.Transf
 		for _, acc := range tokenAccounts {
 			amount := types.NewBigIntFromStr(acc.Info.Parsed.Info.TokenAmount.Amount)
 			if amount.Cmp(&zero) > 0 {
-				txInput.SourceTokenAccounts = append(txInput.SourceTokenAccounts, &TokenAccount{
+				txInput.SourceTokenAccounts = append(txInput.SourceTokenAccounts, &tx_input.TokenAccount{
 					Account: acc.Account.Pubkey,
 					Balance: amount,
 				})
@@ -123,8 +126,8 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *types.Transf
 		sort.Slice(txInput.SourceTokenAccounts, func(i, j int) bool {
 			return txInput.SourceTokenAccounts[i].Balance.Cmp(&txInput.SourceTokenAccounts[j].Balance) > 0
 		})
-		if len(txInput.SourceTokenAccounts) > MaxTokenTransfers {
-			txInput.SourceTokenAccounts = txInput.SourceTokenAccounts[:MaxTokenTransfers]
+		if len(txInput.SourceTokenAccounts) > builder.MaxTokenTransfers {
+			txInput.SourceTokenAccounts = txInput.SourceTokenAccounts[:builder.MaxTokenTransfers]
 		}
 
 		if len(tokenAccounts) == 0 {
@@ -166,7 +169,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *types.Transf
 }
 
 func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
-	_tx := tx.(*Tx)
+	_tx := tx.(*xc_solana.Tx)
 	solanaTx := _tx.SolTx
 
 	feeCalc, err := a.client.GetFeeForMessage(ctx, solanaTx.Message.ToBase64(), rpc.CommitmentFinalized)
@@ -181,7 +184,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 }
 
 func (a *Client) SubmitTx(ctx context.Context, _tx types.Tx) error {
-	tx := _tx.(*Tx)
+	tx := _tx.(*xc_solana.Tx)
 	solanaTx := tx.SolTx
 
 	payload, err := solanaTx.MarshalBinary()

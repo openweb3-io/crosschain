@@ -1,4 +1,4 @@
-package solana
+package builder
 
 import (
 	"errors"
@@ -8,6 +8,8 @@ import (
 	compute_budget "github.com/gagliardetto/solana-go/programs/compute-budget"
 	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/programs/token"
+	xc_solana "github.com/openweb3-io/crosschain/blockchain/solana"
+	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	"github.com/openweb3-io/crosschain/types"
 )
@@ -38,7 +40,7 @@ func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
 }
 
 func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
-	txInput := input.(*TxInput)
+	txInput := input.(*tx_input.TxInput)
 
 	contract := b.Asset.GetContract()
 	if contract == "" {
@@ -164,7 +166,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 	return b.buildSolanaTx(instructions, accountFrom, txInput)
 }
 
-func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, accountFrom solana.PublicKey, txInput *TxInput) (types.Tx, error) {
+func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, accountFrom solana.PublicKey, txInput *tx_input.TxInput) (*xc_solana.Tx, error) {
 	tx1, err := solana.NewTransaction(
 		instructions,
 		txInput.RecentBlockHash,
@@ -173,13 +175,13 @@ func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, acco
 	if err != nil {
 		return nil, err
 	}
-	return &Tx{
+	return &xc_solana.Tx{
 		SolTx: tx1,
 	}, nil
 }
 
 func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
-	txInput := input.(*TxInput)
+	txInput := input.(*tx_input.TxInput)
 
 	accountFrom, err := solana.PublicKeyFromBase58(string(txInput.From))
 	if err != nil {
@@ -212,7 +214,7 @@ func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
 		return nil, err
 	}
 
-	return &Tx{
+	return &xc_solana.Tx{
 		SolTx: tx,
 	}, nil
 }

@@ -1,10 +1,11 @@
-package solana
+package tx_input
 
 import (
 	"time"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/openweb3-io/crosschain/types"
+	"github.com/shopspring/decimal"
 )
 
 type TxInput struct {
@@ -19,6 +20,20 @@ type TxInput struct {
 	SourceTokenAccounts []*TokenAccount  `json:"source_token_accounts,omitempty"`
 	PrioritizationFee   types.BigInt     `json:"prioritization_fee,omitempty"`
 	Timestamp           int64            `json:"timestamp,omitempty"`
+}
+
+func (input *TxInput) GetBlockchain() types.Blockchain {
+	return types.BlockchainSolana
+}
+
+func (input *TxInput) SetGasFeePriority(other types.GasFeePriority) error {
+	multiplier, err := other.GetDefault()
+	if err != nil {
+		return err
+	}
+	multipliedFee := multiplier.Mul(decimal.NewFromBigInt(input.PrioritizationFee.Int(), 0)).BigInt()
+	input.PrioritizationFee = types.BigInt(*multipliedFee)
+	return nil
 }
 
 type TokenAccount struct {
