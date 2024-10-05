@@ -222,7 +222,6 @@ func TestFetchTxInput(t *testing.T) {
 }
 
 func TestSubmitTxErr(t *testing.T) {
-
 	client, _ := client.NewClient(&xc.ChainConfig{
 		URL: "",
 	})
