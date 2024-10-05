@@ -158,11 +158,11 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	balance, err := client.FetchBalance(ctx, addr)
 	suite.Require().NoError(err)
 
-	fmt.Printf("[EVM]] address: %s, balance %v", addr, balance)
+	fmt.Printf("[EVM]] address: %s, balance %v\n", addr, balance)
 
 	balance, err = client.FetchBalanceForAsset(ctx, addr, contractAddress)
 	suite.Require().NoError(err)
 
-	fmt.Printf("[EVM] contract %v, address: %v, balance: %v", contractAddress, addr, balance)
+	fmt.Printf("[EVM] contract %v, address: %v, balance: %v\n", contractAddress, addr, balance)
 
 }
