@@ -12,6 +12,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	"github.com/openweb3-io/crosschain/types"
+	xc_types "github.com/openweb3-io/crosschain/types"
 )
 
 // Max number of token transfers we can fit in a solana transaction,
@@ -21,15 +22,19 @@ const MaxAccountUnstakes = 20
 const MaxAccountWithdraws = 20
 
 type TxBuilder struct {
-	Asset types.IAsset
+	Chain *xc_types.ChainConfig
 }
 
-func NewTxBuilder() (*TxBuilder, error) {
-	return &TxBuilder{}, nil
+func NewTxBuilder(chain *xc_types.ChainConfig) (*TxBuilder, error) {
+	return &TxBuilder{
+		Chain: chain,
+	}, nil
 }
 
 func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
-	switch b.Asset.(type) {
+	txInput := input.(*tx_input.TxInput)
+
+	switch txInput.Asset.(type) {
 	case *types.TokenAssetConfig:
 		return b.NewTokenTransfer(input)
 	default:
@@ -40,10 +45,15 @@ func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
 func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
+	if txInput.Asset == nil {
+		return nil, errors.New("asset missing")
+	}
+
 	contract := txInput.Asset.GetContract()
 	if contract == "" {
 		return nil, errors.New("contract missing")
 	}
+	decimals := txInput.Asset.GetDecimals()
 
 	accountFrom, err := solana.PublicKeyFromBase58(string(txInput.From))
 	if err != nil {
@@ -107,7 +117,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 		instructions = append(instructions,
 			token.NewTransferCheckedInstruction(
 				txInput.Amount.Uint64(),
-				uint8(b.Asset.GetDecimals()),
+				uint8(decimals),
 				ataFrom,
 				accountContract,
 				ataTo,
@@ -131,7 +141,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 			instructions = append(instructions,
 				token.NewTransferCheckedInstruction(
 					amountToSendUint,
-					uint8(b.Asset.GetDecimals()),
+					uint8(decimals),
 					tokenAcc.Account,
 					accountContract,
 					ataTo,
@@ -154,7 +164,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 	}
 
 	// add priority fee last
-	priorityFee := txInput.GetLimitedPrioritizationFee(b.Asset.GetChain())
+	priorityFee := txInput.GetLimitedPrioritizationFee(b.Chain)
 	if priorityFee > 0 {
 		instructions = append(instructions,
 			compute_budget.NewSetComputeUnitPriceInstruction(priorityFee).Build(),
@@ -199,7 +209,7 @@ func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
 		).Build(),
 	}
 
-	prioprityFee := txInput.GetLimitedPrioritizationFee(b.Asset.GetChain())
+	prioprityFee := txInput.GetLimitedPrioritizationFee(b.Chain)
 	if prioprityFee > 0 {
 		instructions = append(instructions, compute_budget.NewSetComputeUnitPriceInstruction(prioprityFee).Build())
 	}

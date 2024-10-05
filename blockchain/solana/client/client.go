@@ -53,6 +53,10 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	if err != nil {
 		return nil, err
 	}
+	txInput.From = args.GetFrom()
+	txInput.To = args.GetTo()
+	txInput.Amount = args.GetAmount()
+	txInput.Asset, _ = args.GetAsset()
 
 	asset, _ := args.GetAsset()
 	if asset == nil {

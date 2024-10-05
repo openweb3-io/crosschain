@@ -14,6 +14,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
 	"github.com/openweb3-io/crosschain/blockchain/solana/client"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	xc_types "github.com/openweb3-io/crosschain/types"
 
 	"github.com/openweb3-io/crosschain/types"
 )
@@ -57,7 +58,7 @@ func TestClientTestSuite(t *testing.T) {
 func (suite *ClientTestSuite) TestTranfser() {
 	ctx := context.Background()
 
-	builder, err := builder.NewTxBuilder()
+	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
 	args, err := xcbuilder.NewTransferArgs(
@@ -96,7 +97,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) TestSPLTranfser(t *testing.T) {
+func (suite *ClientTestSuite) TestSPLTranfser() {
 	ctx := context.Background()
 
 	args, err := xcbuilder.NewTransferArgs(
@@ -113,7 +114,7 @@ func (suite *ClientTestSuite) TestSPLTranfser(t *testing.T) {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder()
+	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)
@@ -142,7 +143,7 @@ func (suite *ClientTestSuite) TestSPLTranfser(t *testing.T) {
 	fmt.Printf("tx hash: %s\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
+func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 	ctx := context.Background()
 
 	// feePayer := recipientPrivateKey.PublicKey().String()
@@ -161,7 +162,7 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer(t *testing.T) {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder, err := builder.NewTxBuilder()
+	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTokenTransfer(input)

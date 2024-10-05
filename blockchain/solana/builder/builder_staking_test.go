@@ -13,8 +13,7 @@ import (
 )
 
 func TestNewStakingTransfer(t *testing.T) {
-
-	txBuilder, _ := builder.NewTxBuilder()
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"
@@ -53,8 +52,7 @@ func TestNewStakingTransfer(t *testing.T) {
 }
 
 func TestNewUnstakeTransfer(t *testing.T) {
-
-	txBuilder, _ := builder.NewTxBuilder()
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "50_000_000_000"
@@ -115,7 +113,7 @@ func TestNewUnstakeTransfer(t *testing.T) {
 }
 func TestNewWithdrawTransfer(t *testing.T) {
 
-	txBuilder, _ := builder.NewTxBuilder()
+	txBuilder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
 	from := xc_types.Address("83wDqn8DFg5oh1WetQJwcyZySjxGkxWVKf3p39T6GMQH") // fails on parsing from
 	validator := "J2nUHEAgZFRyuJbFjdqPrAa9gyWDuc7hErtDQHPhsYRp"

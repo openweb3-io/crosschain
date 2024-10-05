@@ -40,7 +40,7 @@ func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc_types.StakeT
 	instructions = append(instructions,
 		// set gas fee priority
 		compute_budget.NewSetComputeUnitPriceInstruction(
-			stakeInput.GetLimitedPrioritizationFee(txBuilder.Asset.GetChain()),
+			stakeInput.GetLimitedPrioritizationFee(txBuilder.Chain),
 		).Build(),
 	)
 
@@ -113,7 +113,7 @@ func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc_types.Unst
 	instructions = append(instructions,
 		// set gas fee priority
 		compute_budget.NewSetComputeUnitPriceInstruction(
-			unstakeInput.GetLimitedPrioritizationFee(txBuilder.Asset.GetChain()),
+			unstakeInput.GetLimitedPrioritizationFee(txBuilder.Chain),
 		).Build(),
 	)
 	didSplit := false
@@ -182,7 +182,7 @@ func (txBuilder TxBuilder) Withdraw(args xcbuilder.StakeArgs, input xc_types.Wit
 	instructions = append(instructions,
 		// set gas fee priority
 		compute_budget.NewSetComputeUnitPriceInstruction(
-			withdrawInput.GetLimitedPrioritizationFee(txBuilder.Asset.GetChain()),
+			withdrawInput.GetLimitedPrioritizationFee(txBuilder.Chain),
 		).Build(),
 	)
 
