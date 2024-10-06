@@ -2,8 +2,10 @@ package builder
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx"
@@ -17,10 +19,10 @@ var _ xcbuilder.TxXTransferBuilder = &TxBuilder{}
 func (txBuilder TxBuilder) NewTask(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 	asset := txInput.Asset.(*xc.TaskConfig)
-	// amountInt := big.Int(amount)
+	amountInt := big.Int(amount)
 	amountCoin := types.Coin{
 		Denom:  txBuilder.GetDenom(asset),
-		Amount: types.NewIntFromBigInt(&amountInt),
+		Amount: math.NewIntFromBigInt(&amountInt),
 	}
 
 	if strings.HasPrefix(asset.Code, "CosmosUndelegateOperator") {

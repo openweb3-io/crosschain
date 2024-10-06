@@ -140,7 +140,7 @@ func (client *Client) FetchBaseTxInput(ctx context.Context, from xc.Address, ass
 
 	var assetI xc.IAsset
 	if asset != nil {
-		asset = asset
+		assetI = asset
 	} else {
 		assetI = client.Chain
 	}
@@ -172,7 +172,7 @@ func (client *Client) FetchBaseTxInput(ctx context.Context, from xc.Address, ass
 		txInput.GasPrice = gasPrice
 	}
 
-	_, assetType, err := client.fetchBalanceAndType(ctx, from, asset.GetContract())
+	_, assetType, err := client.fetchBalanceAndType(ctx, from, assetI.GetContract())
 	if err != nil {
 		return txInput, err
 	}

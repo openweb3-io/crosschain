@@ -65,7 +65,7 @@ func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc.UnstakeTxI
 	msg := &stakingtypes.MsgUndelegate{
 		DelegatorAddress: string(from),
 		ValidatorAddress: validatorAddress,
-		Amount:           types.NewCoin(denom, types.NewIntFromBigInt(amount.Int())),
+		Amount:           types.NewCoin(denom, math.NewIntFromBigInt(amount.Int())),
 	}
 
 	fees := txBuilder.calculateFees(amount, &stakeInput.TxInput, false)
