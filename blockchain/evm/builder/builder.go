@@ -74,7 +74,7 @@ func (txBuilder TxBuilder) Transfer(args *xcbuilder.TransferArgs, input xc.TxInp
 }
 func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
-	asset, _ := txInput.Args.GetAsset()
+	asset := txInput.Asset
 	if asset == nil {
 		asset = txBuilder.Chain
 	}
@@ -115,8 +115,8 @@ func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amo
 // NewTokenTransfer creates a new transfer for a token asset
 func (txBuilder TxBuilder) NewTokenTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
-	asset, ok := txInput.Args.GetAsset()
-	if !ok {
+	asset := txInput.Asset
+	if asset == nil {
 		return nil, errors.New("asset needed")
 	}
 
@@ -207,8 +207,8 @@ func GweiToWei(gwei uint64) xc.BigInt {
 
 func (txBuilder TxBuilder) Stake(stakeArgs xcbuilder.StakeArgs, input xc.StakeTxInput) (xc.Tx, error) {
 	batchDepositInput := input.(*tx_input.BatchDepositInput)
-	asset, ok := batchDepositInput.Args.GetAsset()
-	if !ok {
+	asset := batchDepositInput.Asset
+	if asset == nil {
 		return nil, errors.New("asset needed")
 	}
 
@@ -249,8 +249,8 @@ func (txBuilder TxBuilder) Stake(stakeArgs xcbuilder.StakeArgs, input xc.StakeTx
 }
 func (txBuilder TxBuilder) Unstake(stakeArgs xcbuilder.StakeArgs, input xc.UnstakeTxInput) (xc.Tx, error) {
 	batchDepositInput := input.(*tx_input.ExitRequestInput)
-	asset, ok := batchDepositInput.Args.GetAsset()
-	if !ok {
+	asset := batchDepositInput.Asset
+	if asset == nil {
 		return nil, errors.New("asset needed")
 	}
 

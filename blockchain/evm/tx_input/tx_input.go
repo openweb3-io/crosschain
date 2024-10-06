@@ -3,7 +3,6 @@ package tx_input
 import (
 	"strings"
 
-	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/factory/blockchains/registry"
 	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/shopspring/decimal"
@@ -29,7 +28,12 @@ type TxInput struct {
 	// legacy only
 	Prices []*Price `json:"prices,omitempty"`
 
-	Args *xcbuilder.TransferArgs
+	From   xc.Address
+	To     xc.Address
+	Amount xc.BigInt
+	Asset  xc.IAsset
+
+	// Args *xcbuilder.TransferArgs
 }
 
 var _ xc.TxInput = &TxInput{}

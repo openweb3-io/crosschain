@@ -16,13 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewTxBuilder(t *testing.T) {
-	b, err := builder.NewTxBuilder(&xc_types.TokenAssetConfig{Asset: "USDC", Contract: "1234"})
-	require.NoError(t, err)
-	require.NotNil(t, b)
-	require.Equal(t, "USDC", b.Asset.(*xc_types.TokenAssetConfig).Asset)
-}
-
 func TestTransferSetsMaxTipCap(t *testing.T) {
 	b, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
