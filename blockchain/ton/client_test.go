@@ -103,7 +103,7 @@ func (suite *ClientTestSuite) SetupTest() {
 func (suite *ClientTestSuite) TearDownTest() {
 }
 
-func (suite *ClientTestSuite) aTest_Tranfser() {
+func (suite *ClientTestSuite) Test_Tranfser() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
@@ -322,7 +322,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 }
 
 func (suite *ClientTestSuite) TestFetchBalance() {
-	contractAddress := xc_types.ContractAddress("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")
+	contractAddress := xc_types.ContractAddress(USDTJettonMainnetAddress)
 
 	ctx := context.Background()
 
@@ -333,4 +333,13 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	balance, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), contractAddress)
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s jetton balance: %v\n", suite.account1Address.String(), balance)
+}
+
+func (suite *ClientTestSuite) TestFetchTonTxByHash() {
+	ctx := context.Background()
+
+	tx, err := suite.client.FetchTonTxByHash(ctx, xc_types.TxHash("4063f473042605c931d103e8b065f235c973d147d824947719e5a3b6a2010957"))
+	suite.Require().NoError(err)
+
+	fmt.Printf("tx: %v\n", tx)
 }

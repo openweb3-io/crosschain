@@ -457,11 +457,8 @@ func ParseBlock(block string) (string, string, error) {
 // Prioritize getting tx by msg-hash as it's deterministic offline.  Fallback to using chain-calculated tx hash.
 func (client *Client) FetchTonTxByHash(ctx context.Context, txHash xc_types.TxHash) (*tonapi.Transaction, error) {
 	transaction, err := client.client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
-		MsgID: url.QueryEscape(string(txHash)),
+		MsgID: string(txHash),
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	if transaction == nil {
 		transaction, err = client.client.GetBlockchainTransaction(ctx, tonapi.GetBlockchainTransactionParams{
