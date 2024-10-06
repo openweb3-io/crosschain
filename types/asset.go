@@ -135,7 +135,6 @@ type ChainConfig struct {
 	Staking StakingConfig `yaml:"staking,omitempty"`
 
 	// Internal
-	// dereferenced api token if used
 	AuthSecret string `yaml:"-"`
 }
 
