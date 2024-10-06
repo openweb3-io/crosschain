@@ -223,8 +223,25 @@ func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*type
 	return &balance, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, error) {
-	tx := _tx.(*tx.Tx)
+func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
+	if len(tx.GetSignatures()) == 0 {
+		// add a mock sig
+		sighashes, err := tx.Sighashes()
+		if err != nil {
+			return nil, err
+		}
+		if len(sighashes) != 1 {
+			return nil, errors.New("invalid sighashes")
+		}
+
+		privateKey := make([]byte, 64)
+		signature := ed25519.Sign(privateKey, sighashes[0])
+
+		err = tx.AddSignatures(signature)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	boc, err := tx.Serialize()
 	if err != nil {

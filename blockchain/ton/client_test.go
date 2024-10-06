@@ -143,7 +143,7 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) aTest_EstimateGas() {
+func (suite *ClientTestSuite) Test_EstimateGas() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
