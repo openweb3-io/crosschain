@@ -18,39 +18,21 @@ import (
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/tonkeeper/tonapi-go"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton"
-	_ton "github.com/xssnick/tonutils-go/ton"
 	"go.uber.org/zap"
 )
 
 type Client struct {
-	client  *tonapi.Client
-	lclient ton.APIClientWrapped
+	client *tonapi.Client
 }
 
 func NewClient(cfg xc_types.IAsset) (*Client, error) {
-	client := liteclient.NewConnectionPool()
-
-	// from cfg
-	// url := "https://ton-blockchain.github.io/testnet-global.config.json"
-	url := cfg.GetChain().URL
-	if url == "" {
-		url = "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
-	}
-	err := client.AddConnectionsFromConfigUrl(context.Background(), url)
-	if err != nil {
-		return nil, err
-	}
-	liteApiClient := _ton.NewAPIClient(client)
-
 	tonApi, err := tonapi.New(tonapi.WithToken("AEXRCJJGQBXCFWQAAAAD3RYTVUWCXT5JW6YN2QU7LHXMKPMOXHFB75P4JSD52AVOVQWPGNY"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{tonApi, liteApiClient}, nil
+	return &Client{tonApi}, nil
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
@@ -266,9 +248,6 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 	defer func() {
 		zap.S().Info("broadcast transaction", zap.Duration("cost", time.Since(st)))
 	}()
-
-	// route all requests to the same node
-	ctx = a.lclient.Client().StickyContext(ctx)
 
 	payload, err := tx.Serialize()
 	if err != nil {
