@@ -39,7 +39,10 @@ func (suite *ClientTestSuite) TestTransfer() {
 	ctx := context.Background()
 
 	//testnet
-	client := tron.NewClient(endpoint, chainId)
+	client := tron.NewClient(&types.ChainConfig{
+		URL:     endpoint,
+		ChainID: chainId.Int64(),
+	})
 
 	amount := xc_types.NewBigIntFromInt64(3)
 
@@ -79,14 +82,17 @@ func (suite *ClientTestSuite) TestTransfer() {
 	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("tx hash: %x\n", tx.Hash())
+	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) TestTranfserTRC20() {
 	ctx := context.Background()
 
 	//testnet
-	client := tron.NewClient(endpoint, chainId)
+	client := tron.NewClient(&types.ChainConfig{
+		URL:     endpoint,
+		ChainID: chainId.Int64(),
+	})
 
 	contractAddress := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
 	// gas := types.NewBigIntFromInt64(1)
@@ -138,14 +144,16 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
-	client := tron.NewClient(endpoint, chainId)
+	client := tron.NewClient(&types.ChainConfig{
+		URL:     endpoint,
+		ChainID: chainId.Int64(),
+	})
 	out, err := client.FetchBalance(ctx, types.Address(senderPubk))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
 
-	contractAddress := "TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn"
-	contractAddr := types.Address(contractAddress)
-	out, err = client.FetchBalanceForAsset(ctx, types.Address(senderPubk), &contractAddr)
+	contractAddr := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	out, err = client.FetchBalanceForAsset(ctx, types.Address(senderPubk), contractAddr)
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)

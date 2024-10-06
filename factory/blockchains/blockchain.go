@@ -8,7 +8,7 @@ import (
 	"github.com/openweb3-io/crosschain/types"
 )
 
-type ClientCreator func(cfg types.IAsset) (xc_client.IClient, error)
+type ClientCreator func(cfg *types.ChainConfig) (xc_client.IClient, error)
 
 var (
 	creatorMap = make(map[types.NativeAsset]ClientCreator)
@@ -19,7 +19,7 @@ func RegisterClient(cfg types.NativeAsset, creator ClientCreator) {
 }
 
 func init() {
-	RegisterClient("ton", func(cfg types.IAsset) (xc_client.IClient, error) {
+	RegisterClient("ton", func(cfg *types.ChainConfig) (xc_client.IClient, error) {
 		return ton.NewClient(cfg)
 	})
 }

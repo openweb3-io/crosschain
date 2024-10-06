@@ -205,8 +205,8 @@ func (client *Client) BroadcastTx(ctx context.Context, tx1 xc.Tx) error {
 }
 
 // FetchLegacyTxInfo returns tx info for a Cosmos tx
-func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (xc.LegacyTxInfo, error) {
-	result := xc.LegacyTxInfo{
+func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (*xc.LegacyTxInfo, error) {
+	result := &xc.LegacyTxInfo{
 		Fee:           xc.BigInt{},
 		BlockIndex:    0,
 		BlockTime:     0,

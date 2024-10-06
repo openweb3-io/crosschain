@@ -137,14 +137,14 @@ func (client *NativeClient) FetchLegacyTxInput(ctx context.Context, from xc.Addr
 }
 
 // FetchLegacyTxInfo returns tx info for a Bitcoin tx
-func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (xc.LegacyTxInfo, error) {
+func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (*xc.LegacyTxInfo, error) {
 	resp := btcjson.GetTransactionResult{}
 
 	// TODO use to-address to figure out the current amount in btc transfer.
 	expectedTo := ""
 
 	if err := client.send(ctx, &resp, "gettransaction", txHash); err != nil {
-		return xc.LegacyTxInfo{}, fmt.Errorf("bad \"gettransaction\": %v", err)
+		return nil, fmt.Errorf("bad \"gettransaction\": %v", err)
 	}
 	j1, _ := json.Marshal(resp)
 	log.Printf("res: %s", j1)
@@ -180,11 +180,11 @@ func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxH
 		}
 		output, _, err := client.Output(ctx, outpoint)
 		if err != nil {
-			return xc.LegacyTxInfo{}, fmt.Errorf("error retrieving input details: %v", err)
+			return nil, fmt.Errorf("error retrieving input details: %v", err)
 		}
 		_, addresses, _, err := txscript.ExtractPkScriptAddrs(output.PubKeyScript, client.opts.Chaincfg)
 		if err != nil || len(addresses) != 1 {
-			return xc.LegacyTxInfo{}, fmt.Errorf("error extracting address from input: %v", err)
+			return nil, fmt.Errorf("error extracting address from input: %v", err)
 		}
 		input := tx.Input{
 			Output:  output,
@@ -216,7 +216,7 @@ func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxH
 		value := output.Value
 		_, addresses, _, err := txscript.ExtractPkScriptAddrs(output.PubKeyScript, client.opts.Chaincfg)
 		if err != nil || len(addresses) != 1 {
-			return xc.LegacyTxInfo{}, fmt.Errorf("error extracting address from output: %v", err)
+			return nil, fmt.Errorf("error extracting address from output: %v", err)
 		}
 		recipientAddr := addresses[0].String()
 		recipient := tx.Recipient{
@@ -239,7 +239,7 @@ func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxH
 		fee = (*big.Int)(&newfee)
 	}
 
-	return xc.LegacyTxInfo{
+	return &xc.LegacyTxInfo{
 		From:          xc.Address(from),
 		To:            xc.Address(to),
 		Amount:        amount,

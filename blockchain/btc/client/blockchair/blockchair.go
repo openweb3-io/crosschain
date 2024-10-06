@@ -230,7 +230,7 @@ func (client *BlockchairClient) send(ctx context.Context, resp interface{}, meth
 	return &apiData.Context, err
 }
 
-func (client *BlockchairClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (xc.LegacyTxInfo, error) {
+func (client *BlockchairClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (*xc.LegacyTxInfo, error) {
 	var data blockchairTransactionData
 	txWithInfo := &xc.LegacyTxInfo{
 		Amount: xc.NewBigIntFromUint64(0), // prevent nil pointer exception
@@ -241,7 +241,7 @@ func (client *BlockchairClient) FetchLegacyTxInfo(ctx context.Context, txHash xc
 
 	blockchairContext, err := client.send(ctx, &data, "/dashboards/transaction", string(txHash))
 	if err != nil {
-		return *txWithInfo, err
+		return txWithInfo, err
 	}
 
 	txWithInfo.Fee = xc.NewBigIntFromUint64(data.Transaction.Fee)
@@ -332,7 +332,7 @@ func (client *BlockchairClient) FetchLegacyTxInfo(ctx context.Context, txHash xc
 	txWithInfo.Sources = sources
 	txWithInfo.Destinations = destinations
 
-	return *txWithInfo, nil
+	return txWithInfo, nil
 }
 
 func (client *BlockchairClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {

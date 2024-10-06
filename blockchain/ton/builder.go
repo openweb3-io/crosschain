@@ -19,10 +19,13 @@ import (
 var Zero = types.NewBigIntFromInt64(0)
 
 type TxBuilder struct {
+	chain *xc_types.ChainConfig
 }
 
-func NewTxBuilder() *TxBuilder {
-	return &TxBuilder{}
+func NewTxBuilder(chain *xc_types.ChainConfig) *TxBuilder {
+	return &TxBuilder{
+		chain: chain,
+	}
 }
 
 func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
@@ -150,4 +153,15 @@ func BuildJettonTransfer(
 	}
 
 	return wallet.SimpleMessage(jettonWalletAddress, maxFee, tokenBody), nil
+}
+
+func ParseComment(body *cell.Cell) (string, bool) {
+	if body != nil {
+		l := body.BeginParse()
+		if val, err := l.LoadUInt(32); err == nil && val == 0 {
+			str, _ := l.LoadStringSnake()
+			return str, true
+		}
+	}
+	return "", false
 }

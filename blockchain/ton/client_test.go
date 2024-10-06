@@ -47,6 +47,7 @@ type ClientTestSuite struct {
 // exchange ton to jUSDT bridge.ton.org
 
 const (
+	AuthSecret            = "AEXRCJJGQBXCFWQAAAAD3RYTVUWCXT5JW6YN2QU7LHXMKPMOXHFB75P4JSD52AVOVQWPGNY"
 	account1PubKeyBase64  = "DwYgZ731p93G922Gc9k/AEEJv3kqzcla+rBZ3NyVOXM="
 	account1PrivKeyBase64 = "XsRM5LXm6T4xOIL+I7tSFCy6TIZBZZr04ofHdI5DSycPBiBnvfWn3cb3bYZz2T8AQQm/eSrNyVr6sFnc3JU5cw=="
 	account2PubKeyBase64  = "7czJlRjDE3wZl4SdbTiMPjOBTaFouafXFDVPkZpnqs8="
@@ -92,7 +93,9 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.account1Signer = ton.NewLocalSigner(account1PrivKey)
 	suite.account2Signer = ton.NewLocalSigner(account2PrivKey)
 
-	client, err := ton.NewClient(&xc_types.ChainConfig{})
+	client, err := ton.NewClient(&xc_types.ChainConfig{
+		AuthSecret: AuthSecret,
+	})
 	suite.Require().NoError(err)
 	suite.client = client
 }
@@ -123,7 +126,7 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder()
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
 	tx, err := builder.NewTransfer(input)
 	suite.Require().NoError(err)
 
@@ -151,7 +154,7 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder()
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
 
 	args, err := xcbuilder.NewTransferArgs(
 		xc_types.Address(from.String()),
@@ -272,15 +275,15 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	amount := readableAmount.ToBlockchain(6)
 	suite.Require().NoError(err)
 
-	jettonBalance, err := suite.client.GetBalanceForAsset(ctx, xc_types.Address(from.String()), contractAddress)
-	suite.Require().NoError(err, "error GetBalanceForAsset")
+	jettonBalance, err := suite.client.FetchBalanceForAsset(ctx, xc_types.Address(from.String()), contractAddress)
+	suite.Require().NoError(err, "error FetchBalanceForAsset")
 
 	if jettonBalance.Cmp(&amount) < 0 {
 		suite.T().Fatal("insufficient amount")
 	}
 
 	// call BuildTransaction method
-	builder := ton.NewTxBuilder()
+	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
 	args, err := xcbuilder.NewTransferArgs(
 		xc_types.Address(from.String()),
 		xc_types.Address(to.String()),
@@ -322,7 +325,7 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TON balance: %v\n", suite.account1Address.String(), balance)
 
-	balance, err = suite.client.GetBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), contractAddress)
+	balance, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), contractAddress)
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s jetton balance: %v\n", suite.account1Address.String(), balance)
 }

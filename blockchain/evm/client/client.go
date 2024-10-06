@@ -129,12 +129,12 @@ func (client *Client) BroadcastTx(ctx context.Context, trans xc.Tx) error {
 }
 
 // FetchLegacyTxInfo returns tx info for a EVM tx
-func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHashStr xc.TxHash) (xc.LegacyTxInfo, error) {
+func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xc.LegacyTxInfo, error) {
 	nativeAsset := client.Chain
 	txHashHex := address.TrimPrefixes(string(txHashStr))
 	txHash := common.HexToHash(txHashHex)
 
-	result := xc.LegacyTxInfo{
+	result := &xc.LegacyTxInfo{
 		TxID:        txHashHex,
 		ExplorerURL: nativeAsset.ExplorerURL + "/tx/0x" + txHashHex,
 	}

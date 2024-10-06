@@ -4,17 +4,27 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"math/big"
+	"net/url"
+	"strings"
 	"time"
 
 	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
+	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/tonkeeper/tongo/abi"
+	"github.com/xssnick/tonutils-go/ton/jetton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
+	tontx "github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/builder"
+	xcclient "github.com/openweb3-io/crosschain/client"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/tonkeeper/tonapi-go"
 	"github.com/xssnick/tonutils-go/address"
@@ -23,16 +33,27 @@ import (
 )
 
 type Client struct {
+	cfg    *xc_types.ChainConfig
 	client *tonapi.Client
 }
 
-func NewClient(cfg xc_types.IAsset) (*Client, error) {
-	tonApi, err := tonapi.New(tonapi.WithToken("AEXRCJJGQBXCFWQAAAAD3RYTVUWCXT5JW6YN2QU7LHXMKPMOXHFB75P4JSD52AVOVQWPGNY"))
+var _ xcclient.IClient = &Client{}
+
+func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
+	var url = cfg.URL
+	if url == "" {
+		url = tonapi.TonApiURL
+	}
+
+	tonApi, err := tonapi.NewClient(
+		url,
+		tonapi.WithToken(cfg.AuthSecret),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{tonApi}, nil
+	return &Client{cfg, tonApi}, nil
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
@@ -141,7 +162,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 		return nil, err
 	}
 
-	tx := tx.NewTx(fromAddr, cellBuilder, nil)
+	tx := tontx.NewTx(fromAddr, cellBuilder, nil)
 	sighashes, err := tx.Sighashes()
 	if err != nil {
 		return nil, err
@@ -180,7 +201,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 	return &gas, nil
 }
 
-func (a *Client) GetBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.ContractAddress) (*types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.ContractAddress) (*types.BigInt, error) {
 	jettonBalance, err := a.client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(ownerAddress),
 		JettonID:  string(assetAddr),
@@ -266,4 +287,283 @@ func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address
 	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
 	args, _ := xcbuilder.NewTransferArgs(from, to, types.NewBigIntFromUint64(1))
 	return client.FetchTransferInput(ctx, args)
+}
+
+// Returns transaction info - legacy/old endpoint
+func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxHash) (*xc_types.LegacyTxInfo, error) {
+	chainInfo, err := client.client.GetRawMasterchainInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := client.FetchTonTxByHash(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	sources := []*xc_types.LegacyTxInfoEndpoint{}
+	dests := []*xc_types.LegacyTxInfoEndpoint{}
+	chain := client.cfg.Chain
+
+	totalFee := xc_types.NewBigIntFromInt64(tx.TotalFees)
+
+	for _, msg := range tx.OutMsgs {
+		if msg.Bounced {
+			// if the message bounced, do no add endpoints
+		} else {
+			memo := ""
+
+			if msg.DecodedBody != nil && msg.DecodedOpName.Value == "text_comment" {
+				var comment abi.TextCommentMsgBody
+				_ = json.Unmarshal(msg.DecodedBody, &comment)
+
+				memo = string(comment.Text)
+			}
+
+			if msg.Destination.IsSet() && msg.Destination.Value.Address != "" && msg.Value != 0 {
+				// addr, err := client.substituteOrParse(addrBook, *)
+				addr, err := tonaddress.ParseAddress(xc_types.Address(msg.Destination.Value.Address), "")
+				if err != nil {
+					return nil, fmt.Errorf("invalid address %s: %v", msg.Destination.Value.Address, err)
+				}
+				value := xc_types.NewBigIntFromInt64(msg.Value)
+				dests = append(dests, &xc_types.LegacyTxInfoEndpoint{
+					Address:         xc_types.Address(addr.String()),
+					ContractAddress: "",
+					Amount:          value,
+					NativeAsset:     chain,
+					Memo:            memo,
+				})
+			}
+			if msg.Source.IsSet() && msg.Source.Value.Address != "" && msg.Value != 0 {
+				addr, err := tonaddress.ParseAddress(xc_types.Address(msg.Source.Value.Address), "")
+				if err != nil {
+					return nil, fmt.Errorf("invalid address %v: %v", msg.Source, err)
+				}
+				value := xc_types.NewBigIntFromInt64(msg.Value)
+				sources = append(sources, &xc_types.LegacyTxInfoEndpoint{
+					Address:         xc_types.Address(addr.String()),
+					ContractAddress: "",
+					Amount:          value,
+					NativeAsset:     chain,
+					Memo:            memo,
+				})
+			}
+		}
+
+	}
+
+	jettonSources, jettonDests, err := client.detectJettonMovements(ctx, tx)
+	if err != nil {
+		return nil, fmt.Errorf("could not detect jetton movements: %v", err)
+	}
+
+	block, err := client.client.GetBlockchainBlock(ctx, tonapi.GetBlockchainBlockParams{
+		BlockID: tx.Block,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sources = append(sources, jettonSources...)
+	dests = append(dests, jettonDests...)
+	info := &xc_types.LegacyTxInfo{
+		BlockHash:     block.Shard,
+		BlockIndex:    int64(block.Seqno),
+		BlockTime:     tx.Utime, // block.GenUtime
+		Confirmations: int64(chainInfo.Last.Seqno - block.Seqno),
+		// Use the InMsg hash as this can be determined offline,
+		// whereas the tx.Hash is determined by the chain after submitting.
+		TxID:        tontx.Normalize(tx.InMsg.Value.Hash),
+		ExplorerURL: "",
+
+		Sources:      sources,
+		Destinations: dests,
+		Fee:          totalFee,
+		From:         "",
+		To:           "",
+		ToAlt:        "",
+		Amount:       xc_types.BigInt{},
+
+		// unused fields
+		ContractAddress: "",
+		FeeContract:     "",
+		Time:            0,
+		TimeReceived:    0,
+	}
+	if len(info.Sources) > 0 {
+		info.From = info.Sources[0].Address
+	}
+	if len(info.Destinations) > 0 {
+		info.To = info.Destinations[0].Address
+		info.Amount = info.Destinations[0].Amount
+	}
+
+	return info, nil
+}
+
+// This detects any JettonMessage in the nest of "InternalMessage"
+// This may need to be expanded as Jetton transfer could be nested deeper in more 'InternalMessages'
+func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Transaction) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint, error) {
+	/*
+		boc, err := base64.StdEncoding.DecodeString(tx.InMsg.MessageContent.Body)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid base64: %v", err)
+		}
+	*/
+	boc := tx.InMsg.Value.DecodedBody
+
+	inMsg, err := cell.FromBOC(boc)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid boc: %v", err)
+	}
+	internalMsg := &tlb.InternalMessage{}
+	nextMsg, err := inMsg.BeginParse().LoadRefCell()
+	if err != nil {
+		err = tlb.LoadFromCell(internalMsg, inMsg.BeginParse())
+	} else {
+		err = tlb.LoadFromCell(internalMsg, nextMsg.BeginParse())
+	}
+	if err != nil {
+		return nil, nil, nil
+	}
+	if internalMsg.DstAddr == nil {
+		return nil, nil, nil
+	}
+
+	next := internalMsg.Body
+	for next != nil {
+		sources, dests, ok, err := client.ParseJetton(ctx, next, internalMsg.DstAddr)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%v", err)
+		}
+		if ok {
+			return sources, dests, nil
+		}
+		nextMsg, err := next.BeginParse().LoadRefCell()
+		if err != nil {
+			break
+		} else {
+			next = nextMsg
+		}
+	}
+
+	return nil, nil, nil
+}
+
+func ParseBlock(block string) (string, string, error) {
+	parts := strings.Split(block, ":")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid block format: %s", block)
+	}
+	return parts[0], parts[1], nil
+}
+
+// Prioritize getting tx by msg-hash as it's deterministic offline.  Fallback to using chain-calculated tx hash.
+func (client *Client) FetchTonTxByHash(ctx context.Context, txHash xc_types.TxHash) (*tonapi.Transaction, error) {
+	transaction, err := client.client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
+		MsgID: url.QueryEscape(string(txHash)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if transaction == nil {
+		transaction, err = client.client.GetBlockchainTransaction(ctx, tonapi.GetBlockchainTransactionParams{
+			TransactionID: url.QueryEscape(string(txHash)),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		if transaction == nil {
+			return nil, fmt.Errorf("no TON transaction found by %s", txHash)
+		}
+	}
+
+	return transaction, nil
+}
+
+func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet *address.Address) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint, bool, error) {
+	net := client.cfg.Network
+	jettonTfMaybe := &jetton.TransferPayload{}
+	err := tlb.LoadFromCell(jettonTfMaybe, c.BeginParse())
+	if err != nil {
+		// give up here - no jetton movement(s)
+		logrus.WithError(err).Debug("no jetton transfer detected")
+		return nil, nil, false, nil
+	}
+	memo, ok := ParseComment(jettonTfMaybe.ForwardPayload)
+	// fmt.Println("memo ", memo, ok)
+	if !ok {
+		memo, _ = ParseComment(jettonTfMaybe.CustomPayload)
+	}
+	tf, err := client.LookupTransferForTokenWallet(ctx, tokenWallet)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	masterAddr, err := tonaddress.ParseAddress(xc_types.Address(tf.Jetton.Address), net)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	// The native jetton structure is confusingly inconsistent in that it uses the 'tokenWallet' for the sourceAddress,
+	// but uses the owner account for the destinationAddress.  But in the /jetton/transfers endpoint, it is reported
+	// using the owner address.  So we use that.
+	ownerAddr, err := tonaddress.ParseAddress(xc_types.Address(tf.Sender.Value.Address), "")
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	chain := client.cfg.Chain
+	amount := xc_types.BigInt(*jettonTfMaybe.Amount.Nano())
+	sources := []*xc_types.LegacyTxInfoEndpoint{
+		{
+			// this is the token wallet of the sender/owner
+			Address:         xc_types.Address(ownerAddr.String()),
+			Amount:          amount,
+			ContractAddress: xc_types.ContractAddress(masterAddr.String()),
+			NativeAsset:     chain,
+			Memo:            memo,
+		},
+	}
+
+	dests := []*xc_types.LegacyTxInfoEndpoint{
+		{
+			// The destination uses the owner account already
+			Address:         xc_types.Address(jettonTfMaybe.Destination.String()),
+			Amount:          amount,
+			ContractAddress: xc_types.ContractAddress(masterAddr.String()),
+			NativeAsset:     chain,
+			Memo:            memo,
+		},
+	}
+	return sources, dests, true, nil
+}
+
+func (client *Client) LookupTransferForTokenWallet(ctx context.Context, tokenWallet *address.Address) (*tonapi.JettonTransferAction, error) {
+	resp, err := client.client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
+		AccountID: tokenWallet.String(),
+		Limit:     1,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve token master address: %v", err)
+	}
+
+	if len(resp.Events) == 0 {
+		return nil, fmt.Errorf("could not resolve token master address: no transfer history")
+	}
+	evt := resp.Events[0]
+
+	if len(evt.Actions) == 0 {
+		return nil, fmt.Errorf("could not resolve token master address: no transfer history")
+	}
+
+	act := evt.Actions[0]
+	if !act.JettonTransfer.IsSet() {
+		return nil, fmt.Errorf("could not resolve token master address: no transfer history")
+	}
+
+	return &act.JettonTransfer.Value, nil
 }

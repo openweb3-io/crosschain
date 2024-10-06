@@ -55,17 +55,21 @@ func TestNativeTx(t *testing.T) {
 
 func TestTokenTx(t *testing.T) {
 	chain := &xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9}
-	builder := ton.NewTxBuilder(&xc_types.TokenAssetConfig{Chain: xc_types.TON, Decimals: 9, Contract: "kQAiboDEv_qRrcEdrYdwbVLNOXBHwShFbtKGbQVJ2OKxY_Di", ChainConfig: chain})
+	builder := ton.NewTxBuilder(chain)
 
-	contractAddress := xc_types.Address("kQAiboDEv_qRrcEdrYdwbVLNOXBHwShFbtKGbQVJ2OKxY_Di")
+	contractAddress := xc_types.ContractAddress("kQAiboDEv_qRrcEdrYdwbVLNOXBHwShFbtKGbQVJ2OKxY_Di")
 
 	from := "EQAjflEZ_6KgKMxPlcnKN1ZoUvHdTT6hVwTW95EGVQfeSha2"
 	to := "0QChotyiAtSPqs0BbPD851Mys9_LdMVM7N-atsFYvUMc48Jm"
 	input := &ton.TxInput{
-		From:            xc_types.Address(from),
-		To:              xc_types.Address(to),
-		Amount:          xc_types.NewBigIntFromUint64(10),
-		ContractAddress: &contractAddress,
+		From:   xc_types.Address(from),
+		To:     xc_types.Address(to),
+		Amount: xc_types.NewBigIntFromUint64(10),
+		Asset: &xc_types.TokenAssetConfig{
+			Chain:    xc_types.TON,
+			Decimals: 9,
+			Contract: contractAddress,
+		},
 	}
 	input.PublicKey, _ = hex.DecodeString("c1172b7926116d2a396bd7d69b9880cc0657e8ba2db9f62b4c210c518321c8b1")
 	tokenWallet := types.Address("EQAjflEZ_6KgKMxPlcnKN1ZoUvHdTT6hVwTW95EGVQfeSha2")

@@ -142,7 +142,7 @@ func (client *BlockbookClient) EstimateFee(ctx context.Context) (xc.BigInt, erro
 	return xc.NewBigIntFromUint64(satsPerByte), nil
 }
 
-func (client *BlockbookClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (xc.LegacyTxInfo, error) {
+func (client *BlockbookClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (*xc.LegacyTxInfo, error) {
 	var data TransactionResponse
 	txWithInfo := &xc.LegacyTxInfo{
 		Amount: xc.NewBigIntFromUint64(0), // prevent nil pointer exception
@@ -153,11 +153,11 @@ func (client *BlockbookClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.
 
 	err := client.get(ctx, "/api/v2/tx/"+string(txHash), &data)
 	if err != nil {
-		return *txWithInfo, err
+		return txWithInfo, err
 	}
 	latestBlock, err := client.LatestBlock(ctx)
 	if err != nil {
-		return *txWithInfo, err
+		return txWithInfo, err
 	}
 
 	txWithInfo.Fee = xc.NewBigIntFromStr(data.Fees)
@@ -256,7 +256,7 @@ func (client *BlockbookClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.
 	txWithInfo.Sources = sources
 	txWithInfo.Destinations = destinations
 
-	return *txWithInfo, nil
+	return txWithInfo, nil
 }
 
 func (client *BlockbookClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {

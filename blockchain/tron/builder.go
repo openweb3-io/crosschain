@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/decred/base58"
 	eABI "github.com/ethereum/go-ethereum/accounts/abi"
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
@@ -91,17 +90,17 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 		return nil, errors.New("asset needed")
 	}
 
-	from_bytes, _, err := base58.CheckDecode(string(txArgs.GetFrom()))
+	from_bytes, err := common.DecodeCheck(string(txArgs.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
 
-	to_bytes, _, err := base58.CheckDecode(string(txArgs.GetTo()))
+	to_bytes, err := common.DecodeCheck(string(txArgs.GetTo()))
 	if err != nil {
 		return nil, err
 	}
 
-	contract_bytes, _, err := base58.CheckDecode(string(asset.GetContract()))
+	contract_bytes, err := common.DecodeCheck(string(asset.GetContract()))
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +109,7 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("internal type construction error: %v", err)
 	}
-	amountType, err := eABI.NewType("address", "", nil)
+	amountType, err := eABI.NewType("uint256", "", nil)
 	if err != nil {
 		return nil, fmt.Errorf("internal type construction error: %v", err)
 	}
