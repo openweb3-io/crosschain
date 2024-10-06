@@ -27,13 +27,6 @@ type TxInput struct {
 
 	// legacy only
 	Prices []*Price `json:"prices,omitempty"`
-
-	From   xc.Address
-	To     xc.Address
-	Amount xc.BigInt
-	Asset  xc.IAsset
-
-	// Args *xcbuilder.TransferArgs
 }
 
 var _ xc.TxInput = &TxInput{}

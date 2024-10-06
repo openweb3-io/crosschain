@@ -16,10 +16,12 @@ import (
 
 var _ xcbuilder.TxXTransferBuilder = &TxBuilder{}
 
-func (txBuilder TxBuilder) NewTask(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewTask(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
-	asset := txInput.Asset.(*xc.TaskConfig)
-	amountInt := big.Int(amount)
+
+	assetI, _ := args.GetAsset()
+	asset := assetI.(*xc.TaskConfig)
+	amountInt := big.Int(args.GetAmount())
 	amountCoin := types.Coin{
 		Denom:  txBuilder.GetDenom(asset),
 		Amount: math.NewIntFromBigInt(&amountInt),
@@ -31,12 +33,12 @@ func (txBuilder TxBuilder) NewTask(from xc.Address, to xc.Address, amount xc.Big
 			return &tx.Tx{}, fmt.Errorf("must provide validator_address in task '%s'", asset.ID())
 		}
 		msgUndelegate := &stakingtypes.MsgUndelegate{
-			DelegatorAddress: string(from),
+			DelegatorAddress: string(args.GetFrom()),
 			Amount:           amountCoin,
 			ValidatorAddress: fmt.Sprintf("%s", validatorAddress),
 		}
 
-		fees := txBuilder.calculateFees(amount, txInput, false)
+		fees := txBuilder.calculateFees(asset, args.GetAmount(), txInput, false)
 		return txBuilder.createTxWithMsg(txInput, msgUndelegate, txArgs{
 			Memo:          txInput.LegacyMemo,
 			FromPublicKey: txInput.LegacyFromPublicKey,

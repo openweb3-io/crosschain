@@ -1,4 +1,4 @@
-package bitcoin_cash
+package btc_cash
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ import (
 // AddressBuilder for Bitcoin
 type AddressBuilder struct {
 	params *chaincfg.Params
-	asset  xc.IAsset
+	cfg    *xc.ChainConfig
 }
 
 var _ xc.AddressBuilder = &AddressBuilder{}
@@ -61,13 +61,13 @@ var (
 )
 
 // NewAddressBuilder creates a new Bitcoin AddressBuilder
-func NewAddressBuilder(asset xc.IAsset) (xc.AddressBuilder, error) {
-	params, err := params.GetParams(asset.GetChain())
+func NewAddressBuilder(cfg *xc.ChainConfig) (xc.AddressBuilder, error) {
+	params, err := params.GetParams(cfg)
 	if err != nil {
 		return AddressBuilder{}, err
 	}
 	return AddressBuilder{
-		asset:  asset,
+		cfg:    cfg,
 		params: params,
 	}, nil
 }

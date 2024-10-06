@@ -68,7 +68,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Transfer(args, input)
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -124,7 +124,7 @@ func (suite *ClientTestSuite) aTestTranfserERC20() {
 	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Transfer(args2, input)
+	tx, err := builder.NewTransfer(args2, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()

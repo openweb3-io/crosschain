@@ -113,10 +113,6 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	if err != nil {
 		return txInput, err
 	}
-	txInput.From = args.GetFrom()
-	txInput.To = args.GetTo()
-	txInput.Amount = args.GetAmount()
-	txInput.Asset, _ = args.GetAsset()
 
 	var asset xc.IAsset
 	if as, ok := args.GetAsset(); ok {
@@ -129,7 +125,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	if err != nil {
 		return nil, fmt.Errorf("could not prepare to simulate: %v", err)
 	}
-	exampleTf, err := builder.NewTransfer(args.GetFrom(), args.GetTo(), args.GetAmount(), txInput)
+	exampleTf, err := builder.NewTransfer(args, txInput)
 	if err != nil {
 		return nil, fmt.Errorf("could not prepare to simulate: %v", err)
 	}

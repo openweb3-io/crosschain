@@ -126,8 +126,10 @@ func (suite *ClientTestSuite) aTest_Tranfser() {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
-	tx, err := builder.NewTransfer(input)
+	builder, err := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	suite.Require().NoError(err)
+
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -154,7 +156,8 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 	to, err := wallet.AddressFromPubKey(suite.account2PubKey, wallet.V4R2, wallet.DefaultSubwallet)
 	suite.Require().NoError(err)
 
-	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	builder, err := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	suite.Require().NoError(err)
 
 	args, err := xcbuilder.NewTransferArgs(
 		xc_types.Address(from.String()),
@@ -167,7 +170,7 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	tx, err := builder.NewTransfer(input)
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	amount, err := suite.client.EstimateGas(ctx, tx)
@@ -283,7 +286,9 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	}
 
 	// call BuildTransaction method
-	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	builder, err := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	suite.Require().NoError(err)
+
 	args, err := xcbuilder.NewTransferArgs(
 		xc_types.Address(from.String()),
 		xc_types.Address(to.String()),
@@ -299,7 +304,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err, "error FetchTransferInput")
 
-	tx, err := builder.NewTransfer(input)
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err, "error BuildTransaction")
 
 	sighashes, err := tx.Sighashes()

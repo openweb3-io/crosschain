@@ -54,7 +54,7 @@ func DefaultMaxGasPrice(nativeAsset *xc.ChainConfig) float64 {
 }
 
 // Old transfer interface
-func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 	native := txBuilder.Chain
 	max := native.ChainMaxGasPrice
@@ -79,35 +79,30 @@ func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc
 	// to determine which cosmos module we should
 	switch txInput.AssetType {
 	case tx_input.BANK:
-		return txBuilder.NewBankTransfer(from, to, amount, input)
+		return txBuilder.NewBankTransfer(args, input)
 	case tx_input.CW20:
-		return txBuilder.NewCW20Transfer(from, to, amount, input)
+		return txBuilder.NewCW20Transfer(args, input)
 	default:
 		return nil, errors.New("unknown cosmos asset type: " + string(txInput.AssetType))
 	}
 }
 
-// NewTransfer creates a new transfer for an Asset, either native or token
-func (txBuilder TxBuilder) Transfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.NewTransfer(args.GetFrom(), args.GetTo(), args.GetAmount(), input)
+// See NewTransfer
+func (txBuilder TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
+	return txBuilder.NewTransfer(args, input)
 }
 
 // See NewTransfer
-func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.NewTransfer(from, to, amount, input)
-}
-
-// See NewTransfer
-func (txBuilder TxBuilder) NewTokenTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.NewTransfer(from, to, amount, input)
+func (txBuilder TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
+	return txBuilder.NewTransfer(args, input)
 }
 
 // x/bank MsgSend transfer
-func (txBuilder TxBuilder) NewBankTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewBankTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
-	amountInt := big.Int(amount)
+	amountInt := big.Int(args.GetAmount())
 
-	asset := txInput.Asset
+	asset, _ := args.GetAsset()
 	if asset == nil {
 		asset = txBuilder.Chain
 	}
@@ -118,8 +113,8 @@ func (txBuilder TxBuilder) NewBankTransfer(from xc.Address, to xc.Address, amoun
 
 	denom := txBuilder.GetDenom(asset)
 	msgSend := &banktypes.MsgSend{
-		FromAddress: string(from),
-		ToAddress:   string(to),
+		FromAddress: string(args.GetFrom()),
+		ToAddress:   string(args.GetTo()),
 		Amount: types.Coins{
 			{
 				Denom:  denom,
@@ -128,30 +123,33 @@ func (txBuilder TxBuilder) NewBankTransfer(from xc.Address, to xc.Address, amoun
 		},
 	}
 
-	fees := txBuilder.calculateFees(amount, txInput, true)
+	fees := txBuilder.calculateFees(asset, args.GetAmount(), txInput, true)
 	return txBuilder.createTxWithMsg(txInput, msgSend, txArgs{
 		Memo:          txInput.LegacyMemo,
 		FromPublicKey: txInput.LegacyFromPublicKey,
 	}, fees)
 }
 
-func (txBuilder TxBuilder) NewCW20Transfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewCW20Transfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
-	asset := txInput.Asset
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
 
 	if txInput.GasLimit == 0 {
 		txInput.GasLimit = gas.TokenTransferGasLimit
 	}
 	contract := asset.GetContract()
-	contractTransferMsg := fmt.Sprintf(`{"transfer": {"amount": "%s", "recipient": "%s"}}`, amount.String(), to)
+	contractTransferMsg := fmt.Sprintf(`{"transfer": {"amount": "%s", "recipient": "%s"}}`, args.GetAmount().String(), args.GetTo())
 	msgSend := &wasmtypes.MsgExecuteContract{
-		Sender:   string(from),
+		Sender:   string(args.GetFrom()),
 		Contract: string(contract),
 		Msg:      wasmtypes.RawContractMessage(json.RawMessage(contractTransferMsg)),
 	}
 
-	fees := txBuilder.calculateFees(amount, txInput, false)
+	fees := txBuilder.calculateFees(asset, args.GetAmount(), txInput, false)
 
 	return txBuilder.createTxWithMsg(txInput, msgSend, txArgs{
 		Memo:          txInput.LegacyMemo,
@@ -187,12 +185,7 @@ func GetTaxFrom(amount xc.BigInt, tax float64) xc.BigInt {
 	return xc.NewBigIntFromUint64(0)
 }
 
-func (txBuilder TxBuilder) calculateFees(amount xc.BigInt, input *tx_input.TxInput, includeTax bool) types.Coins {
-	asset := input.Asset
-	if asset == nil {
-		asset = txBuilder.Chain
-	}
-
+func (txBuilder TxBuilder) calculateFees(asset xc.IAsset, amount xc.BigInt, input *tx_input.TxInput, includeTax bool) types.Coins {
 	gasDenom := txBuilder.Chain.GasCoin
 	if gasDenom == "" {
 		gasDenom = txBuilder.Chain.ChainCoin

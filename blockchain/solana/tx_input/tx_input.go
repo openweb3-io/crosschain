@@ -9,10 +9,12 @@ import (
 )
 
 type TxInput struct {
-	From   xc_types.Address
-	To     xc_types.Address
-	Amount xc_types.BigInt
-	Asset  xc_types.IAsset
+	/*
+		From   xc_types.Address
+		To     xc_types.Address
+		Amount xc_types.BigInt
+		Asset  xc_types.IAsset
+	*/
 
 	RecentBlockHash     solana.Hash      `json:"recent_block_hash,omitempty"`
 	ToIsATA             bool             `json:"to_is_ata,omitempty"`

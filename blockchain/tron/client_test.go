@@ -56,8 +56,10 @@ func (suite *ClientTestSuite) TestTransfer() {
 	input, err := client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder := tron.NewTxBuilder(&xc_types.ChainConfig{})
-	tx, err := builder.BuildTransfer(input)
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	gas, err := client.EstimateGas(ctx, tx)
@@ -111,8 +113,10 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	input, err := client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	builder := tron.NewTxBuilder(&xc_types.ChainConfig{})
-	tx, err := builder.BuildTransfer(input)
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	calculatedGas, err := client.EstimateGas(ctx, tx)

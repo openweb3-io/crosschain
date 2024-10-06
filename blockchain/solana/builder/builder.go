@@ -11,6 +11,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx"
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 )
@@ -31,31 +32,36 @@ func NewTxBuilder(chain *xc_types.ChainConfig) (*TxBuilder, error) {
 	}, nil
 }
 
-func (b *TxBuilder) NewTransfer(input types.TxInput) (types.Tx, error) {
-	txInput := input.(*tx_input.TxInput)
+func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = b.Chain
+	}
 
-	switch txInput.Asset.(type) {
+	switch asset.(type) {
 	case *types.TokenAssetConfig:
-		return b.NewTokenTransfer(input)
+		return b.NewTokenTransfer(args, input)
 	default:
-		return b.NewNativeTransfer(input)
+		return b.NewNativeTransfer(args, input)
 	}
 }
 
-func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
-	if txInput.Asset == nil {
+	asset, _ := args.GetAsset()
+
+	if asset == nil {
 		return nil, errors.New("asset missing")
 	}
 
-	contract := txInput.Asset.GetContract()
+	contract := asset.GetContract()
 	if contract == "" {
 		return nil, errors.New("contract missing")
 	}
-	decimals := txInput.Asset.GetDecimals()
+	decimals := asset.GetDecimals()
 
-	accountFrom, err := solana.PublicKeyFromBase58(string(txInput.From))
+	accountFrom, err := solana.PublicKeyFromBase58(string(args.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +71,12 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 		return nil, err
 	}
 
-	accountTo, err := solana.PublicKeyFromBase58(string(txInput.To))
+	accountTo, err := solana.PublicKeyFromBase58(string(args.GetTo()))
 	if err != nil {
 		return nil, err
 	}
 
-	ataFromStr, err := solana_types.FindAssociatedTokenAddress(string(txInput.To), string(contract), solana.PublicKey(txInput.TokenProgram))
+	ataFromStr, err := solana_types.FindAssociatedTokenAddress(string(args.GetTo()), string(contract), solana.PublicKey(txInput.TokenProgram))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +87,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 
 	ataTo := accountTo
 	if !txInput.ToIsATA {
-		ataToStr, err := solana_types.FindAssociatedTokenAddress(string(txInput.To), string(contract), solana.PublicKey(txInput.TokenProgram))
+		ataToStr, err := solana_types.FindAssociatedTokenAddress(string(args.GetTo()), string(contract), solana.PublicKey(txInput.TokenProgram))
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +122,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 		// just send 1 instruction using the single ATA
 		instructions = append(instructions,
 			token.NewTransferCheckedInstruction(
-				txInput.Amount.Uint64(),
+				args.GetAmount().Uint64(),
 				uint8(decimals),
 				ataFrom,
 				accountContract,
@@ -130,7 +136,7 @@ func (b *TxBuilder) NewTokenTransfer(input types.TxInput) (types.Tx, error) {
 		// So we need to spend them like UTXO. Here we'll just send a solana
 		// instruction for each one until we've reached the target balance.
 		zero := types.NewBigIntFromUint64(0)
-		remainingBalanceToSend := txInput.Amount
+		remainingBalanceToSend := args.GetAmount()
 		for _, tokenAcc := range txInput.SourceTokenAccounts {
 			amountToSend := remainingBalanceToSend
 			if tokenAcc.Balance.Cmp(&remainingBalanceToSend) < 0 {
@@ -188,22 +194,22 @@ func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, acco
 	}, nil
 }
 
-func (b *TxBuilder) NewNativeTransfer(input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
-	accountFrom, err := solana.PublicKeyFromBase58(string(txInput.From))
+	accountFrom, err := solana.PublicKeyFromBase58(string(args.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
 
-	accountTo, err := solana.PublicKeyFromBase58(string(txInput.To))
+	accountTo, err := solana.PublicKeyFromBase58(string(args.GetTo()))
 	if err != nil {
 		return nil, err
 	}
 
 	instructions := []solana.Instruction{
 		system.NewTransferInstruction(
-			txInput.Amount.Int().Uint64(),
+			args.GetAmount().Int().Uint64(),
 			accountFrom,
 			accountTo,
 		).Build(),

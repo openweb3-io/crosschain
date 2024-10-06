@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -353,6 +354,11 @@ func (client *NativeClient) FetchBalance(ctx context.Context, address xc.Address
 	}
 	return &amount, nil
 }
+
+func (client *NativeClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (client *NativeClient) FetchNativeBalance(ctx context.Context, address xc.Address) (*xc.BigInt, error) {
 	return client.FetchBalance(ctx, address)
 }

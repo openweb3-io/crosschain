@@ -10,6 +10,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx"
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	"github.com/openweb3-io/crosschain/blockchain/solana/types"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/require"
 )
@@ -27,15 +28,15 @@ func TestNewTxBuilder(t *testing.T) {
 
 func TestNewNativeTransfer(t *testing.T) {
 	builder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
-	from := xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb")
-	to := xc_types.Address("BWbmXj5ckAaWCAtzMZ97qnJhBAKegoXtgNrv9BUpAB11")
-	amount := xc_types.NewBigIntFromUint64(1200000) // 1.2 SOL
-	input := &tx_input.TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-	}
-	tx, err := builder.NewNativeTransfer(input)
+	args, err := xcbuilder.NewTransferArgs(
+		xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb"),
+		xc_types.Address("BWbmXj5ckAaWCAtzMZ97qnJhBAKegoXtgNrv9BUpAB11"),
+		xc_types.NewBigIntFromUint64(1200000), // 1.2 SOL
+	)
+	require.NoError(t, err)
+
+	input := &tx_input.TxInput{}
+	tx, err := builder.NewNativeTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx := tx.(*Tx).SolTx
@@ -48,22 +49,21 @@ func TestNewNativeTransferErr(t *testing.T) {
 
 	builder, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
-	from := xc_types.Address("from") // fails on parsing from
-	to := xc_types.Address("to")
-	amount := xc_types.BigInt{}
-	input := &TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-	}
-	tx, err := builder.NewNativeTransfer(input)
+	args, err := xcbuilder.NewTransferArgs(
+		xc_types.Address("from"),
+		xc_types.Address("to"),
+		xc_types.BigInt{},
+	)
+	require.NoError(t, err)
+
+	input := &TxInput{}
+	tx, err := builder.NewNativeTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "invalid length, expected 32, got 3")
 
-	from = xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb")
-	input.From = from
+	args.SetFrom(xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb"))
 	// fails on parsing to
-	tx, err = builder.NewNativeTransfer(input)
+	tx, err = builder.NewNativeTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "invalid length, expected 32, got 2")
 }
@@ -78,18 +78,21 @@ func TestNewTokenTransfer(t *testing.T) {
 	ataToStr, _ := types.FindAssociatedTokenAddress(string(to), string(contract), solana.TokenProgramID)
 	ataTo := solana.MustPublicKeyFromBase58(ataToStr)
 
-	// transfer to existing ATA
-	input := &TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-		Asset: &xc_types.TokenAssetConfig{
+	args, err := xcbuilder.NewTransferArgs(
+		from,
+		to,
+		amount,
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract:    contract,
 			Decimals:    6,
 			ChainConfig: &xc_types.ChainConfig{},
-		},
-	}
-	tx, err := builder.NewTokenTransfer(input)
+		}),
+	)
+	require.NoError(t, err)
+
+	// transfer to existing ATA
+	input := &TxInput{}
+	tx, err := builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx := tx.(*Tx).SolTx
@@ -99,13 +102,17 @@ func TestNewTokenTransfer(t *testing.T) {
 	require.Equal(t, ataTo, solTx.Message.AccountKeys[2])                       // destination
 
 	// transfer to non-existing ATA: create
+	args, err = xcbuilder.NewTransferArgs(
+		from,
+		to,
+		amount,
+	)
+	require.NoError(t, err)
+
 	input = &TxInput{
 		ShouldCreateATA: true,
-		From:            from,
-		To:              to,
-		Amount:          amount,
 	}
-	tx, err = builder.NewTokenTransfer(input)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx = tx.(*Tx).SolTx
@@ -116,14 +123,12 @@ func TestNewTokenTransfer(t *testing.T) {
 	require.Equal(t, ataTo, solTx.Message.AccountKeys[1])
 
 	// transfer directly to ATA
-	to = xc_types.Address(ataToStr)
+	args.SetTo(xc_types.Address(ataToStr))
+
 	input = &TxInput{
 		ToIsATA: true,
-		From:    from,
-		To:      to,
-		Amount:  amount,
 	}
-	tx, err = builder.NewTokenTransfer(input)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx = tx.(*Tx).SolTx
@@ -133,14 +138,11 @@ func TestNewTokenTransfer(t *testing.T) {
 	require.Equal(t, ataTo, solTx.Message.AccountKeys[2])                       // destination
 
 	// invalid: direct to ATA, but ToIsATA: false
-	to = xc_types.Address(ataToStr)
+	args.SetTo(xc_types.Address(ataToStr))
 	input = &TxInput{
 		ToIsATA: false,
-		From:    from,
-		To:      to,
-		Amount:  amount,
 	}
-	tx, err = builder.NewTokenTransfer(input)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx = tx.(*Tx).SolTx
@@ -183,6 +185,18 @@ func TestNewMultiTokenTransfer(t *testing.T) {
 	require.NoError(t, err)
 	ataTo := solana.MustPublicKeyFromBase58(ataToStr)
 
+	args, err := xcbuilder.NewTransferArgs(
+		from,
+		to,
+		amountTooBig,
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
+			Contract:    contract,
+			Decimals:    6,
+			ChainConfig: &xc_types.ChainConfig{},
+		}),
+	)
+	require.NoError(t, err)
+
 	// transfer to existing ATA
 	input := &TxInput{
 		SourceTokenAccounts: []*tx_input.TokenAccount{
@@ -199,20 +213,12 @@ func TestNewMultiTokenTransfer(t *testing.T) {
 				Balance: xc_types.NewBigIntFromUint64(100),
 			},
 		},
-		From:   from,
-		To:     to,
-		Amount: amountTooBig,
-		Asset: &xc_types.TokenAssetConfig{
-			Contract:    contract,
-			Decimals:    6,
-			ChainConfig: &xc_types.ChainConfig{},
-		},
 	}
-	_, err = builder.NewTokenTransfer(input)
+	_, err = builder.NewTokenTransfer(args, input)
 	require.ErrorContains(t, err, "cannot send")
 
-	input.Amount = amountExact
-	tx, err := builder.NewTokenTransfer(input)
+	args.SetAmount(amountExact)
+	tx, err := builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	solTx := tx.(*Tx).SolTx
 
@@ -228,25 +234,25 @@ func TestNewMultiTokenTransfer(t *testing.T) {
 	require.EqualValues(t, 100, getTokenTransferAmount(solTx, &solTx.Message.Instructions[2]))
 
 	// amountSmall1 should just have 1 instruction (fits 1 token balance exact)
-	input.Amount = amountSmall1
-	tx, err = builder.NewTokenTransfer(input)
+	args.SetAmount(amountSmall1)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	solTx = tx.(*Tx).SolTx
 	require.Equal(t, 1, len(solTx.Message.Instructions))
 	require.EqualValues(t, 100, getTokenTransferAmount(solTx, &solTx.Message.Instructions[0]))
 
 	// amountSmall2 should just have 2 instruction (first 100, second 50)
-	input.Amount = amountSmall2
-	tx, err = builder.NewTokenTransfer(input)
+	args.SetAmount(amountSmall2)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	solTx = tx.(*Tx).SolTx
 	require.Equal(t, 2, len(solTx.Message.Instructions))
 	require.EqualValues(t, 100, getTokenTransferAmount(solTx, &solTx.Message.Instructions[0]))
 	require.EqualValues(t, 50, getTokenTransferAmount(solTx, &solTx.Message.Instructions[1]))
 
-	// amountSmall3 should just have 3 instruction (first 100, second 100)
-	input.Amount = amountSmall3
-	tx, err = builder.NewTokenTransfer(input)
+	// amountSmall3 should just have 3 instruction (first 100, second 100)	input.Amount =
+	args.SetAmount(amountSmall3)
+	tx, err = builder.NewTokenTransfer(args, input)
 	require.NoError(t, err)
 	solTx = tx.(*Tx).SolTx
 	require.Equal(t, 2, len(solTx.Message.Instructions))
@@ -262,12 +268,12 @@ func TestNewTokenTransferErr(t *testing.T) {
 	from := xc_types.Address("from")
 	to := xc_types.Address("to")
 	amount := xc_types.BigInt{}
-	input := &TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-	}
-	tx, err := txBuilder.NewTokenTransfer(input)
+
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(t, err)
+
+	input := &TxInput{}
+	tx, err := txBuilder.NewTokenTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "asset does not have a contract")
 
@@ -275,32 +281,34 @@ func TestNewTokenTransferErr(t *testing.T) {
 	from = xc_types.Address("from")
 	to = xc_types.Address("to")
 	amount = xc_types.BigInt{}
-	input = &TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-		Asset: &xc_types.TokenAssetConfig{
+
+	args, err = xcbuilder.NewTransferArgs(from, to, amount,
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
 			Decimals: 6,
-		},
-	}
-	tx, err = txBuilder.NewTokenTransfer(input)
+		}),
+	)
+	require.NoError(t, err)
+
+	input = &TxInput{}
+	tx, err = txBuilder.NewTokenTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "invalid length, expected 32, got 3")
 
 	from = xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb")
-	input.From = from
-	tx, err = txBuilder.NewTokenTransfer(input)
+	args.SetFrom(from)
+	tx, err = txBuilder.NewTokenTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "invalid length, expected 32, got 2")
 
 	// invalid asset config
-	input.Asset = &xc_types.TokenAssetConfig{
+	args.SetAsset(&xc_types.TokenAssetConfig{
 		Contract: "contract",
 		Decimals: 6,
-	}
+	})
+
 	txBuilder, _ = builder.NewTxBuilder(&xc_types.ChainConfig{})
-	tx, err = txBuilder.NewTokenTransfer(input)
+	tx, err = txBuilder.NewTokenTransfer(args, input)
 	require.Nil(t, tx)
 	require.EqualError(t, err, "invalid length, expected 32, got 6")
 }
@@ -310,12 +318,12 @@ func TestNewTransfer(t *testing.T) {
 	from := xc_types.Address("Hzn3n914JaSpnxo5mBbmuCDmGL6mxWN9Ac2HzEXFSGtb")
 	to := xc_types.Address("BWbmXj5ckAaWCAtzMZ97qnJhBAKegoXtgNrv9BUpAB11")
 	amount := xc_types.NewBigIntFromUint64(1200000) // 1.2 SOL
-	input := &TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-	}
-	tx, err := builder.NewTransfer(input)
+
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(t, err)
+
+	input := &TxInput{}
+	tx, err := builder.NewTransfer(args, input)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
 	solTx := tx.(*Tx).SolTx
@@ -330,26 +338,35 @@ func TestNewTransferAsToken(t *testing.T) {
 	to := xc_types.Address("BWbmXj5ckAaWCAtzMZ97qnJhBAKegoXtgNrv9BUpAB11")
 	amount := xc_types.NewBigIntFromUint64(1200000) // 1.2 SOL
 
+	args, err := xcbuilder.NewTransferArgs(
+		from,
+		to,
+		amount,
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
+			Contract:    "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+			Decimals:    6,
+			ChainConfig: &xc_types.ChainConfig{},
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type testcase struct {
+		args                  *xcbuilder.TransferArgs
 		txInput               *TxInput
 		expectedSourceAccount string
 	}
 	testcases := []testcase{
 		{
+			args: args,
 			txInput: &TxInput{
 				RecentBlockHash: solana.HashFromBytes([]byte{1, 2, 3, 4}),
-				From:            from,
-				To:              to,
-				Amount:          amount,
-				Asset: &xc_types.TokenAssetConfig{
-					Contract:    "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
-					Decimals:    6,
-					ChainConfig: &xc_types.ChainConfig{},
-				},
 			},
 			expectedSourceAccount: "DvSgNMRxVSMBpLp4hZeBrmQo8ZRFne72actTZ3PYE3AA",
 		},
 		{
+			args: args,
 			txInput: &TxInput{
 				RecentBlockHash: solana.HashFromBytes([]byte{1, 2, 3, 4}),
 				SourceTokenAccounts: []*tx_input.TokenAccount{
@@ -363,7 +380,7 @@ func TestNewTransferAsToken(t *testing.T) {
 		},
 	}
 	for _, v := range testcases {
-		tx, err := builder.NewTransfer(v.txInput)
+		tx, err := builder.NewTransfer(v.args, v.txInput)
 		require.Nil(t, err)
 		require.NotNil(t, tx)
 		solTx := tx.(*Tx).SolTx

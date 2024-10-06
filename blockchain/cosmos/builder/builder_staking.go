@@ -13,6 +13,11 @@ import (
 )
 
 func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc.StakeTxInput) (xc.Tx, error) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
+
 	stakeInput, ok := input.(*tx_input.StakingInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, stakeInput)
@@ -25,7 +30,7 @@ func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc.StakeTxInput
 
 	from := args.GetFrom()
 
-	denom := txBuilder.GetDenom(stakeInput.Asset)
+	denom := txBuilder.GetDenom(asset)
 	amount := args.GetAmount()
 
 	msg := &stakingtypes.MsgDelegate{
@@ -34,7 +39,7 @@ func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc.StakeTxInput
 		Amount:           types.NewCoin(denom, math.NewIntFromBigInt(amount.Int())),
 	}
 
-	fees := txBuilder.calculateFees(amount, &stakeInput.TxInput, false)
+	fees := txBuilder.calculateFees(asset, amount, &stakeInput.TxInput, false)
 	memo, _ := args.GetMemo()
 	pubkey, ok := args.GetPublicKey()
 	if !ok {
@@ -48,6 +53,11 @@ func (txBuilder TxBuilder) Stake(args xcbuilder.StakeArgs, input xc.StakeTxInput
 }
 
 func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc.UnstakeTxInput) (xc.Tx, error) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
+
 	stakeInput, ok := input.(*tx_input.UnstakingInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, stakeInput)
@@ -59,7 +69,7 @@ func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc.UnstakeTxI
 
 	from := args.GetFrom()
 
-	denom := txBuilder.GetDenom(stakeInput.Asset)
+	denom := txBuilder.GetDenom(asset)
 	amount := args.GetAmount()
 
 	msg := &stakingtypes.MsgUndelegate{
@@ -68,7 +78,7 @@ func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc.UnstakeTxI
 		Amount:           types.NewCoin(denom, math.NewIntFromBigInt(amount.Int())),
 	}
 
-	fees := txBuilder.calculateFees(amount, &stakeInput.TxInput, false)
+	fees := txBuilder.calculateFees(asset, amount, &stakeInput.TxInput, false)
 	memo, _ := args.GetMemo()
 	pubkey, ok := args.GetPublicKey()
 	if !ok {
@@ -82,6 +92,11 @@ func (txBuilder TxBuilder) Unstake(args xcbuilder.StakeArgs, input xc.UnstakeTxI
 }
 
 func (txBuilder TxBuilder) Withdraw(args xcbuilder.StakeArgs, input xc.WithdrawTxInput) (xc.Tx, error) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
+
 	withdrawInput, ok := input.(*tx_input.WithdrawInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, withdrawInput)
@@ -101,7 +116,7 @@ func (txBuilder TxBuilder) Withdraw(args xcbuilder.StakeArgs, input xc.WithdrawT
 		ValidatorAddress: validatorAddress,
 	}
 
-	fees := txBuilder.calculateFees(amount, &withdrawInput.TxInput, false)
+	fees := txBuilder.calculateFees(asset, amount, &withdrawInput.TxInput, false)
 	memo, _ := args.GetMemo()
 	pubkey, ok := args.GetPublicKey()
 	if !ok {

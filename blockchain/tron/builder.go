@@ -9,6 +9,7 @@ import (
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -18,26 +19,23 @@ type TxBuilder struct {
 	Chain *types.ChainConfig
 }
 
-func NewTxBuilder(chain *types.ChainConfig) *TxBuilder {
+func NewTxBuilder(chain *types.ChainConfig) (*TxBuilder, error) {
 	return &TxBuilder{
 		Chain: chain,
-	}
+	}, nil
 }
 
-func (b *TxBuilder) BuildTransfer(input types.TxInput) (types.Tx, error) {
-	txInput := input.(*TxInput)
-
-	asset, _ := txInput.Args.GetAsset()
+func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
+	asset, _ := args.GetAsset()
 	if asset == nil || asset.GetContract() == "" {
-		return b.BuildNativeTransfer(input)
+		return b.NewNativeTransfer(args, input)
 	} else {
-		return b.BuildTokenTransfer(input)
+		return b.NewTokenTransfer(args, input)
 	}
 }
 
-func (b *TxBuilder) BuildNativeTransfer(input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
-	args := txInput.Args
 
 	from_bytes, err := common.DecodeCheck(string(args.GetFrom()))
 	if err != nil {
@@ -78,24 +76,23 @@ func (b *TxBuilder) BuildNativeTransfer(input types.TxInput) (types.Tx, error) {
 
 	return &Tx{
 		tronTx: tx,
-		input:  txInput,
+		args:   args,
 	}, nil
 }
 
-func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
 	txInput := input.(*TxInput)
-	txArgs := txInput.Args
-	asset, _ := txArgs.GetAsset()
+	asset, _ := args.GetAsset()
 	if asset == nil {
 		return nil, errors.New("asset needed")
 	}
 
-	from_bytes, err := common.DecodeCheck(string(txArgs.GetFrom()))
+	from_bytes, err := common.DecodeCheck(string(args.GetFrom()))
 	if err != nil {
 		return nil, err
 	}
 
-	to_bytes, err := common.DecodeCheck(string(txArgs.GetTo()))
+	to_bytes, err := common.DecodeCheck(string(args.GetTo()))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +110,7 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("internal type construction error: %v", err)
 	}
-	args := eABI.Arguments{
+	txArgs := eABI.Arguments{
 		{
 			Type: addrType,
 		},
@@ -122,9 +119,9 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 		},
 	}
 
-	paramBz, err := args.PackValues([]interface{}{
+	paramBz, err := txArgs.PackValues([]interface{}{
 		eth_common.BytesToAddress(to_bytes),
-		txArgs.GetAmount().Int(),
+		args.GetAmount().Int(),
 	})
 	methodSig := Signature("transfer(address,uint256)")
 	data := append(methodSig, paramBz...)
@@ -171,7 +168,7 @@ func (b *TxBuilder) BuildTokenTransfer(input types.TxInput) (types.Tx, error) {
 
 	return &Tx{
 		tronTx: tx,
-		input:  txInput,
+		args:   args,
 	}, nil
 }
 

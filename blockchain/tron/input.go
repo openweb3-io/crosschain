@@ -1,12 +1,10 @@
 package tron
 
 import (
-	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc_types "github.com/openweb3-io/crosschain/types"
 )
 
 type TxInput struct {
-	Args          *xcbuilder.TransferArgs
 	RefBlockBytes []byte
 	RefBlockHash  []byte
 	Expiration    int64

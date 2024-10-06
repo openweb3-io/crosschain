@@ -10,16 +10,10 @@ type TxInput struct {
 	AccountStatus   tonapi.AccountStatus
 	Seq             uint32
 	PublicKey       []byte `json:"public_key,omitempty"`
-	Memo            string
 	Timestamp       int64
 	TokenWallet     xc_types.Address
 	EstimatedMaxFee xc_types.BigInt
 	TonBalance      xc_types.BigInt
-
-	From   xc_types.Address
-	To     xc_types.Address
-	Amount xc_types.BigInt
-	Asset  xc_types.IAsset
 }
 
 func NewTxInput() *TxInput {

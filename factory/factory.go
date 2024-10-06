@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/openweb3-io/crosschain/builder"
 	xc_client "github.com/openweb3-io/crosschain/client"
 	"github.com/openweb3-io/crosschain/factory/blockchains"
+	"github.com/openweb3-io/crosschain/factory/signer"
 	"github.com/openweb3-io/crosschain/types"
 )
 
 type IFactory interface {
-	NewClient(cfg types.IAsset) (xc_client.IClient, error)
+	NewClient(cfg *types.ChainConfig) (xc_client.IClient, error)
 }
 
 type Factory struct {
@@ -27,7 +29,7 @@ func NewDefaultFactory() *Factory {
 	}
 }
 
-func (f *Factory) NewClient(cfg types.IAsset) (xc_client.IClient, error) {
+func (f *Factory) NewClient(cfg *types.ChainConfig) (xc_client.IClient, error) {
 	return blockchains.NewClient(cfg)
 }
 
@@ -95,4 +97,41 @@ func (f *Factory) RegisterGetAssetConfigCallback(callback func(assetID types.Ass
 
 func (f *Factory) UnregisterGetAssetConfigCallback() {
 	f.callbackGetAssetConfig = nil
+}
+
+// GetAllPossibleAddressesFromPublicKey returns all PossibleAddress(es) given a public key
+func (f *Factory) GetAllPossibleAddressesFromPublicKey(cfg *types.ChainConfig, publicKey []byte) ([]types.PossibleAddress, error) {
+	builder, err := blockchains.NewAddressBuilder(cfg)
+	if err != nil {
+		return []types.PossibleAddress{}, err
+	}
+	return builder.GetAllPossibleAddressesFromPublicKey(publicKey)
+}
+
+// GetAddressFromPublicKey returns an Address given a public key
+func (f *Factory) GetAddressFromPublicKey(cfg *types.ChainConfig, publicKey []byte) (types.Address, error) {
+	return getAddressFromPublicKey(cfg, publicKey)
+}
+
+func getAddressFromPublicKey(cfg *types.ChainConfig, publicKey []byte) (types.Address, error) {
+	builder, err := blockchains.NewAddressBuilder(cfg)
+	if err != nil {
+		return "", err
+	}
+	return builder.GetAddressFromPublicKey(publicKey)
+}
+
+// NewAddressBuilder creates a new AddressBuilder
+func (f *Factory) NewAddressBuilder(cfg *types.ChainConfig) (types.AddressBuilder, error) {
+	return blockchains.NewAddressBuilder(cfg)
+}
+
+// NewTxBuilder creates a new TxBuilder
+func (f *Factory) NewTxBuilder(cfg *types.ChainConfig) (builder.TxBuilder, error) {
+	return blockchains.NewTxBuilder(cfg)
+}
+
+// NewSigner creates a new Signer
+func (f *Factory) NewSigner(cfg *types.ChainConfig, secret string) (*signer.Signer, error) {
+	return blockchains.NewSigner(cfg, secret)
 }

@@ -1,4 +1,4 @@
-package bitcoin_cash
+package btc_cash
 
 import (
 	"github.com/openweb3-io/crosschain/blockchain/btc/client"

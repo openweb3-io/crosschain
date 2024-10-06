@@ -37,6 +37,24 @@ func NewTransferArgs(from types.Address, to types.Address, amount types.BigInt, 
 	return args, nil
 }
 
+func (args *TransferArgs) SetFrom(v types.Address) {
+	args.from = v
+}
+
+func (args *TransferArgs) SetTo(v types.Address) {
+	args.to = v
+}
+
+func (args *TransferArgs) SetAmount(v types.BigInt) { args.amount = v }
+
+func (args *TransferArgs) SetMemo(v string) {
+	WithMemo(v)(&args.options)
+}
+
+func (args *TransferArgs) SetAsset(asset types.IAsset) {
+	WithAsset(asset)(&args.options)
+}
+
 func (args *TransferArgs) GetFrom() types.Address {
 	return args.from
 }

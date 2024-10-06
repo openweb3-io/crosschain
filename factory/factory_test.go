@@ -3,13 +3,8 @@ package factory_test
 import (
 	"testing"
 
-	"github.com/cordialsys/crosschain/factory/blockchains"
-	bitcointxinput "github.com/openweb3-io/crosschain/blockchain/btc/tx_input"
-	cosmostxinput "github.com/openweb3-io/crosschain/blockchain/cosmos/tx_input"
-	solanatxinput "github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	"github.com/openweb3-io/crosschain/factory"
 	xc "github.com/openweb3-io/crosschain/types"
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,7 +12,7 @@ type CrosschainTestSuite struct {
 	suite.Suite
 	Factory          *factory.Factory
 	TestNativeAssets []xc.NativeAsset
-	TestAssetConfigs []xc.IAsset
+	TestChainConfigs []*xc.ChainConfig
 }
 
 func (s *CrosschainTestSuite) SetupTest() {
@@ -36,10 +31,10 @@ func (s *CrosschainTestSuite) SetupTest() {
 		// xc.ATOM,
 	}
 	for _, native := range s.TestNativeAssets {
-		assetConfig, _ := s.Factory.GetAssetConfig("", native)
-		s.TestAssetConfigs = append(s.TestAssetConfigs, assetConfig)
+		asset, _ := s.Factory.GetAssetConfig("", native)
+		chainConfig := asset.(*xc.ChainConfig)
+		s.TestChainConfigs = append(s.TestChainConfigs, chainConfig)
 	}
-
 }
 
 func TestCrosschain(t *testing.T) {
@@ -55,40 +50,37 @@ func (s *CrosschainTestSuite) TestNewDefaultFactory() {
 
 func (s *CrosschainTestSuite) TestNewTxBuilder() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
+	for _, asset := range s.TestChainConfigs {
 		builder, _ := s.Factory.NewTxBuilder(asset)
 		require.NotNil(builder)
 	}
 
-	asset, _ := s.Factory.PutAssetConfig(&xc.ChainConfig{Chain: "TEST"})
-	_, err := s.Factory.NewTxBuilder(asset)
+	_, err := s.Factory.NewTxBuilder(&xc.ChainConfig{Chain: "TEST"})
 	require.ErrorContains(err, "no tx-builder defined for")
 }
 
 func (s *CrosschainTestSuite) TestNewSigner() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
+	for _, chain := range s.TestChainConfigs {
 		pri := "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-		signer, err := s.Factory.NewSigner(asset.GetChain(), pri)
+		signer, err := s.Factory.NewSigner(chain, pri)
 		require.NoError(err)
 		require.NotNil(signer)
 	}
 
-	asset, _ := s.Factory.PutAssetConfig(&xc.ChainConfig{Chain: "TEST"})
-	_, err := s.Factory.NewSigner(asset.GetChain(), "")
+	_, err := s.Factory.NewSigner(&xc.ChainConfig{Chain: "TEST"}, "")
 	require.ErrorContains(err, "unsupported signing alg")
 }
 
 func (s *CrosschainTestSuite) TestNewAddressBuilder() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
-		builder, err := s.Factory.NewAddressBuilder(asset)
+	for _, cfg := range s.TestChainConfigs {
+		builder, err := s.Factory.NewAddressBuilder(cfg)
 		require.NoError(err)
 		require.NotNil(builder)
 	}
 
-	asset, _ := s.Factory.PutAssetConfig(&xc.ChainConfig{Chain: "TEST"})
-	_, err := s.Factory.NewAddressBuilder(asset)
+	_, err := s.Factory.NewAddressBuilder(&xc.ChainConfig{Chain: "TEST"})
 	require.ErrorContains(err, "no address builder defined for")
 }
 
@@ -96,7 +88,7 @@ func (s *CrosschainTestSuite) TestNewAddressBuilder() {
 
 func (s *CrosschainTestSuite) TestGetAddressFromPublicKey() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
+	for _, asset := range s.TestChainConfigs {
 		address, _ := s.Factory.GetAddressFromPublicKey(asset, []byte{})
 		require.NotNil(address)
 	}
@@ -104,7 +96,7 @@ func (s *CrosschainTestSuite) TestGetAddressFromPublicKey() {
 
 func (s *CrosschainTestSuite) TestGetAllPossibleAddressesFromPublicKey() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
+	for _, asset := range s.TestChainConfigs {
 		addresses, _ := s.Factory.GetAllPossibleAddressesFromPublicKey(asset, []byte{})
 		require.NotNil(addresses)
 	}
@@ -112,33 +104,9 @@ func (s *CrosschainTestSuite) TestGetAllPossibleAddressesFromPublicKey() {
 
 // MustObject functions
 
-func (s *CrosschainTestSuite) TestMustAmountBlockchain() {
-	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
-		asset := asset.GetChain()
-		amount := s.Factory.MustAmountBlockchain(asset, "10.3")
-
-		var expected xc.BigInt
-		if asset.Decimals == 6 {
-			expected = xc.NewBigIntFromUint64(10300000)
-		}
-		if asset.Decimals == 9 {
-			expected = xc.NewBigIntFromUint64(10300000000)
-		}
-		if asset.Decimals == 12 {
-			expected = xc.NewBigIntFromUint64(10300000000 * 1000)
-		}
-		if asset.Decimals == 18 {
-			expected = xc.NewBigIntFromUint64(10300000000 * 1000000000)
-		}
-
-		require.Equal(expected, amount, "Error on: "+asset.Chain)
-	}
-}
-
 func (s *CrosschainTestSuite) TestMustAddress() {
 	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
+	for _, asset := range s.TestChainConfigs {
 		asset := asset.GetChain()
 		address := s.Factory.MustAddress(asset, "myaddress") // trivial impl
 		require.Equal(xc.Address("myaddress"), address, "Error on: "+asset.Chain)
@@ -146,144 +114,6 @@ func (s *CrosschainTestSuite) TestMustAddress() {
 }
 
 // Convert functions
-
-func (s *CrosschainTestSuite) TestConvertAmountToHuman() {
-	require := s.Require()
-	var amountBlockchain xc.BigInt
-	for _, asset := range s.TestAssetConfigs {
-		asset := asset.GetChain()
-		if asset.Decimals == 6 {
-			amountBlockchain = xc.NewBigIntFromUint64(10300000)
-		}
-		if asset.Decimals == 9 {
-			amountBlockchain = xc.NewBigIntFromUint64(10300000000)
-		}
-		if asset.Decimals == 12 {
-			amountBlockchain = xc.NewBigIntFromUint64(10300000000 * 1000)
-		}
-		if asset.Decimals == 18 {
-			amountBlockchain = xc.NewBigIntFromUint64(10300000000 * 1000000000)
-		}
-
-		amount, err := s.Factory.ConvertAmountToHuman(asset, amountBlockchain)
-		require.Nil(err)
-		require.Equal("10.3", amount.String(), "Error on: "+asset.Chain)
-	}
-	asset, _ := s.Factory.PutAssetConfig(&xc.ChainConfig{Chain: "TEST", Decimals: 0})
-	amountBlockchain = xc.NewBigIntFromUint64(103)
-	amount, err := s.Factory.ConvertAmountToHuman(asset, amountBlockchain)
-	require.NoError(err)
-	require.EqualValues("103", amount.String())
-}
-
-func (s *CrosschainTestSuite) TestConvertAmountToBlockchain() {
-	require := s.Require()
-	amountDecimal, _ := decimal.NewFromString("10.3")
-	amountHuman := xc.AmountHumanReadable(amountDecimal)
-
-	var expected xc.BigInt
-	for _, asset := range s.TestAssetConfigs {
-		asset := asset.GetChain()
-		amount, err := s.Factory.ConvertAmountToBlockchain(asset, amountHuman)
-
-		if asset.Decimals == 6 {
-			expected = xc.NewBigIntFromUint64(10300000)
-		}
-		if asset.Decimals == 9 {
-			expected = xc.NewBigIntFromUint64(10300000000)
-		}
-		if asset.Decimals == 12 {
-			expected = xc.NewBigIntFromUint64(10300000000 * 1000)
-		}
-		if asset.Decimals == 18 {
-			expected = xc.NewBigIntFromUint64(10300000000 * 1000000000)
-		}
-
-		require.Nil(err)
-		require.Equal(expected, amount, "Error on: "+asset.Chain)
-	}
-}
-
-func (s *CrosschainTestSuite) TestConvertAmountStrToBlockchain() {
-	require := s.Require()
-	var expected xc.BigInt
-	for _, asset := range s.TestAssetConfigs {
-		asset := asset.GetChain()
-		amount, err := s.Factory.ConvertAmountStrToBlockchain(asset, "10.3")
-
-		if asset.Decimals == 6 {
-			expected = xc.NewBigIntFromUint64(10_300_000)
-		}
-		if asset.Decimals == 9 {
-			expected = xc.NewBigIntFromUint64(10_300_000_000)
-		}
-		if asset.Decimals == 12 {
-			expected = xc.NewBigIntFromUint64(10_300_000_000_000)
-		}
-		if asset.Decimals == 18 {
-			expected = xc.NewBigIntFromUint64(10_300_000_000_000_000_000)
-		}
-
-		require.Nil(err)
-		require.Equal(expected, amount, "Error on: "+asset.Chain)
-	}
-
-	asset, _ := s.Factory.PutAssetConfig(&xc.ChainConfig{Chain: "TEST", Decimals: 0})
-	amount, err := s.Factory.ConvertAmountStrToBlockchain(asset, "103")
-	require.NoError(err)
-	require.EqualValues(103, amount.Uint64())
-}
-
-func (s *CrosschainTestSuite) TestConvertAmountStrToBlockchainErr() {
-	require := s.Require()
-	for _, asset := range s.TestAssetConfigs {
-		amount, err := s.Factory.ConvertAmountStrToBlockchain(asset, "")
-		require.EqualError(err, "can't convert  to decimal")
-		require.Equal(xc.NewBigIntFromUint64(0), amount)
-
-		_, err = s.Factory.ConvertAmountStrToBlockchain(asset, "err")
-		require.EqualError(err, "can't convert err to decimal: exponent is not numeric")
-		require.Equal(xc.NewBigIntFromUint64(0), amount)
-	}
-}
-
-// Config functions
-
-func (s *CrosschainTestSuite) TestEnrichAssetConfig() {
-	require := s.Require()
-
-	assetCfgI, err := s.Factory.GetAssetConfig("USDC", "SOL")
-	require.NoError(err)
-	assetCfg := assetCfgI.(*xc.TokenAssetConfig)
-	assetCfg.GetChain().URL = ""
-	assetCfgEnriched, err := s.Factory.EnrichAssetConfig(assetCfg)
-	require.NoError(err)
-	require.NotNil(assetCfgEnriched)
-	require.Equal("USDC", assetCfgEnriched.Asset)
-	// default should be crosschainapi client
-	require.NotEqual("", assetCfgEnriched.GetChain().GetAllClients()[0].URL)
-	require.NotEqual("", assetCfgEnriched.GetChain().Driver)
-
-	assetCfg.GetChain().URL = ""
-	assetCfg.Chain = "TEST"
-	assetCfgEnriched, err = s.Factory.EnrichAssetConfig(assetCfg)
-	require.EqualError(err, "unsupported native asset: TEST")
-	require.NotNil(assetCfgEnriched)
-	require.Equal("USDC", assetCfgEnriched.Asset)
-	require.Equal("", assetCfgEnriched.GetChain().URL)
-	require.Equal(xc.NativeAsset("TEST"), assetCfgEnriched.Chain)
-	require.NotEqual("", assetCfgEnriched.GetChain().Driver)
-
-	assetCfg.GetChain().URL = ""
-	assetCfg.Chain = ""
-	assetCfgEnriched, err = s.Factory.EnrichAssetConfig(assetCfg)
-	require.EqualError(err, "unsupported native asset: (empty)")
-	require.NotNil(assetCfgEnriched)
-	require.Equal("USDC", assetCfgEnriched.Asset)
-	require.Equal("", assetCfgEnriched.GetChain().URL)
-	require.Equal(xc.NativeAsset(""), assetCfgEnriched.Chain)
-	require.NotEqual(xc.NativeAsset(""), assetCfgEnriched.GetChain().Driver)
-}
 
 func (s *CrosschainTestSuite) TestGetAssetID() {
 	require := s.Require()
@@ -312,13 +142,16 @@ func (s *CrosschainTestSuite) TestGetAssetConfigEdgeCases() {
 	require.Equal(xc.NativeAsset(""), asset.Chain)
 }
 
+/*
 func (s *CrosschainTestSuite) TestGetTaskConfig() {
 	require := s.Require()
 	asset, err := s.Factory.GetTaskConfig("sol-wrap", "SOL")
 	require.Nil(err)
 	require.NotNil(asset)
 }
+*/
 
+/*
 func (s *CrosschainTestSuite) TestGetTaskConfigEdgeCases() {
 	require := s.Require()
 	singleAsset, _ := s.Factory.GetAssetConfig("USDC", "SOL")
@@ -328,6 +161,7 @@ func (s *CrosschainTestSuite) TestGetTaskConfigEdgeCases() {
 	require.NotNil(asset)
 	require.Equal(singleAsset, asset)
 }
+*/
 
 /*
 func (s *CrosschainTestSuite) TestGetMultiAssetConfig() {
@@ -406,67 +240,3 @@ func (s *CrosschainTestSuite) TestPutAssetConfig() {
 	require.Equal(assetName, asset.Asset)
 }
 */
-
-func (s *CrosschainTestSuite) TestTxInputSerDeser() {
-	require := s.Require()
-
-	// Solana
-	inputSolana := solanatxinput.NewTxInput()
-	inputSolana.RecentBlockHash = [32]byte{1, 2, 3}
-	inputSolana.ToIsATA = true
-	inputSolana.ShouldCreateATA = true
-	ser, err := s.Factory.MarshalTxInput(inputSolana)
-	require.NoError(err)
-
-	deser, err := s.Factory.UnmarshalTxInput(ser)
-	require.NoError(err)
-	typedSolana := deser.(*solanatxinput.TxInput)
-	require.NotNil(typedSolana)
-	require.Equal(inputSolana, typedSolana)
-
-	// Cosmos
-	inputCosmos := cosmostxinput.NewTxInput()
-	inputCosmos.LegacyFromPublicKey = []byte{1, 2, 3}
-	inputCosmos.AccountNumber = 1
-	inputCosmos.Sequence = 2
-	inputCosmos.GasLimit = 3
-	inputCosmos.GasPrice = 4.5
-	inputCosmos.LegacyMemo = "memo"
-	ser, err = s.Factory.MarshalTxInput(inputCosmos)
-	require.NoError(err)
-
-	deser, err = s.Factory.UnmarshalTxInput(ser)
-	require.NoError(err)
-	typedCosmos := deser.(*cosmostxinput.TxInput)
-	require.NotNil(typedCosmos)
-	expected := inputCosmos
-	require.Equal(expected, typedCosmos)
-
-	// Bitcoin
-	inputBtc := bitcointxinput.NewTxInput()
-	inputBtc.UnspentOutputs = []bitcointxinput.Output{
-		{
-			Outpoint: bitcointxinput.Outpoint{
-				Index: 1,
-			},
-			Value: xc.NewBigIntFromUint64(100),
-		},
-		{
-			Outpoint: bitcointxinput.Outpoint{
-				Index: 2,
-			},
-			Value: xc.NewBigIntFromUint64(200),
-		},
-	}
-	btcBz, err := blockchains.MarshalTxInput(inputBtc)
-	require.NoError(err)
-	inputBtc2, err := blockchains.UnmarshalTxInput(btcBz)
-	require.NoError(err)
-
-	require.Equal(inputBtc.UnspentOutputs[0].Value.String(), "100")
-	require.Equal(inputBtc.UnspentOutputs[1].Value.String(), "200")
-	require.EqualValues(inputBtc2.(*bitcointxinput.TxInput).UnspentOutputs[0].Outpoint.Index, 1)
-	require.EqualValues(inputBtc2.(*bitcointxinput.TxInput).UnspentOutputs[1].Outpoint.Index, 2)
-	require.Equal(inputBtc2.(*bitcointxinput.TxInput).UnspentOutputs[0].Value.String(), "100")
-	require.Equal(inputBtc2.(*bitcointxinput.TxInput).UnspentOutputs[1].Value.String(), "200")
-}

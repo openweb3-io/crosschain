@@ -7,6 +7,7 @@ import (
 	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
@@ -22,31 +23,32 @@ type TxBuilder struct {
 	chain *xc_types.ChainConfig
 }
 
-func NewTxBuilder(chain *xc_types.ChainConfig) *TxBuilder {
+func NewTxBuilder(chain *xc_types.ChainConfig) (*TxBuilder, error) {
 	return &TxBuilder{
 		chain: chain,
-	}
+	}, nil
 }
 
-func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
+func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
 	ctx := context.Background()
 
 	txInput := input.(*TxInput)
 
-	toAddr, err := address.ParseAddr(string(txInput.To))
+	toAddr, err := address.ParseAddr(string(args.GetTo()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid TON to address: %s", txInput.To)
+		return nil, errors.Wrapf(err, "invalid TON to address: %s", args.GetTo())
 	}
 	// TODO 应该在外部传入地址的时候决定 bounce
 	toAddr = toAddr.Bounce(false)
-	fromAddr, err := address.ParseAddr(string(txInput.From))
+	fromAddr, err := address.ParseAddr(string(args.GetFrom()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid TON address %s", txInput.From)
+		return nil, errors.Wrapf(err, "invalid TON address %s", args.GetFrom())
 	}
 
 	var message *wallet.Message
 
-	asset := txInput.Asset
+	asset, _ := args.GetAsset()
+	memo, _ := args.GetMemo()
 
 	if asset != nil && asset.GetContract() != "" {
 		tokenAddr, err := tonaddress.ParseAddress(txInput.TokenWallet, "")
@@ -54,7 +56,7 @@ func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
 			return nil, fmt.Errorf("invalid TON token address %s: %v", txInput.TokenWallet, err)
 		}
 
-		amountTlb, err := tlb.FromNano(txInput.Amount.Int(), int(asset.GetDecimals()))
+		amountTlb, err := tlb.FromNano(args.GetAmount().Int(), int(asset.GetDecimals()))
 		if err != nil {
 			return nil, err
 		}
@@ -74,13 +76,13 @@ func (b *TxBuilder) NewTransfer(input xc_types.TxInput) (xc_types.Tx, error) {
 			toAddr,
 			amountTlb,
 			tlb.FromNanoTON(maxJettonFee.Int()),
-			txInput.Memo,
+			memo,
 		)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		message, err = BuildTransfer(toAddr, tlb.FromNanoTON(txInput.Amount.Int()), txInput.Memo)
+		message, err = BuildTransfer(toAddr, tlb.FromNanoTON(args.GetAmount().Int()), memo)
 		if err != nil {
 			return nil, errors.Wrap(err, "BuildTransfer failed")
 		}

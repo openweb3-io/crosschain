@@ -27,7 +27,7 @@ type TxBuilder struct {
 	// isBch  bool
 }
 
-var _ xcbuilder.FullTransferBuilder = &TxBuilder{}
+var _ xcbuilder.TxBuilder = &TxBuilder{}
 
 // NewTxBuilder creates a new Bitcoin TxBuilder
 func NewTxBuilder(cfgI xc.IAsset) (TxBuilder, error) {
@@ -49,25 +49,20 @@ func (txBuilder TxBuilder) WithAddressDecoder(decoder address.AddressDecoder) Tx
 	return txBuilder
 }
 
-// NewTransfer creates a new transfer for an Asset, either native or token
-func (txBuilder TxBuilder) Transfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
-	return txBuilder.NewTransfer(args.GetFrom(), args.GetTo(), args.GetAmount(), input)
-}
-
 // Old transfer interface
-func (txBuilder TxBuilder) NewTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	switch asset := txBuilder.Asset.(type) {
 	case *xc.ChainConfig:
-		return txBuilder.NewNativeTransfer(from, to, amount, input)
+		return txBuilder.NewNativeTransfer(args, input)
 	case *xc.TokenAssetConfig:
-		return txBuilder.NewTokenTransfer(from, to, amount, input)
+		return txBuilder.NewTokenTransfer(args, input)
 	default:
 		return nil, fmt.Errorf("NewTransfer not implemented for %T", asset)
 	}
 }
 
 // NewNativeTransfer creates a new transfer for a native asset
-func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 
 	var local_input *tx_input.TxInput
 	var ok bool
@@ -85,15 +80,16 @@ func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amo
 	}
 	fee := gasPrice.Mul(&estimatedTxBytesLength)
 
+	amount := args.GetAmount()
 	transferAmountAndFee := amount.Add(&fee)
 	unspentAmountMinusTransferAndFee := totalSpend.Sub(&transferAmountAndFee)
 	recipients := []tx.Recipient{
 		{
-			To:    to,
+			To:    args.GetTo(),
 			Value: amount,
 		},
 		{
-			To:    from,
+			To:    args.GetFrom(),
 			Value: unspentAmountMinusTransferAndFee,
 		},
 	}
@@ -130,8 +126,8 @@ func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amo
 	tx := tx.Tx{
 		MsgTx: msgTx,
 
-		From:   from,
-		To:     to,
+		From:   args.GetFrom(),
+		To:     args.GetTo(),
 		Amount: amount,
 		Input:  local_input,
 
@@ -141,6 +137,6 @@ func (txBuilder TxBuilder) NewNativeTransfer(from xc.Address, to xc.Address, amo
 }
 
 // NewTokenTransfer creates a new transfer for a token asset
-func (txBuilder TxBuilder) NewTokenTransfer(from xc.Address, to xc.Address, amount xc.BigInt, input xc.TxInput) (xc.Tx, error) {
+func (txBuilder TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
 	return nil, errors.New("not implemented")
 }

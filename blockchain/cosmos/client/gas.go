@@ -108,5 +108,6 @@ func (client *Client) BuildReferenceTransfer(gasLimit uint64) (*tx.Tx, error) {
 }
 
 func (client *Client) EstimateGas(ctx context.Context, input xc.Tx) (*xc.BigInt, error) {
+	// TODO
 	return nil, nil
 }

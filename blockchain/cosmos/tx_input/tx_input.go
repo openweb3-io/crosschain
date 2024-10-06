@@ -21,8 +21,6 @@ var BANK CosmoAssetType = "bank"
 
 // TxInput for Cosmos
 type TxInput struct {
-	Asset xc.IAsset
-
 	AccountNumber       uint64  `json:"account_number,omitempty"`
 	Sequence            uint64  `json:"sequence,omitempty"`
 	GasLimit            uint64  `json:"gas_limit,omitempty"`

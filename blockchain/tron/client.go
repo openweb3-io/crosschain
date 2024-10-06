@@ -59,7 +59,6 @@ func NewClient(
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
 	input := new(TxInput)
-	input.Args = args
 
 	// Getting blockhash details from the CreateTransfer endpoint as TRON uses an unusual hashing algorithm (SHA2256SM3), so we can't do a minimal
 	// retrieval and just get the blockheaders
@@ -100,9 +99,6 @@ func (a *Client) FetchBalanceForAsset(ctx context.Context, address types.Address
 func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.BigInt, err error) {
 	_tx := tx.(*Tx)
 
-	input := _tx.input
-	args := input.Args
-
 	bandwithUsage := types.NewBigIntFromInt64(200)
 	/*
 		if txInput.Gas != nil {
@@ -127,17 +123,17 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 		}
 	}
 
-	asset, _ := args.GetAsset()
+	asset, _ := _tx.args.GetAsset()
 	if asset == nil || asset.GetContract() == "" {
 		//普通trx转账只需要带宽
 		totalCost := (&transactionFee).Mul(&bandwithUsage)
 		return &totalCost, nil
 	} else {
 		estimate, err := a.client.EstimateEnergy(
-			string(args.GetFrom()),
+			string(_tx.args.GetFrom()),
 			string(asset.GetContract()),
 			"transfer(address,uint256)",
-			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, args.GetTo(), args.GetAmount()),
+			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, _tx.args.GetTo(), _tx.args.GetAmount()),
 			0, "", 0,
 		)
 		if err != nil {

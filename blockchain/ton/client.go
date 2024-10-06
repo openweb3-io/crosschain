@@ -77,14 +77,9 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *builder.Tran
 		TonBalance:      xc_types.NewBigIntFromInt64(acc.GetBalance()),
 		Seq:             uint32(seq.Seqno),
 		EstimatedMaxFee: xc_types.NewBigIntFromInt64(0), // TODO
-		From:            args.GetFrom(),
-		To:              args.GetTo(),
-		Amount:          args.GetAmount(),
 	}
-	input.Asset, _ = args.GetAsset()
-	if memo, ok := args.GetMemo(); ok {
-		input.Memo = memo
-	}
+
+	memo, _ := args.GetMemo()
 
 	asset, _ := args.GetAsset()
 	if asset != nil && asset.GetContract() != "" {
@@ -93,7 +88,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *builder.Tran
 			return input, err
 		}
 
-		maxFee, err := client.EstimateMaxFee(ctx, args.GetFrom(), args.GetTo(), input.TokenWallet, asset.GetDecimals(), input.Memo, input.Seq)
+		maxFee, err := client.EstimateMaxFee(ctx, args.GetFrom(), args.GetTo(), input.TokenWallet, asset.GetDecimals(), memo, input.Seq)
 		if err != nil {
 			return input, err
 		}

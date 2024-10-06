@@ -6,13 +6,14 @@ import (
 	"errors"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	"google.golang.org/protobuf/proto"
 )
 
 type Tx struct {
 	tronTx *core.Transaction
-	input  *TxInput
+	args   *xcbuilder.TransferArgs
 }
 
 func (tx *Tx) Serialize() ([]byte, error) {

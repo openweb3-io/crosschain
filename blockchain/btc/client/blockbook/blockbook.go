@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -289,6 +290,10 @@ func (client *BlockbookClient) FetchBalance(ctx context.Context, address xc.Addr
 	return &amount, nil
 }
 
+func (client *BlockbookClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (client *BlockbookClient) FetchNativeBalance(ctx context.Context, address xc.Address) (*xc.BigInt, error) {
 	return client.FetchBalance(ctx, address)
 }
@@ -314,7 +319,7 @@ func (client *BlockbookClient) FetchLegacyTxInput(ctx context.Context, from xc.A
 	return client.FetchTransferInput(ctx, args)
 }
 
-func (client *BlockbookClient) EstimateGas(ctx context.Context, input xc.Tx) (*xc.BigInt, error) {
+func (client *BlockbookClient) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
 	return nil, nil
 }
 

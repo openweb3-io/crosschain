@@ -71,7 +71,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	input, err := suite.client.FetchTransferInput(ctx, args)
 	suite.Require().NoError(err)
 
-	tx, err := builder.NewTransfer(input)
+	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
 	fee, err := suite.client.EstimateGas(ctx, tx)
@@ -117,7 +117,7 @@ func (suite *ClientTestSuite) TestSPLTranfser() {
 	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.NewTokenTransfer(input)
+	tx, err := builder.NewTokenTransfer(args, input)
 	suite.Require().NoError(err)
 
 	fee, err := suite.client.EstimateGas(ctx, tx)
@@ -165,7 +165,7 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 	builder, err := builder.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.NewTokenTransfer(input)
+	tx, err := builder.NewTokenTransfer(args, input)
 	suite.Require().NoError(err)
 
 	fee, err := suite.client.EstimateGas(ctx, tx)

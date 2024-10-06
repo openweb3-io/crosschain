@@ -19,30 +19,34 @@ import (
 func TestTransferSetsMaxTipCap(t *testing.T) {
 	b, _ := builder.NewTxBuilder(&xc_types.ChainConfig{})
 
-	from := "0x724435CC1B2821362c2CD425F2744Bd7347bf299"
-	to := "0x3ad57b83B2E3dC5648F32e98e386935A9B10bb9F"
+	from := xc_types.Address("0x724435CC1B2821362c2CD425F2744Bd7347bf299")
+	to := xc_types.Address("0x3ad57b83B2E3dC5648F32e98e386935A9B10bb9F")
 	amount := xc_types.NewBigIntFromUint64(100)
+
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(t, err)
+
 	input := tx_input.NewTxInput()
 
 	input.GasTipCap = builder.GweiToWei(builder.DefaultMaxTipCapGwei - 1)
-	trans, err := b.NewTransfer(xc_types.Address(from), xc_types.Address(to), amount, input)
+	trans, err := b.NewTransfer(args, input)
 	require.NoError(t, err)
 	require.EqualValues(t, builder.GweiToWei(builder.DefaultMaxTipCapGwei-1).Uint64(), trans.(*tx.Tx).EthTx.GasTipCap().Uint64())
 
 	input.GasTipCap = builder.GweiToWei(builder.DefaultMaxTipCapGwei + 1)
-	trans, err = b.NewTransfer(xc_types.Address(from), xc_types.Address(to), amount, input)
+	trans, err = b.NewTransfer(args, input)
 	require.NoError(t, err)
 	require.EqualValues(t, builder.GweiToWei(builder.DefaultMaxTipCapGwei).Uint64(), trans.(*tx.Tx).EthTx.GasTipCap().Uint64())
 
 	// increase the max
 	b, _ = builder.NewTxBuilder(&xc_types.ChainConfig{ChainMaxGasPrice: 100})
-	trans, _ = b.NewTransfer(xc_types.Address(from), xc_types.Address(to), amount, input)
+	trans, _ = b.NewTransfer(args, input)
 	// now DefaultMaxTipCapGwei + 1 is used
 	require.EqualValues(t, builder.GweiToWei(builder.DefaultMaxTipCapGwei+1).Uint64(), trans.(*tx.Tx).EthTx.GasTipCap().Uint64())
 
 	// 100 is used instead of 1000
 	input.GasTipCap = builder.GweiToWei(1000)
-	trans, _ = b.NewTransfer(xc_types.Address(from), xc_types.Address(to), amount, input)
+	trans, _ = b.NewTransfer(args, input)
 	require.EqualValues(t, builder.GweiToWei(100).Uint64(), trans.(*tx.Tx).EthTx.GasTipCap().Uint64())
 }
 
