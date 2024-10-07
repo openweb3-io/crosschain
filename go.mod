@@ -36,7 +36,6 @@ require (
 	github.com/test-go/testify v1.1.4
 	github.com/tidwall/btree v1.7.0
 	github.com/tonkeeper/tonapi-go v0.0.7
-	github.com/tonkeeper/tongo v1.10.2
 	github.com/xssnick/tonutils-go v1.10.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.28.0
@@ -47,6 +46,7 @@ require (
 )
 
 require (
+	github.com/tonkeeper/tongo v1.10.2 // indirect
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect

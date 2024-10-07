@@ -8,7 +8,6 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
@@ -17,7 +16,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-var Zero = types.NewBigIntFromInt64(0)
+var Zero = xc_types.NewBigIntFromInt64(0)
 
 type TxBuilder struct {
 	chain *xc_types.ChainConfig
@@ -63,7 +62,7 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 
 		// Spend max 0.2 TON per Jetton transfer.  If we don't have 0.05 TON, we should
 		// lower the max to our balance less max-fees.
-		maxJettonFee := types.NewBigIntFromInt64(50000000)
+		maxJettonFee := xc_types.NewBigIntFromInt64(50000000)
 		remainingTonBal := txInput.TonBalance.Sub(&txInput.EstimatedMaxFee)
 		if maxJettonFee.Cmp(&remainingTonBal) > 0 && remainingTonBal.Cmp(&Zero) > 0 {
 			maxJettonFee = remainingTonBal

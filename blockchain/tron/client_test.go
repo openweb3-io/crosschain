@@ -9,9 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/openweb3-io/crosschain/blockchain/tron"
-	"github.com/openweb3-io/crosschain/builder"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,7 +18,7 @@ var (
 	endpoint = "grpc.nile.trongrid.io:50051"
 	chainId  = big.NewInt(1001)
 
-	senderPubk  = "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
+	// senderPubk  = "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
 	senderPrivk = "8e812436a0e3323166e1f0e8ba79e19e217b2c4a53c970d4cca0cfb1078979df"
 )
 
@@ -39,7 +37,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
@@ -47,7 +45,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 
 	amount := xc_types.NewBigIntFromInt64(3)
 
-	args, err := builder.NewTransferArgs(
+	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
 		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
 		amount,
@@ -92,16 +90,16 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
 
-	contractAddress := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	contractAddress := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
 	// gas := types.NewBigIntFromInt64(1)
 
-	args, err := builder.NewTransferArgs(
+	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
 		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
 		xc_types.NewBigIntFromInt64(3),
@@ -150,18 +148,18 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
 
-	out, err := client.FetchBalance(ctx, types.Address(senderPubk))
+	out, err := client.FetchBalance(ctx, xc_types.Address(senderPubk))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
 
-	contractAddr := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
-	out, err = client.FetchBalanceForAsset(ctx, types.Address(senderPubk), contractAddr)
+	contractAddr := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	out, err = client.FetchBalanceForAsset(ctx, xc_types.Address(senderPubk), contractAddr)
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)

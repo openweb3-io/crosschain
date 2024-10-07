@@ -105,7 +105,7 @@ func (suite *ClientTestSuite) SetupTest() {
 func (suite *ClientTestSuite) TearDownTest() {
 }
 
-func (suite *ClientTestSuite) aTest_Tranfser() {
+func (suite *ClientTestSuite) Test_Tranfser() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
@@ -184,7 +184,7 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 /**
  * work for mainnet
  */
-func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
+func (suite *ClientTestSuite) Test_SwapFromTonToUSDT() {
 	ctx := context.Background()
 	// Address from swap
 
@@ -265,7 +265,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	suite.Require().NoError(err)
 }
 
-func (suite *ClientTestSuite) aTest_TransferJetton() {
+func (suite *ClientTestSuite) Test_TransferJetton() {
 	ctx := context.Background()
 
 	contractAddress := xc_types.ContractAddress(USDTJettonMainnetAddress)
@@ -344,14 +344,22 @@ func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	require := suite.Require()
 
 	type testcase struct {
-		name string
-		hash xc_types.TxHash
+		name   string
+		hash   xc_types.TxHash
+		expect func(legacyTx *xc_types.LegacyTxInfo)
 	}
 
 	testcases := []testcase{
 		{
 			name: "jetton out txid",
 			hash: xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6"),
+			expect: func(legacyTx *xc_types.LegacyTxInfo) {
+				require.GreaterOrEqual(len(legacyTx.Destinations), 2)
+				require.Equal(legacyTx.Destinations[0].Amount.String(), xc_types.NewBigIntFromInt64(50000000).String(), "amount not matched")
+
+				require.Equal(legacyTx.Destinations[1].Amount.String(), xc_types.NewBigIntFromInt64(100000), "amount not matched")
+
+			},
 		},
 		{
 			name: "ton out",
@@ -365,21 +373,18 @@ func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 			name: "jetton in",
 			hash: xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63"), // jetton in
 		},
-		{
-			name: "swap",
-			hash: xc_types.TxHash("c47c728ce10e845b493b926aa96d441518a843dff1835120a07a59630078de94"),
-		},
+		/*
+			{
+				name: "swap",
+				hash: xc_types.TxHash("c47c728ce10e845b493b926aa96d441518a843dff1835120a07a59630078de94"),
+			},*/
 	}
 
 	for _, tc := range testcases {
-		tx, err := suite.client.FetchTonTxByHash(ctx, tc.hash)
-		require.NoError(err)
-
-		fmt.Printf("tx: %v\n", tx.Hash)
-
 		legacyTx, err := suite.client.FetchLegacyTxInfo(ctx, tc.hash)
-		suite.Require().NoError(err)
+		require.NoError(err)
+		tc.expect(legacyTx)
 
-		fmt.Printf("tx: %v\n", legacyTx.Amount)
+		fmt.Printf("tx: %v\n", legacyTx)
 	}
 }

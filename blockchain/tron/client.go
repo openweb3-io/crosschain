@@ -16,12 +16,9 @@ import (
 	tronApi "github.com/fbsobreira/gotron-sdk/pkg/proto/api"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
-
-	"github.com/openweb3-io/crosschain/builder"
 	xcclient "github.com/openweb3-io/crosschain/client"
-	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -57,7 +54,7 @@ func NewClient(
 	}, nil
 }
 
-func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {
+func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
 	input := new(TxInput)
 
 	// Getting blockhash details from the CreateTransfer endpoint as TRON uses an unusual hashing algorithm (SHA2256SM3), so we can't do a minimal
@@ -79,27 +76,27 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *builder.Tran
 	return input, nil
 }
 
-func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
+func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*xc_types.BigInt, error) {
 	account, err := a.client.GetAccount(string(address))
 	if err != nil {
 		return nil, err
 	}
-	balance := types.NewBigIntFromInt64(account.Balance)
+	balance := xc_types.NewBigIntFromInt64(account.Balance)
 	return &balance, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, address types.Address, contractAddress types.ContractAddress) (*types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
 	balance, err := a.client.TRC20ContractBalance(string(address), string(contractAddress))
 	if err != nil {
 		return nil, err
 	}
-	return (*types.BigInt)(balance), nil
+	return (*xc_types.BigInt)(balance), nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.BigInt, err error) {
+func (a *Client) EstimateGas(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
 	_tx := tx.(*Tx)
 
-	bandwithUsage := types.NewBigIntFromInt64(200)
+	bandwithUsage := xc_types.NewBigIntFromInt64(200)
 	/*
 		if txInput.Gas != nil {
 			bandwithUsage = *txInput.Gas
@@ -111,15 +108,15 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 		return nil, errors.Wrap(err, "get chain params")
 	}
 
-	var transactionFee types.BigInt
-	var energyFee types.BigInt
+	var transactionFee xc_types.BigInt
+	var energyFee xc_types.BigInt
 
 	for _, v := range params.ChainParameter {
 		if v.Key == "getTransactionFee" {
-			transactionFee = types.NewBigIntFromInt64(v.Value)
+			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
 		}
 		if v.Key == "getEnergyFee" {
-			energyFee = types.NewBigIntFromInt64(v.Value)
+			energyFee = xc_types.NewBigIntFromInt64(v.Value)
 		}
 	}
 
@@ -140,7 +137,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (amount *types.Bi
 			return nil, err
 		}
 
-		energyUsage := types.NewBigIntFromInt64(estimate.EnergyRequired)
+		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
 		bandwidthCost := transactionFee.Mul(&bandwithUsage)
 		energyCost := energyFee.Add(&energyUsage)
 		totalCost := bandwidthCost.Add(&energyCost)

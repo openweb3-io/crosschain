@@ -13,7 +13,6 @@ import (
 	"time"
 
 	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
-	"github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
@@ -23,7 +22,6 @@ import (
 
 	tontx "github.com/openweb3-io/crosschain/blockchain/ton/tx"
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
-	"github.com/openweb3-io/crosschain/builder"
 	xcclient "github.com/openweb3-io/crosschain/client"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/tonkeeper/tonapi-go"
@@ -81,7 +79,7 @@ func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
 	return &Client{cfg, tonApi}, nil
 }
 
-func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
+func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
 	acc, err := client.Client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(args.GetFrom()),
 	})
@@ -283,7 +281,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 }
 
 func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
-	tx := _tx.(*tx.Tx)
+	tx := _tx.(*tontx.Tx)
 
 	st := time.Now()
 	defer func() {
