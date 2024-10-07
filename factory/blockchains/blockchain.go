@@ -64,6 +64,10 @@ func init() {
 		return cosmosclient.NewClient(cfg)
 	})
 
+	RegisterClient(types.BlockchainCosmosEvmos, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return cosmosclient.NewClient(cfg)
+	})
+
 	RegisterClient(types.BlockchainTon, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
 		return ton.NewClient(cfg)
 	})
