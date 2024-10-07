@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 // LegacyTxInfoEndpoint is a unified view of an endpoint (source or destination) in a TxInfo.
 type LegacyTxInfoEndpoint struct {
 	Address         Address         `json:"address"`
@@ -56,4 +58,9 @@ func (info *LegacyTxInfo) AddStakeEvent(ev StakeEvent) {
 }
 func (info *LegacyTxInfo) GetStakeEvents() []StakeEvent {
 	return info.stakeEvents
+}
+
+func (info *LegacyTxInfo) String() string {
+	b, _ := json.MarshalIndent(info, "", "\t")
+	return string(b)
 }

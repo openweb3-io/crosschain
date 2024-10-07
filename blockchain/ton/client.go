@@ -14,7 +14,6 @@ import (
 
 	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/xssnick/tonutils-go/ton/jetton"
@@ -144,7 +143,7 @@ func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address
 	return xc_types.Address(result.WalletAddress.Address), nil
 }
 
-func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address, to xc_types.Address, jettonWalletAddress xc_types.Address, tokenDecimals int32, memo string, seq uint32) (*types.BigInt, error) {
+func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address, to xc_types.Address, jettonWalletAddress xc_types.Address, tokenDecimals int32, memo string, seq uint32) (*xc_types.BigInt, error) {
 	fromAddr, _ := address.ParseAddr(string(from))
 	toAddr, _ := address.ParseAddr(string(to))
 	jettonWalletAddr, err := tonaddress.ParseAddress(jettonWalletAddress, "")
@@ -214,12 +213,12 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 		return nil, errors.Wrap(err, "could not estimate fee")
 	}
 
-	gas := types.NewBigIntFromInt64(res.Event.Extra * -1)
+	gas := xc_types.NewBigIntFromInt64(res.Event.Extra * -1)
 
 	return &gas, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.ContractAddress) (*types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_types.Address, assetAddr xc_types.ContractAddress) (*xc_types.BigInt, error) {
 	jettonBalance, err := a.Client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(ownerAddress),
 		JettonID:  string(assetAddr),
@@ -228,11 +227,11 @@ func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress types.Ad
 		return nil, errors.Wrap(err, "GetJettonWallet failed")
 	}
 
-	amount := types.NewBigIntFromStr(jettonBalance.Balance)
+	amount := xc_types.NewBigIntFromStr(jettonBalance.Balance)
 	return &amount, nil
 }
 
-func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
+func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*xc_types.BigInt, error) {
 	account, err := a.Client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(address),
 	})
@@ -240,11 +239,11 @@ func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*type
 		return nil, errors.Wrap(err, "get balance failed")
 	}
 
-	balance := types.NewBigIntFromInt64(account.Balance)
+	balance := xc_types.NewBigIntFromInt64(account.Balance)
 	return &balance, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, error) {
+func (a *Client) EstimateGas(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
 	if len(tx.GetSignatures()) == 0 {
 		// add a mock sig
 		sighashes, err := tx.Sighashes()
@@ -276,11 +275,11 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 		return nil, errors.Wrap(err, "EmulateMessageToWallet failed")
 	}
 
-	gas := types.NewBigIntFromInt64(res.Event.Extra * -1)
+	gas := xc_types.NewBigIntFromInt64(res.Event.Extra * -1)
 	return &gas, nil
 }
 
-func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
+func (a *Client) BroadcastTx(ctx context.Context, _tx xc_types.Tx) error {
 	tx := _tx.(*tontx.Tx)
 
 	st := time.Now()
@@ -301,9 +300,9 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 	return nil
 }
 
-func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address, to types.Address, asset types.IAsset) (types.TxInput, error) {
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address, asset xc_types.IAsset) (xc_types.TxInput, error) {
 	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
-	args, _ := xcbuilder.NewTransferArgs(from, to, types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
+	args, _ := xcbuilder.NewTransferArgs(from, to, xc_types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
 	return client.FetchTransferInput(ctx, args)
 }
 
@@ -370,7 +369,32 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 				})
 			}
 		}
+	}
 
+	switch tx.InMsg.Value.MsgType {
+	case tonapi.MessageMsgTypeIntMsg:
+		{
+			b, _ := json.MarshalIndent(tx, "", "\t")
+			fmt.Printf("tx.InMsg.Value.DecodedBody: %v\n", string(b))
+
+			sources = append(sources, &xc_types.LegacyTxInfoEndpoint{
+				// this is the token wallet of the sender/owner
+				Address: xc_types.Address(tx.InMsg.Value.Source.Value.Address),
+				Amount:  xc_types.NewBigIntFromInt64(tx.InMsg.Value.Value),
+				// Asset:           tf.Jetton.Symbol,
+				ContractAddress: "",
+				NativeAsset:     chain,
+			})
+
+			dests = append(dests, &xc_types.LegacyTxInfoEndpoint{
+				// this is the token wallet of the sender/owner
+				Address: xc_types.Address(tx.InMsg.Value.Destination.Value.Address),
+				Amount:  xc_types.NewBigIntFromInt64(tx.InMsg.Value.Value),
+				// Asset:           tf.Jetton.Symbol,
+				ContractAddress: "",
+				NativeAsset:     chain,
+			})
+		}
 	}
 
 	jettonSources, jettonDests, err := client.detectJettonMovements(ctx, tx)
@@ -425,7 +449,10 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 // This detects any JettonMessage in the nest of "InternalMessage"
 // This may need to be expanded as Jetton transfer could be nested deeper in more 'InternalMessages'
 func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Transaction) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint, error) {
-	// boc, err := hex.DecodeString(tx.Raw)
+	if tx.InMsg.Value.MsgType == tonapi.MessageMsgTypeIntMsg {
+		return nil, nil, nil
+	}
+
 	boc, err := hex.DecodeString(tx.InMsg.Value.RawBody.Value)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid base64: %v", err)
@@ -435,6 +462,8 @@ func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Tran
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid boc: %v", err)
 	}
+
+	fmt.Printf("msgType: %v\n", tx.InMsg.Value.MsgType)
 
 	internalMsg := &tlb.InternalMessage{}
 	nextMsg, err := inMsg.BeginParse().LoadRefCell()

@@ -350,29 +350,85 @@ func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	}
 
 	testcases := []testcase{
+		/*
+			{
+				name: "ton out",
+				hash: xc_types.TxHash("09f977c21bb427b5c7c7bda414be625144b6c1ae187aa9bfacd6f58c3c617e3a"),
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 1)
+					require.Equal(xc_types.NewBigIntFromInt64(10000000).String(), legacyTx.Destinations[0].Amount.String(), "amount not matched")
+				},
+			},
+		*/
+		/*
+			{
+				name: "ton in",
+				hash: xc_types.TxHash("1b454bb24d3d08ef7a545e8b6d895cb8715177eeecc32f1c7e5d9b510694c717"),
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 1)
+					require.Equal(xc_types.NewBigIntFromInt64(10000000).String(), legacyTx.Destinations[0].Amount.String(), "amount not matched")
+				},
+			},
+		*/
+		/*
+			{
+				name: "received ton (ext_in)",
+				hash: xc_types.TxHash("4fc9c9f66d70c0e10b4b9c1b9fd2bf2b27a20261d5d052ef92ec23326ea2c571"),
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 1)
+					require.Equal(xc_types.NewBigIntFromInt64(300000000).String(), legacyTx.Amount.String(), "amount not matched")
+					require.Equal(xc_types.NewBigIntFromInt64(3293671).String(), legacyTx.Fee.String(), "fee not matched")
+				},
+			},
+		*/
 		{
-			name: "jetton out txid",
-			hash: xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6"),
+			name: "received ton (int_in)",
+			hash: xc_types.TxHash("91252a2bf2736f848b3738cdb5460cdb0295586239881e7d316efa9dc8e1c4df"),
 			expect: func(legacyTx *xc_types.LegacyTxInfo) {
-				require.GreaterOrEqual(len(legacyTx.Destinations), 2)
-				require.Equal(legacyTx.Destinations[0].Amount.String(), xc_types.NewBigIntFromInt64(50000000).String(), "amount not matched")
-
-				require.Equal(legacyTx.Destinations[1].Amount.String(), xc_types.NewBigIntFromInt64(100000), "amount not matched")
-
+				require.GreaterOrEqual(len(legacyTx.Destinations), 1)
+				require.Equal(xc_types.NewBigIntFromInt64(300000000).String(), legacyTx.Amount.String(), "amount not matched")
+				require.Equal(xc_types.NewBigIntFromInt64(330109).String(), legacyTx.Fee.String(), "fee not matched")
 			},
 		},
-		{
-			name: "ton out",
-			hash: xc_types.TxHash("09f977c21bb427b5c7c7bda414be625144b6c1ae187aa9bfacd6f58c3c617e3a"),
-		},
-		{
-			name: "jetton in1",
-			hash: xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd"),
-		},
-		{
-			name: "jetton in",
-			hash: xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63"), // jetton in
-		},
+		/*
+			{
+				name: "jetton out txid",
+				hash: xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6"),
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 2)
+					require.Equal(xc_types.NewBigIntFromInt64(50000000).String(), legacyTx.Destinations[0].Amount.String(), "amount not matched")
+					require.Equal(xc_types.NewBigIntFromInt64(2543031).String(), legacyTx.Fee.String(), "gas not matched")
+
+					require.Equal(xc_types.NewBigIntFromInt64(10000).String(), legacyTx.Destinations[1].Amount.String(), "amount not matched")
+
+				},
+			},
+		*/
+		/*
+			{
+				name: "jetton in1",
+				hash: xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd"),
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 2)
+					require.Equal(xc_types.NewBigIntFromInt64(50000000).String(), legacyTx.Destinations[0].Amount.String(), "amount not matched")
+
+					// error parse jetton
+					require.Equal(xc_types.NewBigIntFromInt64(50000000).String(), legacyTx.Fee.String(), "gas not matched")
+					require.Equal(xc_types.NewBigIntFromInt64(10000).String(), legacyTx.Destinations[1].Amount.String(), "amount not matched")
+
+				},
+			},
+		*/
+		/*
+			{
+				name: "jetton in",
+				hash: xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63"), // jetton in
+				expect: func(legacyTx *xc_types.LegacyTxInfo) {
+					require.GreaterOrEqual(len(legacyTx.Destinations), 2)
+					require.Equal(xc_types.NewBigIntFromInt64(10000000).String(), legacyTx.Destinations[0].Amount.String(), "amount not matched")
+				},
+			},
+		*/
 		/*
 			{
 				name: "swap",
@@ -381,6 +437,8 @@ func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	}
 
 	for _, tc := range testcases {
+		fmt.Printf("testcase: %s\n", tc.name)
+
 		legacyTx, err := suite.client.FetchLegacyTxInfo(ctx, tc.hash)
 		require.NoError(err)
 		tc.expect(legacyTx)

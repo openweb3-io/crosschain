@@ -15,12 +15,12 @@ import (
 	tronClient "github.com/fbsobreira/gotron-sdk/pkg/client"
 	tronApi "github.com/fbsobreira/gotron-sdk/pkg/proto/api"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
-	"github.com/golang/protobuf/proto"
 	xcclient "github.com/openweb3-io/crosschain/client"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ xcclient.IClient = &Client{}
