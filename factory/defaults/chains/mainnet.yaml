@@ -503,4 +503,5 @@ chains:
     decimals: 9
     coingecko_id: the-open-network
     coinmarketcap_id: 173
+    explorer_url: https://tonviewer.com
     dti: QBZLT5MT1
