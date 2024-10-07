@@ -10,6 +10,7 @@ import (
 	cosmosbuilder "github.com/openweb3-io/crosschain/blockchain/cosmos/builder"
 	cosmosclient "github.com/openweb3-io/crosschain/blockchain/cosmos/client"
 
+	evm_legacy "github.com/openweb3-io/crosschain/blockchain/evm_legacy"
 	solanabuilder "github.com/openweb3-io/crosschain/blockchain/solana/builder"
 
 	evmbuilder "github.com/openweb3-io/crosschain/blockchain/evm/builder"
@@ -82,6 +83,10 @@ func init() {
 
 	RegisterClient(types.BlockchainEVM, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
 		return evmclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainEVMLegacy, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return evm_legacy.NewClient(cfg)
 	})
 }
 
