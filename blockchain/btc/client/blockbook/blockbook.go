@@ -313,9 +313,9 @@ func (client *BlockbookClient) FetchTransferInput(ctx context.Context, args *xcb
 	return input, nil
 }
 
-func (client *BlockbookClient) FetchLegacyTxInput(ctx context.Context, from xc.Address, to xc.Address) (xc.TxInput, error) {
+func (client *BlockbookClient) FetchLegacyTxInput(ctx context.Context, from xc.Address, to xc.Address, asset xc.IAsset) (xc.TxInput, error) {
 	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
-	args, _ := xcbuilder.NewTransferArgs(from, to, xc.NewBigIntFromUint64(1))
+	args, _ := xcbuilder.NewTransferArgs(from, to, xc.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
 	return client.FetchTransferInput(ctx, args)
 }
 

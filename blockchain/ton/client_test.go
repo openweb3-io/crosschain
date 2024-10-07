@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/tonkeeper/tonapi-go"
 
 	"github.com/croutondefi/stonfi-go"
 	"github.com/openweb3-io/crosschain/blockchain/ton"
@@ -17,7 +16,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/signer"
 	xc_types "github.com/openweb3-io/crosschain/types"
-	"github.com/test-go/testify/suite"
+	"github.com/stretchr/testify/suite"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -344,37 +343,43 @@ func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	ctx := context.Background()
 	require := suite.Require()
 
-	// USDTJettonMainnetAddress = "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"
-	// USDTJettonMainnetWalletAddress = "EQBPy4gmH8pf1pfBwbMw3PdtsO8Aj2rxmVfhM6jpAGHSmTnr"
+	type testcase struct {
+		name string
+		hash xc_types.TxHash
+	}
 
-	/*
-		accountId := "EQB1cvzPLU_t5g9EeX7O0z-yELXr0KNi9bSDbAObNuc80IT-"
-		jettonAcc, err := suite.client.Client.GetAccount(ctx, tonapi.GetAccountParams{
-			AccountID: accountId,
-		})
+	testcases := []testcase{
+		{
+			name: "jetton out txid",
+			hash: xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6"),
+		},
+		{
+			name: "ton out",
+			hash: xc_types.TxHash("09f977c21bb427b5c7c7bda414be625144b6c1ae187aa9bfacd6f58c3c617e3a"),
+		},
+		{
+			name: "jetton in1",
+			hash: xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd"),
+		},
+		{
+			name: "jetton in",
+			hash: xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63"), // jetton in
+		},
+		{
+			name: "swap",
+			hash: xc_types.TxHash("c47c728ce10e845b493b926aa96d441518a843dff1835120a07a59630078de94"),
+		},
+	}
+
+	for _, tc := range testcases {
+		tx, err := suite.client.FetchTonTxByHash(ctx, tc.hash)
 		require.NoError(err)
-	*/
 
-	resp, err := suite.client.Client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
-		AccountID: USDTJettonMainnetWalletAddress,
-		Limit:     1,
-	})
-	require.NoError(err)
+		fmt.Printf("tx: %v\n", tx.Hash)
 
-	fmt.Printf("resp: %v\n", resp)
+		legacyTx, err := suite.client.FetchLegacyTxInfo(ctx, tc.hash)
+		suite.Require().NoError(err)
 
-	// hash := xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd")
-	hash := xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6") // jetton out txid
-	// hash := xc_types.TxHash("09f977c21bb427b5c7c7bda414be625144b6c1ae187aa9bfacd6f58c3c617e3a") // out
-	// hash := xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63") // in
-
-	tx, err := suite.client.FetchTonTxByHash(ctx, hash)
-	suite.Require().NoError(err)
-
-	fmt.Printf("tx: %v\n", tx.Hash)
-
-	legacyTx, err := suite.client.FetchLegacyTxInfo(ctx, hash)
-	suite.Require().NoError(err)
-
-	fmt.Printf("tx: %v\n", legacyTx.Amount)
+		fmt.Printf("tx: %v\n", legacyTx.Amount)
+	}
 }

@@ -13,7 +13,7 @@ import (
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
-	"github.com/test-go/testify/suite"
+	"github.com/stretchr/testify/suite"
 )
 
 var (

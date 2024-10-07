@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/openweb3-io/crosschain/cmd/xc/setup"
 	"github.com/openweb3-io/crosschain/types"
+	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -49,9 +50,9 @@ func main() {
 	_ = cmd.Execute()
 }
 
-func assetConfig(chain *types.ChainConfig, contractMaybe string, decimals int32) types.IAsset {
+func assetConfig(chain *xc.ChainConfig, contractMaybe xc.ContractAddress, decimals int32) types.IAsset {
 	if contractMaybe != "" {
-		token := types.TokenAssetConfig{
+		token := xc.TokenAssetConfig{
 			Contract: contractMaybe,
 			// Chain:       chain.Chain,
 			ChainConfig: chain,

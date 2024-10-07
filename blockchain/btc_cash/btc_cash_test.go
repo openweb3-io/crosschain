@@ -8,6 +8,7 @@ import (
 
 	"github.com/openweb3-io/crosschain/blockchain/btc/tx"
 	"github.com/openweb3-io/crosschain/blockchain/btc/tx_input"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -92,13 +93,16 @@ func (s *CrosschainTestSuite) TestNewNativeTransfer() {
 			from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 			to := xc.Address(addr)
 			amount := xc.NewBigIntFromUint64(1)
+			args, err := xcbuilder.NewTransferArgs(from, to, amount)
+			require.NoError(err)
+
 			input := &tx_input.TxInput{
 				UnspentOutputs: []tx_input.Output{{
 					Value: xc.NewBigIntFromUint64(1000),
 				}},
 				GasPricePerByte: xc.NewBigIntFromUint64(1),
 			}
-			tf, err := builder.NewNativeTransfer(from, to, amount, input)
+			tf, err := builder.NewNativeTransfer(args, input)
 			require.NoError(err)
 			require.NotNil(tf)
 			hash := tf.Hash()
@@ -111,7 +115,7 @@ func (s *CrosschainTestSuite) TestNewNativeTransfer() {
 				}},
 				GasPricePerByte: xc.NewBigIntFromUint64(1),
 			}
-			_, err = builder.NewNativeTransfer(from, to, amount, input_small)
+			_, err = builder.NewNativeTransfer(args, input_small)
 			require.Error(err)
 
 			// add signature
@@ -139,13 +143,16 @@ func (s *CrosschainTestSuite) TestTxHash() {
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.NewBigIntFromUint64(1)
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(1000),
 		}},
 		GasPricePerByte: xc.NewBigIntFromUint64(1),
 	}
-	tf, err := builder.NewNativeTransfer(from, to, amount, input)
+	tf, err := builder.NewNativeTransfer(args, input)
 	require.NoError(err)
 
 	tx := tf.(*tx.Tx)

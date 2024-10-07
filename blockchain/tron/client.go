@@ -285,8 +285,8 @@ func deserialiseNativeTransfer(tx *core.Transaction) (xc_types.Address, xc_types
 	return from, to, xc_types.NewBigIntFromUint64(uint64(amount)), nil
 }
 
-func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address) (xc_types.TxInput, error) {
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address, asset xc_types.IAsset) (xc_types.TxInput, error) {
 	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
-	args, _ := xcbuilder.NewTransferArgs(from, to, xc_types.NewBigIntFromUint64(1))
+	args, _ := xcbuilder.NewTransferArgs(from, to, xc_types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
 	return client.FetchTransferInput(ctx, args)
 }

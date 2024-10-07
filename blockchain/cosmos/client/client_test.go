@@ -203,7 +203,7 @@ func TestFetchTxInput(t *testing.T) {
 		client, _ := client.NewClient(&v.asset)
 		from := xc.Address(v.from)
 		to := xc.Address(v.to)
-		input, err := client.FetchLegacyTxInput(context.Background(), from, to)
+		input, err := client.FetchLegacyTxInput(context.Background(), from, to, nil)
 
 		if v.err != "" {
 			require.ErrorContains(t, err, v.err)

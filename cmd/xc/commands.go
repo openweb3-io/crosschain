@@ -44,15 +44,15 @@ func CmdTxInput() *cobra.Command {
 			addressRaw := args[0]
 
 			addressTo, _ := cmd.Flags().GetString("to")
-			contract, _ := cmd.Flags().GetString("contract")
-			client, err := xcFactory.NewClient(assetConfig(chain, contract, 0))
+			// contract, _ := cmd.Flags().GetString("contract")
+			client, err := xcFactory.NewClient(chain)
 			if err != nil {
 				return err
 			}
 
 			from := xcFactory.MustAddress(chain, addressRaw)
 			to := xcFactory.MustAddress(chain, addressTo)
-			input, err := client.FetchLegacyTxInput(context.Background(), from, to)
+			input, err := client.FetchLegacyTxInput(context.Background(), from, to, nil)
 			if err != nil {
 				return fmt.Errorf("could not fetch transaction inputs: %v", err)
 			}

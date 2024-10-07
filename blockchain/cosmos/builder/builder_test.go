@@ -11,6 +11,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx_input"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx_input/gas"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +49,7 @@ func TestTransferWithTax(t *testing.T) {
 		},
 	} {
 
-		asset := &xc.ChainConfig{
+		chain := &xc.ChainConfig{
 			Chain:            "XPLA",
 			ChainCoin:        "axpla",
 			ChainPrefix:      "xpla",
@@ -57,15 +58,20 @@ func TestTransferWithTax(t *testing.T) {
 
 		amount := xc.NewBigIntFromUint64(tc.Amount)
 
-		builder, err := builder.NewTxBuilder(asset)
+		builder, err := builder.NewTxBuilder(chain)
 		require.NoError(t, err)
 
 		addr1 := "xpla1hdvf6vv5amc7wp84js0ls27apekwxpr0ge96kg"
 		addr2 := "xpla1hdvf6vv5amc7wp84js0ls27apekwxpr0ge96kg"
+		args, err := xcbuilder.NewTransferArgs(
+			xc.Address(addr1), xc.Address(addr2), amount,
+		)
+		require.NoError(t, err)
+
 		input := tx_input.NewTxInput()
 		input.AssetType = tx_input.BANK
 
-		xcTx, err := builder.NewTransfer(xc.Address(addr1), xc.Address(addr2), amount, input)
+		xcTx, err := builder.NewTransfer(args, input)
 		require.NoError(t, err)
 		cosmosTx := xcTx.(*tx.Tx).CosmosTx.(types.FeeTx)
 		fee := cosmosTx.GetFee()
@@ -75,8 +81,8 @@ func TestTransferWithTax(t *testing.T) {
 		require.EqualValues(t, tc.Tax, fee.AmountOf("axpla").Uint64())
 
 		// change the gas coin
-		asset.GasCoin = "uusd"
-		xcTx, err = builder.NewTransfer(xc.Address(addr1), xc.Address(addr2), amount, input)
+		chain.GasCoin = "uusd"
+		xcTx, err = builder.NewTransfer(args, input)
 		require.NoError(t, err)
 		cosmosTx = xcTx.(*tx.Tx).CosmosTx.(types.FeeTx)
 		fee = cosmosTx.GetFee()
@@ -133,11 +139,14 @@ func TestTransferWithMaxGasPrice(t *testing.T) {
 
 		addr1 := "terra18pptupzy59ulkvn0eyrawuuxspc93w6a9ctp9j"
 		addr2 := "terra18pptupzy59ulkvn0eyrawuuxspc93w6a9ctp9j"
+		args, err := xcbuilder.NewTransferArgs(xc.Address(addr1), xc.Address(addr2), amount)
+		require.NoError(t, err)
+
 		input := tx_input.NewTxInput()
 		input.GasPrice = tc.inputPrice
 		input.AssetType = tx_input.BANK
 
-		xcTx, err := builder.NewTransfer(xc.Address(addr1), xc.Address(addr2), amount, input)
+		xcTx, err := builder.NewTransfer(args, input)
 		require.NoError(t, err)
 		cosmosTx := xcTx.(*tx.Tx).CosmosTx.(types.FeeTx)
 		fee := cosmosTx.GetFee()

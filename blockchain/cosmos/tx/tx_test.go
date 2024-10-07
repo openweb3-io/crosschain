@@ -88,10 +88,10 @@ func TestTxSerialize(t *testing.T) {
 
 func TestGetSighash(t *testing.T) {
 
-	sighash := tx.GetSighash(&xc.ChainConfig{Driver: xc.DriverCosmos}, []byte{})
+	sighash := tx.GetSighash(&xc.ChainConfig{Blockchain: xc.BlockchainCosmos}, []byte{})
 	// echo -n '' | openssl dgst -sha256
 	require.Exactly(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hex.EncodeToString(sighash))
 
-	sighash = tx.GetSighash(&xc.ChainConfig{Driver: xc.DriverCosmosEvmos}, []byte{})
+	sighash = tx.GetSighash(&xc.ChainConfig{Blockchain: xc.BlockchainCosmosEvmos}, []byte{})
 	require.Exactly(t, "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470", hex.EncodeToString(sighash))
 }

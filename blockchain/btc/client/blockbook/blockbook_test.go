@@ -88,12 +88,12 @@ func (s *ClientTestSuite) TestFetchTxInput() {
 			`{"result": "0.00007998"}`,
 		}, 200)
 		defer close()
-		asset := &xc.ChainConfig{Chain: xc.BTC, URL: server.URL, Network: "testnet", Provider: string(client.Blockbook), ChainMinGasPrice: 15}
-		client, _ := client.NewClient(asset)
+		cfg := &xc.ChainConfig{Chain: xc.BTC, URL: server.URL, Network: "testnet", Provider: string(client.Blockbook), ChainMinGasPrice: 15}
+		client, _ := client.NewClient(cfg)
 
 		from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 		to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
-		input, err := client.FetchLegacyTxInput(s.Ctx, from, to)
+		input, err := client.FetchLegacyTxInput(s.Ctx, from, to, nil)
 		require.NotNil(input)
 		// optimize the utxo amounts
 		input.(xc.TxInputWithAmount).SetAmount(xc.NewBigIntFromUint64(uint64(v.targetAmount)))

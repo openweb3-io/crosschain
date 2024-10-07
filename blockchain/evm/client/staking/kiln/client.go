@@ -46,15 +46,7 @@ func toStakingState(status string) (xcclient.State, bool) {
 }
 
 func NewClient(rpcClient *evmclient.Client, chain *xc_types.ChainConfig, kilnCfg *services.KilnConfig) (xcclient.StakingClient, error) {
-	// rpcClient, err := evmclient.NewClient(chain)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	apiToken, err := kilnCfg.ApiToken.Load()
-	if err != nil {
-		return nil, err
-	}
-	kilnClient, err := kiln.NewClient(string(chain.Chain), kilnCfg.BaseUrl, apiToken)
+	kilnClient, err := kiln.NewClient(string(chain.Chain), kilnCfg.BaseUrl, kilnCfg.ApiToken)
 	if err != nil {
 		return nil, err
 	}

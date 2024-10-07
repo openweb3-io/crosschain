@@ -196,11 +196,11 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 
 	contractAddress := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
 
-	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), nil)
+	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s SOL balance: %v", senderPrivateKey.PublicKey().String(), out)
 
-	out, err = suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), (*types.Address)(&contractAddress))
+	out, err = suite.client.FetchBalanceForAsset(ctx, types.Address(senderPrivateKey.PublicKey().String()), types.ContractAddress(contractAddress))
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s SPL token balance: %v", senderPrivateKey.PublicKey().String(), out)

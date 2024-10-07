@@ -102,7 +102,9 @@ func WithStakeAccount(account string) BuilderOption {
 
 func WithAsset(asset xc_types.IAsset) BuilderOption {
 	return func(opts *builderOptions) error {
-		opts.asset = &asset
+		if asset != nil {
+			opts.asset = &asset
+		}
 		return nil
 	}
 }

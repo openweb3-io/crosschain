@@ -14,7 +14,7 @@ import (
 	"github.com/openweb3-io/crosschain/signer"
 	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
-	"github.com/test-go/testify/suite"
+	"github.com/stretchr/testify/suite"
 )
 
 var (

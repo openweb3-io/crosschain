@@ -303,9 +303,9 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 	return nil
 }
 
-func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address, to types.Address) (types.TxInput, error) {
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address, to types.Address, asset types.IAsset) (types.TxInput, error) {
 	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
-	args, _ := xcbuilder.NewTransferArgs(from, to, types.NewBigIntFromUint64(1))
+	args, _ := xcbuilder.NewTransferArgs(from, to, types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
 	return client.FetchTransferInput(ctx, args)
 }
 
@@ -427,6 +427,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 // This detects any JettonMessage in the nest of "InternalMessage"
 // This may need to be expanded as Jetton transfer could be nested deeper in more 'InternalMessages'
 func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Transaction) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint, error) {
+	// boc, err := hex.DecodeString(tx.Raw)
 	boc, err := hex.DecodeString(tx.InMsg.Value.RawBody.Value)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid base64: %v", err)
@@ -436,6 +437,7 @@ func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Tran
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid boc: %v", err)
 	}
+
 	internalMsg := &tlb.InternalMessage{}
 	nextMsg, err := inMsg.BeginParse().LoadRefCell()
 	if err != nil {
@@ -443,6 +445,11 @@ func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Tran
 	} else {
 		err = tlb.LoadFromCell(internalMsg, nextMsg.BeginParse())
 	}
+
+	if err != nil {
+		err = tlb.LoadFromCell(internalMsg, inMsg.BeginParse())
+	}
+
 	if err != nil {
 		return nil, nil, nil
 	}
@@ -536,8 +543,9 @@ func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet
 	sources := []*xc_types.LegacyTxInfoEndpoint{
 		{
 			// this is the token wallet of the sender/owner
-			Address:         xc_types.Address(ownerAddr.String()),
-			Amount:          amount,
+			Address: xc_types.Address(ownerAddr.String()),
+			Amount:  amount,
+			// Asset:           tf.Jetton.Symbol,
 			ContractAddress: xc_types.ContractAddress(masterAddr.String()),
 			NativeAsset:     chain,
 			Memo:            memo,
@@ -547,8 +555,9 @@ func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet
 	dests := []*xc_types.LegacyTxInfoEndpoint{
 		{
 			// The destination uses the owner account already
-			Address:         xc_types.Address(jettonTfMaybe.Destination.String()),
-			Amount:          amount,
+			Address: xc_types.Address(jettonTfMaybe.Destination.String()),
+			Amount:  amount,
+			// Asset:           tf.Jetton.Symbol,
 			ContractAddress: xc_types.ContractAddress(masterAddr.String()),
 			NativeAsset:     chain,
 			Memo:            memo,
@@ -558,7 +567,8 @@ func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet
 }
 
 func (client *Client) LookupTransferForTokenWallet(ctx context.Context, tokenWallet *address.Address) (*tonapi.JettonTransferAction, error) {
-	resp, err := client.Client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
+	// GetAccountJettonsHistory
+	resp, err := client.Client.GetAccountEvents(ctx, tonapi.GetAccountEventsParams{
 		AccountID: tokenWallet.String(),
 		Limit:     10,
 	})
@@ -581,5 +591,6 @@ func (client *Client) LookupTransferForTokenWallet(ctx context.Context, tokenWal
 		return nil, fmt.Errorf("could not resolve token master address: no transfer history")
 	}
 
+	fmt.Printf("jetton name: %v, %v\n", act.JettonTransfer.Value.Jetton.Name, act.JettonTransfer)
 	return &act.JettonTransfer.Value, nil
 }
