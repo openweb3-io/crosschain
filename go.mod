@@ -36,7 +36,6 @@ require (
 	github.com/test-go/testify v1.1.4
 	github.com/tidwall/btree v1.7.0
 	github.com/tonkeeper/tonapi-go v0.0.7
-	github.com/tonkeeper/tongo v1.10.2
 	github.com/xssnick/tonutils-go v1.10.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.28.0
@@ -228,6 +227,7 @@ require (
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/tonkeeper/tongo v1.10.2 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/zondax/hid v0.9.2 // indirect

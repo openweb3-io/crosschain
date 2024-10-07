@@ -11,9 +11,9 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/tron"
 	"github.com/openweb3-io/crosschain/builder"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
+
 	xc_types "github.com/openweb3-io/crosschain/types"
-	"github.com/test-go/testify/suite"
+	"github.com/stretchr/testify/suite"
 )
 
 var (
@@ -39,7 +39,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
@@ -92,13 +92,13 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
 
-	contractAddress := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	contractAddress := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
 	// gas := types.NewBigIntFromInt64(1)
 
 	args, err := builder.NewTransferArgs(
@@ -150,18 +150,18 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
-	client, err := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&xc_types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
 
-	out, err := client.FetchBalance(ctx, types.Address(senderPubk))
+	out, err := client.FetchBalance(ctx, xc_types.Address(senderPubk))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
 
-	contractAddr := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
-	out, err = client.FetchBalanceForAsset(ctx, types.Address(senderPubk), contractAddr)
+	contractAddr := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	out, err = client.FetchBalanceForAsset(ctx, xc_types.Address(senderPubk), contractAddr)
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)

@@ -16,7 +16,8 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/ton/wallet"
 	"github.com/openweb3-io/crosschain/signer"
 	xc_types "github.com/openweb3-io/crosschain/types"
-	"github.com/test-go/testify/suite"
+
+	"github.com/stretchr/testify/suite"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -105,7 +106,7 @@ func (suite *ClientTestSuite) SetupTest() {
 func (suite *ClientTestSuite) TearDownTest() {
 }
 
-func (suite *ClientTestSuite) aTest_Tranfser() {
+func (suite *ClientTestSuite) Test_Tranfser() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
@@ -184,7 +185,7 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 /**
  * work for mainnet
  */
-func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
+func (suite *ClientTestSuite) Test_SwapFromTonToUSDT() {
 	ctx := context.Background()
 	// Address from swap
 
@@ -265,7 +266,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	suite.Require().NoError(err)
 }
 
-func (suite *ClientTestSuite) aTest_TransferJetton() {
+func (suite *ClientTestSuite) Test_TransferJetton() {
 	ctx := context.Background()
 
 	contractAddress := xc_types.ContractAddress(USDTJettonMainnetAddress)
