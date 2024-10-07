@@ -59,7 +59,7 @@ type JettonTransferPayload struct {
 
 type Client struct {
 	cfg    *xc_types.ChainConfig
-	client *tonapi.Client
+	Client *tonapi.Client
 }
 
 var _ xcclient.IClient = &Client{}
@@ -82,14 +82,14 @@ func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (xc_types.TxInput, error) {
-	acc, err := client.client.GetAccount(ctx, tonapi.GetAccountParams{
+	acc, err := client.Client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(args.GetFrom()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	seq, err := client.client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
+	seq, err := client.Client.GetAccountSeqno(ctx, tonapi.GetAccountSeqnoParams{
 		AccountID: string(args.GetFrom()),
 	})
 	if err != nil {
@@ -127,7 +127,7 @@ func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address
 	// fromAddr, _ := address.ParseAddr(string(from))
 	// contractAddr, _ := address.ParseAddr(string(contract))
 
-	result, err := client.client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
+	result, err := client.Client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(from),
 		JettonID:  string(contract),
 	})
@@ -204,7 +204,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 		return nil, err
 	}
 
-	res, err := client.client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
+	res, err := client.Client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
 		Boc: base64.StdEncoding.EncodeToString(b),
 		/*Params: []tonapi.EmulateMessageToWalletReqParamsItem{
 			{
@@ -222,7 +222,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 }
 
 func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress types.Address, assetAddr types.ContractAddress) (*types.BigInt, error) {
-	jettonBalance, err := a.client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
+	jettonBalance, err := a.Client.GetAccountJettonBalance(ctx, tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(ownerAddress),
 		JettonID:  string(assetAddr),
 	})
@@ -235,7 +235,7 @@ func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress types.Ad
 }
 
 func (a *Client) FetchBalance(ctx context.Context, address types.Address) (*types.BigInt, error) {
-	account, err := a.client.GetAccount(ctx, tonapi.GetAccountParams{
+	account, err := a.Client.GetAccount(ctx, tonapi.GetAccountParams{
 		AccountID: string(address),
 	})
 	if err != nil {
@@ -271,7 +271,7 @@ func (a *Client) EstimateGas(ctx context.Context, tx types.Tx) (*types.BigInt, e
 		return nil, err
 	}
 
-	res, err := a.client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
+	res, err := a.Client.EmulateMessageToWallet(ctx, &tonapi.EmulateMessageToWalletReq{
 		Boc: base64.StdEncoding.EncodeToString(boc),
 	}, tonapi.EmulateMessageToWalletParams{})
 	if err != nil {
@@ -295,7 +295,7 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 		return err
 	}
 
-	_, err = a.client.SendMessage(ctx, payload)
+	_, err = a.Client.SendMessage(ctx, payload)
 	if err != nil {
 		return errors.Wrap(err, "SendMessage failed")
 	}
@@ -311,7 +311,7 @@ func (client *Client) FetchLegacyTxInput(ctx context.Context, from types.Address
 
 // Returns transaction info - legacy/old endpoint
 func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxHash) (*xc_types.LegacyTxInfo, error) {
-	chainInfo, err := client.client.GetRawMasterchainInfo(ctx)
+	chainInfo, err := client.Client.GetRawMasterchainInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +380,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 		return nil, fmt.Errorf("could not detect jetton movements: %v", err)
 	}
 
-	block, err := client.client.GetBlockchainBlock(ctx, tonapi.GetBlockchainBlockParams{
+	block, err := client.Client.GetBlockchainBlock(ctx, tonapi.GetBlockchainBlockParams{
 		BlockID: tx.Block,
 	})
 	if err != nil {
@@ -480,12 +480,12 @@ func ParseBlock(block string) (string, string, error) {
 
 // Prioritize getting tx by msg-hash as it's deterministic offline.  Fallback to using chain-calculated tx hash.
 func (client *Client) FetchTonTxByHash(ctx context.Context, txHash xc_types.TxHash) (_ *tonapi.Transaction, err error) {
-	transaction, _ := client.client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
+	transaction, _ := client.Client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
 		MsgID: string(txHash),
 	})
 
 	if transaction == nil {
-		transaction, err = client.client.GetBlockchainTransaction(ctx, tonapi.GetBlockchainTransactionParams{
+		transaction, err = client.Client.GetBlockchainTransaction(ctx, tonapi.GetBlockchainTransactionParams{
 			TransactionID: url.QueryEscape(string(txHash)),
 		})
 
@@ -558,7 +558,7 @@ func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet
 }
 
 func (client *Client) LookupTransferForTokenWallet(ctx context.Context, tokenWallet *address.Address) (*tonapi.JettonTransferAction, error) {
-	resp, err := client.client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
+	resp, err := client.Client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
 		AccountID: tokenWallet.String(),
 		Limit:     10,
 	})

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	"github.com/tonkeeper/tonapi-go"
 
 	"github.com/croutondefi/stonfi-go"
 	"github.com/openweb3-io/crosschain/blockchain/ton"
@@ -342,6 +343,26 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 
 func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	ctx := context.Background()
+	require := suite.Require()
+
+	// USDTJettonMainnetAddress = "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"
+	// USDTJettonMainnetWalletAddress = "EQBPy4gmH8pf1pfBwbMw3PdtsO8Aj2rxmVfhM6jpAGHSmTnr"
+
+	/*
+		accountId := "EQB1cvzPLU_t5g9EeX7O0z-yELXr0KNi9bSDbAObNuc80IT-"
+		jettonAcc, err := suite.client.Client.GetAccount(ctx, tonapi.GetAccountParams{
+			AccountID: accountId,
+		})
+		require.NoError(err)
+	*/
+
+	resp, err := suite.client.Client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
+		AccountID: USDTJettonMainnetWalletAddress,
+		Limit:     1,
+	})
+	require.NoError(err)
+
+	fmt.Printf("resp: %v\n", resp)
 
 	// hash := xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd")
 	hash := xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6") // jetton out txid
