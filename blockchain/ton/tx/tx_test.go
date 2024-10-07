@@ -5,25 +5,25 @@ import (
 	"testing"
 
 	"github.com/openweb3-io/crosschain/blockchain/ton"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNativeTx(t *testing.T) {
-
-	builder := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	builder, err := ton.NewTxBuilder(&xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9})
+	require.NoError(t, err)
 
 	from := xc_types.Address("EQAjflEZ_6KgKMxPlcnKN1ZoUvHdTT6hVwTW95EGVQfeSha2")
 	to := xc_types.Address("0QChotyiAtSPqs0BbPD851Mys9_LdMVM7N-atsFYvUMc48Jm")
 	amount := xc_types.NewBigIntFromUint64(10)
-	input := &ton.TxInput{
-		From:   from,
-		To:     to,
-		Amount: amount,
-	}
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(t, err)
+
+	input := &ton.TxInput{}
 	input.PublicKey, _ = hex.DecodeString("c1172b7926116d2a396bd7d69b9880cc0657e8ba2db9f62b4c210c518321c8b1")
-	tx, err := builder.NewTransfer(input)
+	tx, err := builder.NewTransfer(args, input)
 	require.NoError(t, err)
 
 	hashes, err := tx.Sighashes()
@@ -55,32 +55,35 @@ func TestNativeTx(t *testing.T) {
 
 func TestTokenTx(t *testing.T) {
 	chain := &xc_types.ChainConfig{Chain: xc_types.TON, Decimals: 9}
-	builder := ton.NewTxBuilder(chain)
+	builder, err := ton.NewTxBuilder(chain)
+	require.NoError(t, err)
 
 	contractAddress := xc_types.ContractAddress("kQAiboDEv_qRrcEdrYdwbVLNOXBHwShFbtKGbQVJ2OKxY_Di")
 
 	from := "EQAjflEZ_6KgKMxPlcnKN1ZoUvHdTT6hVwTW95EGVQfeSha2"
 	to := "0QChotyiAtSPqs0BbPD851Mys9_LdMVM7N-atsFYvUMc48Jm"
-	input := &ton.TxInput{
-		From:   xc_types.Address(from),
-		To:     xc_types.Address(to),
-		Amount: xc_types.NewBigIntFromUint64(10),
-		Asset: &xc_types.TokenAssetConfig{
+	args, err := xcbuilder.NewTransferArgs(
+		xc_types.Address(from),
+		xc_types.Address(to),
+		xc_types.NewBigIntFromUint64(10),
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Chain:    xc_types.TON,
 			Decimals: 9,
 			Contract: contractAddress,
-		},
-	}
+		}))
+	require.NoError(t, err)
+
+	input := &ton.TxInput{}
 	input.PublicKey, _ = hex.DecodeString("c1172b7926116d2a396bd7d69b9880cc0657e8ba2db9f62b4c210c518321c8b1")
 	tokenWallet := types.Address("EQAjflEZ_6KgKMxPlcnKN1ZoUvHdTT6hVwTW95EGVQfeSha2")
 	input.TokenWallet = tokenWallet
 
-	tx, err := builder.NewTransfer(input)
+	tx, err := builder.NewTransfer(args, input)
 	require.NoError(t, err)
 
 	// Should be an error if token wallet is not set
 	input.TokenWallet = ""
-	_, err = builder.NewTransfer(input)
+	_, err = builder.NewTransfer(args, input)
 	require.Error(t, err)
 
 	hashes, err := tx.Sighashes()

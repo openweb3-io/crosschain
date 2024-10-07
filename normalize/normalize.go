@@ -105,7 +105,7 @@ func Normalize(address string, nativeAsset xc_types.NativeAsset) string {
 		}
 		address = strings.ToLower(address)
 
-	case xc_types.BlockchainBitcoinCash, xc_types.BlockchainBitcoin:
+	case xc_types.BlockchainBtcCash, xc_types.BlockchainBtc:
 		// remove bitcoincash: prefix
 		if strings.Contains(address, ":") {
 			address = strings.Split(address, ":")[1]
@@ -153,7 +153,7 @@ func TransactionHash(hash string, nativeAsset xc_types.NativeAsset) string {
 		hash = prefix + hash
 		hash = strings.ToLower(hash)
 
-	case xc_types.BlockchainBitcoinCash, xc_types.BlockchainBitcoin:
+	case xc_types.BlockchainBtcCash, xc_types.BlockchainBtc:
 		hash = strings.TrimPrefix(hash, "0x")
 		hash = strings.ToLower(hash)
 

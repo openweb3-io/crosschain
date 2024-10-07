@@ -2,12 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 
-	"github.com/pkg/errors"
-
+	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/openweb3-io/crosschain/blockchain/solana/builder"
@@ -15,15 +15,22 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	xcclient "github.com/openweb3-io/crosschain/client"
 	"github.com/openweb3-io/crosschain/types"
+	xc "github.com/openweb3-io/crosschain/types"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type Client struct {
-	cfg    *types.ChainConfig
+	cfg    *xc.ChainConfig
 	client *rpc.Client
 }
 
-func NewClient(cfg *types.ChainConfig) (*Client, error) {
+var _ xcclient.IClient = &Client{}
+var _ xcclient.StakingClient = &Client{}
+
+func NewClient(cfg *xc.ChainConfig) (*Client, error) {
 	endpoint := cfg.URL
 	if endpoint == "" {
 		endpoint = rpc.MainNetBeta_RPC
@@ -32,7 +39,7 @@ func NewClient(cfg *types.ChainConfig) (*Client, error) {
 	return &Client{cfg: cfg, client: client}, nil
 }
 
-func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address) (*tx_input.TxInput, error) {
+func (client *Client) FetchBaseInput(ctx context.Context, fromAddr xc.Address) (*tx_input.TxInput, error) {
 	txInput := tx_input.NewTxInput()
 
 	// get recent block hash (i.e. nonce)
@@ -48,7 +55,7 @@ func (client *Client) FetchBaseInput(ctx context.Context, fromAddr types.Address
 	return txInput, nil
 }
 
-func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (types.TxInput, error) {
+func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc.TxInput, error) {
 	txInput, err := client.FetchBaseInput(ctx, args.GetFrom())
 	if err != nil {
 		return nil, err
@@ -107,10 +114,10 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		if err != nil {
 			return nil, err
 		}
-		zero := types.NewBigIntFromInt64(0)
+		zero := xc.NewBigIntFromInt64(0)
 
 		for _, acc := range tokenAccounts {
-			amount := types.NewBigIntFromStr(acc.Info.Parsed.Info.TokenAmount.Amount)
+			amount := xc.NewBigIntFromStr(acc.Info.Parsed.Info.TokenAmount.Amount)
 			if amount.Cmp(&zero) > 0 {
 				txInput.SourceTokenAccounts = append(txInput.SourceTokenAccounts, &tx_input.TokenAccount{
 					Account: acc.Account.Pubkey,
@@ -149,12 +156,12 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		}
 	}
 	if priority_fee_count > 0 {
-		txInput.PrioritizationFee = types.NewBigIntFromUint64(
+		txInput.PrioritizationFee = xc.NewBigIntFromUint64(
 			priority_fee_sum / priority_fee_count,
 		)
 	} else {
 		// default 100
-		txInput.PrioritizationFee = types.NewBigIntFromUint64(
+		txInput.PrioritizationFee = xc.NewBigIntFromUint64(
 			100,
 		)
 	}
@@ -164,7 +171,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	return txInput, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, error) {
+func (a *Client) EstimateGas(ctx context.Context, _tx xc.Tx) (*xc.BigInt, error) {
 	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 
@@ -175,11 +182,11 @@ func (a *Client) EstimateGas(ctx context.Context, _tx types.Tx) (*types.BigInt, 
 
 	value := *feeCalc.Value
 
-	fee := types.NewBigIntFromUint64(value)
+	fee := xc.NewBigIntFromUint64(value)
 	return &fee, nil
 }
 
-func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
+func (a *Client) BroadcastTx(ctx context.Context, _tx xc.Tx) error {
 	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 
@@ -192,32 +199,35 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx types.Tx) error {
 	return err
 }
 
-func (a *Client) FetchBalance(ctx context.Context, address types.Address, contractAddress *types.Address) (*types.BigInt, error) {
+func (a *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc.BigInt, error) {
 	addr := solana.MustPublicKeyFromBase58(string(address))
-	if contractAddress == nil {
-		out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)
-		if err != nil {
-			return nil, err
-		}
-		balance := types.NewBigIntFromUint64(out.Value)
-		return &balance, nil
-	} else {
-		mint := solana.MustPublicKeyFromBase58(string(*contractAddress))
-		associated, _, err := solana.FindAssociatedTokenAddress(addr, mint)
-		if err != nil {
-			return nil, err
-		}
-		out, err := a.client.GetTokenAccountBalance(ctx, associated, rpc.CommitmentFinalized)
-		if err != nil {
-			return nil, err
-		}
-		amount, err := strconv.ParseInt(out.Value.Amount, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		balance := types.NewBigIntFromInt64(amount)
-		return &balance, nil
+	out, err := a.client.GetBalance(ctx, addr, rpc.CommitmentFinalized)
+	if err != nil {
+		return nil, err
 	}
+	balance := xc.NewBigIntFromUint64(out.Value)
+	return &balance, nil
+}
+
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*types.BigInt, error) {
+	addr := solana.MustPublicKeyFromBase58(string(address))
+
+	mint := solana.MustPublicKeyFromBase58(string(contractAddress))
+	associated, _, err := solana.FindAssociatedTokenAddress(addr, mint)
+	if err != nil {
+		return nil, err
+	}
+	out, err := a.client.GetTokenAccountBalance(ctx, associated, rpc.CommitmentFinalized)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := strconv.ParseInt(out.Value.Amount, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	balance := xc.NewBigIntFromInt64(amount)
+	return &balance, nil
+
 }
 
 type TokenAccountWithInfo struct {
@@ -263,4 +273,241 @@ func (client *Client) GetTokenAccountsByOwner(ctx context.Context, addr string, 
 		})
 	}
 	return tokenAccounts, nil
+}
+
+// FetchLegacyTxInfo returns tx info for a Solana tx
+func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (*xc.LegacyTxInfo, error) {
+	result := &xc.LegacyTxInfo{}
+
+	txSig, err := solana.SignatureFromBase58(string(txHash))
+	if err != nil {
+		return nil, err
+	}
+	// confusingly, '0' is the latest version, which comes after 'legacy' (no version).
+	maxVersion := uint64(0)
+	res, err := client.client.GetTransaction(
+		ctx,
+		txSig,
+		&rpc.GetTransactionOpts{
+			Encoding:                       solana.EncodingBase64,
+			Commitment:                     rpc.CommitmentFinalized,
+			MaxSupportedTransactionVersion: &maxVersion,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil || res.Transaction == nil {
+		return nil, errors.New("invalid transaction in response")
+	}
+
+	solTx, err := solana.TransactionFromDecoder(bin.NewBinDecoder(res.Transaction.GetBinary()))
+	if err != nil {
+		return nil, err
+	}
+	tx := tx.NewTxFrom(solTx)
+	meta := res.Meta
+	if res.BlockTime != nil {
+		result.BlockTime = res.BlockTime.Time().Unix()
+	}
+
+	if res.Slot > 0 {
+		result.BlockIndex = int64(res.Slot)
+		if res.BlockTime != nil {
+			result.BlockTime = int64(*res.BlockTime)
+		}
+
+		recent, err := client.client.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
+		if err != nil {
+			// ignore
+			logrus.WithError(err).Warn("failed to get latest blockhash")
+		} else {
+			result.Confirmations = int64(recent.Context.Slot) - result.BlockIndex
+		}
+	}
+	result.Fee = xc.NewBigIntFromUint64(meta.Fee)
+
+	result.TxID = string(txHash)
+	result.ExplorerURL = client.cfg.ExplorerURL + "/tx/" + result.TxID + "?cluster=" + client.cfg.Network
+
+	sources := []*xc.LegacyTxInfoEndpoint{}
+	dests := []*xc.LegacyTxInfoEndpoint{}
+
+	for _, instr := range tx.GetSystemTransfers() {
+		from := instr.GetFundingAccount().PublicKey.String()
+		to := instr.GetRecipientAccount().PublicKey.String()
+		amount := xc.NewBigIntFromUint64(*instr.Lamports)
+		sources = append(sources, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(from),
+			Amount:  amount,
+		})
+		dests = append(dests, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(to),
+			Amount:  amount,
+		})
+	}
+	for _, instr := range tx.GetVoteWithdraws() {
+		from := instr.GetWithdrawAuthorityAccount().PublicKey.String()
+		to := instr.GetRecipientAccount().PublicKey.String()
+		amount := xc.NewBigIntFromUint64(*instr.Lamports)
+		sources = append(sources, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(from),
+			Amount:  amount,
+		})
+		dests = append(dests, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(to),
+			Amount:  amount,
+		})
+	}
+	for _, instr := range tx.GetStakeWithdraws() {
+		from := instr.GetStakeAccount().PublicKey.String()
+		to := instr.GetRecipientAccount().PublicKey.String()
+		amount := xc.NewBigIntFromUint64(*instr.Lamports)
+		sources = append(sources, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(from),
+			Amount:  amount,
+		})
+		dests = append(dests, &xc.LegacyTxInfoEndpoint{
+			Address: xc.Address(to),
+			Amount:  amount,
+		})
+	}
+	for _, instr := range tx.GetTokenTransferCheckeds() {
+		from := instr.GetOwnerAccount().PublicKey.String()
+		toTokenAccount := instr.GetDestinationAccount().PublicKey
+		contract := xc.ContractAddress(instr.GetMintAccount().PublicKey.String())
+		to := xc.Address(toTokenAccount.String())
+		// Solana doesn't keep full historical state, so we can't rely on always being able to lookup the account.
+		tokenAccountInfo, err := client.LookupTokenAccount(ctx, toTokenAccount)
+		if err != nil {
+			logrus.WithError(err).Warn("failed to lookup token account")
+		} else {
+			to = xc.Address(tokenAccountInfo.Parsed.Info.Owner)
+		}
+
+		amount := xc.NewBigIntFromUint64(*instr.Amount)
+		sources = append(sources, &xc.LegacyTxInfoEndpoint{
+			Address:         xc.Address(from),
+			Amount:          amount,
+			ContractAddress: contract,
+		})
+		dests = append(dests, &xc.LegacyTxInfoEndpoint{
+			Address:         xc.Address(to),
+			Amount:          amount,
+			ContractAddress: contract,
+		})
+	}
+	for _, instr := range tx.GetTokenTransfers() {
+		from := instr.GetOwnerAccount().PublicKey.String()
+		toTokenAccount := instr.GetDestinationAccount().PublicKey
+		tokenAccountInfo, err := client.LookupTokenAccount(ctx, toTokenAccount)
+
+		to := xc.Address(toTokenAccount.String())
+		contract := xc.ContractAddress("")
+		// Solana doesn't keep full historical state, so we can't rely on always being able to lookup the account.
+		if err != nil {
+			logrus.WithError(err).Warn("failed to lookup token account")
+		} else {
+			to = xc.Address(tokenAccountInfo.Parsed.Info.Owner)
+			contract = xc.ContractAddress(tokenAccountInfo.Parsed.Info.Mint)
+		}
+
+		amount := xc.NewBigIntFromUint64(*instr.Amount)
+		sources = append(sources, &xc.LegacyTxInfoEndpoint{
+			Address:         xc.Address(from),
+			Amount:          amount,
+			ContractAddress: contract,
+		})
+		dests = append(dests, &xc.LegacyTxInfoEndpoint{
+			Address:         xc.Address(to),
+			Amount:          amount,
+			ContractAddress: contract,
+		})
+	}
+	for _, instr := range tx.GetDelegateStake() {
+		xcStake := &xcclient.Stake{
+			Account:   instr.GetStakeAccount().PublicKey.String(),
+			Validator: instr.GetVoteAccount().PublicKey.String(),
+			Address:   instr.GetStakeAuthority().PublicKey.String(),
+			// Needs to be looked up from separate instruction
+			Balance: xc.BigInt{},
+		}
+		for _, createAccount := range tx.GetCreateAccounts() {
+			if createAccount.NewAccount.Equals(instr.GetStakeAccount().PublicKey) {
+				xcStake.Balance = xc.NewBigIntFromUint64(createAccount.Lamports)
+			}
+		}
+
+		result.AddStakeEvent(xcStake)
+	}
+	for _, instr := range tx.GetDeactivateStakes() {
+		xcStake := &xcclient.Unstake{
+			Account: instr.GetStakeAccount().PublicKey.String(),
+			Address: instr.GetStakeAuthority().PublicKey.String(),
+
+			// Needs to be looked up
+			Balance:   xc.BigInt{},
+			Validator: "",
+		}
+		stakeAccountInfo, err := client.LookupStakeAccount(ctx, instr.GetStakeAccount().PublicKey)
+		if err != nil {
+			logrus.WithError(err).Warn("failed to lookup stake account")
+		} else {
+			xcStake.Validator = stakeAccountInfo.Parsed.Info.Stake.Delegation.Voter
+			xcStake.Balance = xc.NewBigIntFromStr(stakeAccountInfo.Parsed.Info.Stake.Delegation.Stake)
+		}
+		result.AddStakeEvent(xcStake)
+	}
+
+	if len(sources) > 0 {
+		result.From = sources[0].Address
+	}
+	if len(dests) > 0 {
+		result.To = dests[0].Address
+		result.Amount = dests[0].Amount
+		result.ContractAddress = dests[0].ContractAddress
+	}
+
+	result.Sources = sources
+	result.Destinations = dests
+
+	return result, nil
+}
+
+func (client *Client) LookupTokenAccount(ctx context.Context, tokenAccount solana.PublicKey) (solana_types.TokenAccountInfo, error) {
+	var accountInfo solana_types.TokenAccountInfo
+	info, err := client.client.GetAccountInfoWithOpts(ctx, tokenAccount, &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentFinalized,
+		Encoding:   "jsonParsed",
+	})
+	if err != nil {
+		return solana_types.TokenAccountInfo{}, err
+	}
+	accountInfo, err = solana_types.ParseRpcData(info.Value.Data)
+	if err != nil {
+		return solana_types.TokenAccountInfo{}, err
+	}
+	return accountInfo, nil
+}
+
+func (client *Client) LookupStakeAccount(ctx context.Context, stakeAccount solana.PublicKey) (solana_types.StakeAccount, error) {
+	info, err := client.client.GetAccountInfoWithOpts(ctx, stakeAccount, &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentFinalized,
+		Encoding:   "jsonParsed",
+	})
+	if err != nil {
+		return solana_types.StakeAccount{}, err
+	}
+	var stakeAccountInfo solana_types.StakeAccount
+	err = json.Unmarshal(info.Value.Data.GetRawJSON(), &stakeAccountInfo)
+	if err != nil {
+		return solana_types.StakeAccount{}, err
+	}
+	return stakeAccountInfo, nil
+}
+
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc.Address, to xc.Address) (xc.TxInput, error) {
+	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
+	args, _ := xcbuilder.NewTransferArgs(from, to, xc.NewBigIntFromUint64(1))
+	return client.FetchTransferInput(ctx, args)
 }

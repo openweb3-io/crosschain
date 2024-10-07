@@ -38,7 +38,7 @@ type Client struct {
 
 func NewClient(
 	cfg *xc_types.ChainConfig,
-) *Client {
+) (*Client, error) {
 	endpoint := cfg.URL
 
 	if endpoint == "" {
@@ -54,7 +54,7 @@ func NewClient(
 	return &Client{
 		cfg,
 		client,
-	}
+	}, nil
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *builder.TransferArgs) (types.TxInput, error) {

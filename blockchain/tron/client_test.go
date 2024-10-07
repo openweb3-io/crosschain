@@ -39,10 +39,11 @@ func (suite *ClientTestSuite) TestTransfer() {
 	ctx := context.Background()
 
 	//testnet
-	client := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
+	suite.Require().NoError(err)
 
 	amount := xc_types.NewBigIntFromInt64(3)
 
@@ -91,10 +92,11 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	ctx := context.Background()
 
 	//testnet
-	client := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
+	suite.Require().NoError(err)
 
 	contractAddress := types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
 	// gas := types.NewBigIntFromInt64(1)
@@ -148,10 +150,12 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
-	client := tron.NewClient(&types.ChainConfig{
+	client, err := tron.NewClient(&types.ChainConfig{
 		URL:     endpoint,
 		ChainID: chainId.Int64(),
 	})
+	suite.Require().NoError(err)
+
 	out, err := client.FetchBalance(ctx, types.Address(senderPubk))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)

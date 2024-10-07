@@ -81,7 +81,7 @@ func (s *CrosschainTestSuite) TestGetAddressFromPublicKeyUsesCompressed() {
 	builder, err := address.NewAddressBuilder(&xc.ChainConfig{
 		Network:    "testnet",
 		Chain:      xc.BTC,
-		Blockchain: xc.BlockchainBitcoin,
+		Blockchain: xc.BlockchainBtc,
 	})
 	require.NoError(err)
 	compressedPubkey, _ := hex.DecodeString("0228a9dd8c304464e0d0f011ca3dccb0e373afd2f5c51e89113b8be2a905687fb9")

@@ -39,15 +39,15 @@ func createChainFor(blockchain xc.Blockchain) *xc.ChainConfig {
 		// URL:         server.URL,
 		Blockchain: blockchain,
 	}
-	if blockchain == xc.BlockchainBitcoin {
+	if blockchain == xc.BlockchainBtc {
 		fakeAsset.Chain = "BTC"
 		fakeAsset.AuthSecret = "1234"
 	}
-	if blockchain == xc.BlockchainBitcoinLegacy {
+	if blockchain == xc.BlockchainBtcLegacy {
 		fakeAsset.Chain = "DOGE"
 		fakeAsset.AuthSecret = "1234"
 	}
-	if blockchain == xc.BlockchainBitcoinCash {
+	if blockchain == xc.BlockchainBtcCash {
 		fakeAsset.Chain = "BCH"
 		fakeAsset.AuthSecret = "1234"
 	}

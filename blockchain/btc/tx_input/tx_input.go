@@ -50,7 +50,7 @@ func NewTxInput() *TxInput {
 }
 
 func (input *TxInput) GetBlockchain() xc.Blockchain {
-	return xc.BlockchainBitcoin
+	return xc.BlockchainBtc
 }
 
 func (input *TxInput) SetGasFeePriority(other xc.GasFeePriority) error {

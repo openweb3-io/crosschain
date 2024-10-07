@@ -5,11 +5,17 @@ import (
 	"fmt"
 
 	"github.com/openweb3-io/crosschain/blockchain/btc"
+	btcclient "github.com/openweb3-io/crosschain/blockchain/btc/client"
 	"github.com/openweb3-io/crosschain/blockchain/btc_cash"
 	cosmosbuilder "github.com/openweb3-io/crosschain/blockchain/cosmos/builder"
+	cosmosclient "github.com/openweb3-io/crosschain/blockchain/cosmos/client"
+
 	solanabuilder "github.com/openweb3-io/crosschain/blockchain/solana/builder"
 
 	evmbuilder "github.com/openweb3-io/crosschain/blockchain/evm/builder"
+	evmclient "github.com/openweb3-io/crosschain/blockchain/evm/client"
+	solanaclient "github.com/openweb3-io/crosschain/blockchain/solana/client"
+	tronclient "github.com/openweb3-io/crosschain/blockchain/tron"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 
 	btcaddress "github.com/openweb3-io/crosschain/blockchain/btc/address"
@@ -42,8 +48,36 @@ func RegisterClient(cfg types.Blockchain, creator ClientCreator) {
 }
 
 func init() {
-	RegisterClient("ton", func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(types.BlockchainBtc, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return btcclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainBtcLegacy, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return btcclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainBtcCash, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return btc_cash.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainCosmos, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return cosmosclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainTon, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
 		return ton.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainTron, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return tronclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainSolana, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return solanaclient.NewClient(cfg)
+	})
+
+	RegisterClient(types.BlockchainEVM, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+		return evmclient.NewClient(cfg)
 	})
 }
 
@@ -68,9 +102,9 @@ func NewAddressBuilder(cfg *types.ChainConfig) (types.AddressBuilder, error) {
 		return solanaaddress.NewAddressBuilder(cfg)
 	//case types.BlockchainAptos:
 	//	return aptos.NewAddressBuilder(cfg)
-	case types.BlockchainBitcoin, types.BlockchainBitcoinLegacy:
+	case types.BlockchainBtc, types.BlockchainBtcLegacy:
 		return btcaddress.NewAddressBuilder(cfg)
-	case types.BlockchainBitcoinCash:
+	case types.BlockchainBtcCash:
 		return btc_cash.NewAddressBuilder(cfg)
 	// case types.BlockchainSui:
 	// 	return sui.NewAddressBuilder(cfg)
@@ -102,9 +136,9 @@ func NewTxBuilder(cfg *types.ChainConfig) (xcbuilder.TxBuilder, error) {
 	//	return aptos.NewTxBuilder(cfg)
 	//case BlockchainSui:
 	//	return sui.NewTxBuilder(cfg)
-	case types.BlockchainBitcoin, types.BlockchainBitcoinLegacy:
+	case types.BlockchainBtc, types.BlockchainBtcLegacy:
 		return btc.NewTxBuilder(cfg)
-	case types.BlockchainBitcoinCash:
+	case types.BlockchainBtcCash:
 		return btc_cash.NewTxBuilder(cfg)
 	// case BlockchainSubstrate:
 	//	return substrate.NewTxBuilder(cfg)

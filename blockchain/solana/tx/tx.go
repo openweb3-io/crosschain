@@ -6,6 +6,8 @@ import (
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go/programs/stake"
+	"github.com/gagliardetto/solana-go/programs/token"
+	"github.com/gagliardetto/solana-go/programs/vote"
 
 	"github.com/gagliardetto/solana-go"
 	solana_sdk "github.com/gagliardetto/solana-go"
@@ -174,4 +176,26 @@ func (tx Tx) GetSplitStakes() []*stake.Split {
 
 func (tx Tx) GetStakeWithdraws() []*stake.Withdraw {
 	return getall[*stake.Withdraw](stake.DecodeInstruction, solana.StakeProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetSystemTransfers() []*system.Transfer {
+	return getall[*system.Transfer](system.DecodeInstruction, solana.SystemProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetVoteWithdraws() []*vote.Withdraw {
+	return getall[*vote.Withdraw](vote.DecodeInstruction, solana.VoteProgramID, tx.SolTx)
+}
+
+func (tx Tx) GetTokenTransferCheckeds() []*token.TransferChecked {
+	return append(
+		getall[*token.TransferChecked](token.DecodeInstruction, solana.TokenProgramID, tx.SolTx),
+		getall[*token.TransferChecked](token.DecodeInstruction, solana.Token2022ProgramID, tx.SolTx)...,
+	)
+}
+
+func (tx Tx) GetTokenTransfers() []*token.Transfer {
+	return append(
+		getall[*token.Transfer](token.DecodeInstruction, solana.TokenProgramID, tx.SolTx),
+		getall[*token.Transfer](token.DecodeInstruction, solana.Token2022ProgramID, tx.SolTx)...,
+	)
 }

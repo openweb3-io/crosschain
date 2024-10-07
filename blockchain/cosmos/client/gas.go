@@ -14,6 +14,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx_input"
 	"github.com/openweb3-io/crosschain/blockchain/cosmos/tx_input/gas"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc "github.com/openweb3-io/crosschain/types"
 )
 
@@ -87,7 +88,12 @@ func (client *Client) BuildReferenceTransfer(gasLimit uint64) (*tx.Tx, error) {
 	input.GasLimit = gasLimit
 	input.GasPrice = 0
 	input.AssetType = tx_input.BANK
-	tx1, err := builder.NewTransfer(xc.Address(from), xc.Address(to), xc.NewBigIntFromUint64(1), input)
+
+	args, err := xcbuilder.NewTransferArgs(xc.Address(from), xc.Address(to), xc.NewBigIntFromUint64(1))
+	if err != nil {
+		return nil, err
+	}
+	tx1, err := builder.NewTransfer(args, input)
 	if err != nil {
 		return nil, err
 	}

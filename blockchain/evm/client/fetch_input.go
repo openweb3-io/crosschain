@@ -22,12 +22,12 @@ import (
 func (client *Client) DefaultGasLimit(asset xc.IAsset) uint64 {
 	// Set absolute gas limits for safety
 	gasLimit := uint64(90_000)
-	native := asset.GetChain()
-	if asset.GetContract() != "" {
+	if asset != nil && asset.GetContract() != "" {
 		// token
 		gasLimit = 500_000
 	}
-	if native.Chain == xc.ArbETH {
+
+	if client.Chain.Chain == xc.ArbETH {
 		// arbeth specifically has different gas limit scale
 		gasLimit = 4_000_000
 	}

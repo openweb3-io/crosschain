@@ -20,28 +20,28 @@ type Blockchain string
 
 // List of supported Blockchain
 const (
-	BlockchainAptos         = Blockchain("aptos")
-	BlockchainBitcoin       = Blockchain("bitcoin")
-	BlockchainBitcoinCash   = Blockchain("bitcoin-cash")
-	BlockchainBitcoinLegacy = Blockchain("bitcoin-legacy")
-	BlockchainCosmos        = Blockchain("cosmos")
-	BlockchainCosmosEvmos   = Blockchain("evmos")
-	BlockchainEVM           = Blockchain("evm")
-	BlockchainEVMLegacy     = Blockchain("evm-legacy")
-	BlockchainSubstrate     = Blockchain("substrate")
-	BlockchainSolana        = Blockchain("solana")
-	BlockchainSui           = Blockchain("sui")
-	BlockchainTron          = Blockchain("tron")
-	BlockchainTon           = Blockchain("ton")
+	BlockchainAptos       = Blockchain("aptos")
+	BlockchainBtc         = Blockchain("btc")
+	BlockchainBtcCash     = Blockchain("btc-cash")
+	BlockchainBtcLegacy   = Blockchain("btc-legacy")
+	BlockchainCosmos      = Blockchain("cosmos")
+	BlockchainCosmosEvmos = Blockchain("evmos")
+	BlockchainEVM         = Blockchain("evm")
+	BlockchainEVMLegacy   = Blockchain("evm-legacy")
+	BlockchainSubstrate   = Blockchain("substrate")
+	BlockchainSolana      = Blockchain("solana")
+	BlockchainSui         = Blockchain("sui")
+	BlockchainTron        = Blockchain("tron")
+	BlockchainTon         = Blockchain("ton")
 	// Crosschain is a client-only blockchain
 	BlockchainCrosschain = Blockchain("crosschain")
 )
 
 var SupportedBlockchains = []Blockchain{
 	BlockchainAptos,
-	BlockchainBitcoin,
-	BlockchainBitcoinCash,
-	BlockchainBitcoinLegacy,
+	BlockchainBtc,
+	BlockchainBtc,
+	BlockchainBtcLegacy,
 	BlockchainCosmos,
 	BlockchainCosmosEvmos,
 	BlockchainEVM,
@@ -106,11 +106,11 @@ func (native NativeAsset) IsValid() bool {
 func (native NativeAsset) Blockchain() Blockchain {
 	switch native {
 	case BTC:
-		return BlockchainBitcoin
+		return BlockchainBtc
 	case BCH:
-		return BlockchainBitcoinCash
+		return BlockchainBtcCash
 	case DOGE, LTC:
-		return BlockchainBitcoinLegacy
+		return BlockchainBtcLegacy
 	case AVAX, CELO, ETH, ETHW, MATIC, OptETH, ArbETH, BERA:
 		return BlockchainEVM
 	case BNB, FTM, ETC, EmROSE, AurETH, ACA, KAR, KLAY, OAS, CHZ, XDC, CHZ2:
@@ -135,7 +135,7 @@ func (native NativeAsset) Blockchain() Blockchain {
 
 func (blockchain Blockchain) SignatureAlgorithm() SignatureType {
 	switch blockchain {
-	case BlockchainBitcoin, BlockchainBitcoinCash, BlockchainBitcoinLegacy:
+	case BlockchainBtc, BlockchainBtcCash, BlockchainBtcLegacy:
 		return K256Sha256
 	case BlockchainEVM, BlockchainEVMLegacy, BlockchainCosmos, BlockchainCosmosEvmos, BlockchainTron:
 		return K256Keccak
@@ -153,7 +153,7 @@ var Uncompressed PublicKeyFormat = "uncompressed"
 
 func (blockchain Blockchain) PublicKeyFormat() PublicKeyFormat {
 	switch blockchain {
-	case BlockchainBitcoin, BlockchainBitcoinCash, BlockchainBitcoinLegacy:
+	case BlockchainBtc, BlockchainBtcCash, BlockchainBtcLegacy:
 		return Compressed
 	case BlockchainCosmos, BlockchainCosmosEvmos:
 		return Compressed

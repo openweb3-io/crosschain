@@ -87,7 +87,7 @@ func (ab AddressBuilder) GetAddressFromPublicKey(publicKeyBytes []byte) (xc.Addr
 	}
 	// force compressed format, BTC wallets should use uncompressed.
 	publicKeyBytes = pubkey.SerializeCompressed()
-	if ab.asset.GetChain().Blockchain == xc.BlockchainBitcoinLegacy {
+	if ab.asset.GetChain().Blockchain == xc.BlockchainBtcLegacy {
 		return ab.GetLegacyAddress(publicKeyBytes)
 	} else {
 		return ab.GetSegWitAddress(publicKeyBytes)
