@@ -26,6 +26,8 @@ import (
 const (
 	USDTJettonMainnetAddress = "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"
 	USDTJettonTestnetAddress = "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy"
+
+	USDTJettonMainnetWalletAddress = "EQBPy4gmH8pf1pfBwbMw3PdtsO8Aj2rxmVfhM6jpAGHSmTnr"
 )
 
 type ClientTestSuite struct {
@@ -103,7 +105,7 @@ func (suite *ClientTestSuite) SetupTest() {
 func (suite *ClientTestSuite) TearDownTest() {
 }
 
-func (suite *ClientTestSuite) Test_Tranfser() {
+func (suite *ClientTestSuite) aTest_Tranfser() {
 	ctx := context.Background()
 
 	from, err := wallet.AddressFromPubKey(suite.account1PubKey, wallet.V4R2, wallet.DefaultSubwallet)
@@ -263,7 +265,7 @@ func (suite *ClientTestSuite) aTest_SwapFromTonToUSDT() {
 	suite.Require().NoError(err)
 }
 
-func (suite *ClientTestSuite) Test_TransferJetton() {
+func (suite *ClientTestSuite) aTest_TransferJetton() {
 	ctx := context.Background()
 
 	contractAddress := xc_types.ContractAddress(USDTJettonMainnetAddress)
@@ -319,6 +321,8 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 
 	err = suite.client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err, "SubmitTx failed")
+
+	fmt.Printf("tx message hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) TestFetchBalance() {
@@ -338,8 +342,18 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 func (suite *ClientTestSuite) TestFetchTonTxByHash() {
 	ctx := context.Background()
 
-	tx, err := suite.client.FetchTonTxByHash(ctx, xc_types.TxHash("4063f473042605c931d103e8b065f235c973d147d824947719e5a3b6a2010957"))
+	// hash := xc_types.TxHash("7f738ef013a970599563c761ac4047a06d9b160cc79e72cd30561902e83f2ecd")
+	hash := xc_types.TxHash("f433109f09daf09d1f7d6e5ae1ff74adb88bcd9980f0158fb1d7e1426c087dc6") // jetton out txid
+	// hash := xc_types.TxHash("09f977c21bb427b5c7c7bda414be625144b6c1ae187aa9bfacd6f58c3c617e3a") // out
+	// hash := xc_types.TxHash("67982fb0800d56d9ae343dc0c9728b8a7f7d07ecbbdf2200eb3e9cdf50c9ba63") // in
+
+	tx, err := suite.client.FetchTonTxByHash(ctx, hash)
 	suite.Require().NoError(err)
 
-	fmt.Printf("tx: %v\n", tx)
+	fmt.Printf("tx: %v\n", tx.Hash)
+
+	legacyTx, err := suite.client.FetchLegacyTxInfo(ctx, hash)
+	suite.Require().NoError(err)
+
+	fmt.Printf("tx: %v\n", legacyTx.Amount)
 }

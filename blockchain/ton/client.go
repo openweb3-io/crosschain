@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -17,7 +18,6 @@ import (
 	"github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/tonkeeper/tongo/abi"
 	"github.com/xssnick/tonutils-go/ton/jetton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
@@ -31,6 +31,31 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"go.uber.org/zap"
 )
+
+type TextComment struct {
+	Text string `json:"text"`
+}
+
+type Value struct {
+	SumType string       `json:"sum_type"`
+	OpCode  int          `json:"op_code"`
+	Value   *TextComment `json:"value"`
+}
+
+type ForwardPayload struct {
+	IsRight bool   `json:"is_right"`
+	Value   *Value `json:"value"`
+}
+
+type JettonTransferPayload struct {
+	QueryId             int64           `json:"query_id"`
+	Amount              string          `json:"amount"`
+	Destination         string          `json:"destination"`
+	ResponseDestination string          `json:"response_destination"`
+	CustomPayload       any             `json:"custom_payload"`
+	ForwardTonAmount    string          `json:"forward_ton_amount"`
+	ForwardPayload      *ForwardPayload `json:"forward_payload"`
+}
 
 type Client struct {
 	cfg    *xc_types.ChainConfig
@@ -309,10 +334,12 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 			memo := ""
 
 			if msg.DecodedBody != nil && msg.DecodedOpName.Value == "text_comment" {
-				var comment abi.TextCommentMsgBody
-				_ = json.Unmarshal(msg.DecodedBody, &comment)
+				var body struct {
+					Text string `json:"text"`
+				}
+				_ = json.Unmarshal(msg.DecodedBody, &body)
 
-				memo = string(comment.Text)
+				memo = string(body.Text)
 			}
 
 			if msg.Destination.IsSet() && msg.Destination.Value.Address != "" && msg.Value != 0 {
@@ -400,13 +427,10 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 // This detects any JettonMessage in the nest of "InternalMessage"
 // This may need to be expanded as Jetton transfer could be nested deeper in more 'InternalMessages'
 func (client *Client) detectJettonMovements(ctx context.Context, tx *tonapi.Transaction) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint, error) {
-	/*
-		boc, err := base64.StdEncoding.DecodeString(tx.InMsg.MessageContent.Body)
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid base64: %v", err)
-		}
-	*/
-	boc := tx.InMsg.Value.DecodedBody
+	boc, err := hex.DecodeString(tx.InMsg.Value.RawBody.Value)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid base64: %v", err)
+	}
 
 	inMsg, err := cell.FromBOC(boc)
 	if err != nil {
@@ -455,8 +479,8 @@ func ParseBlock(block string) (string, string, error) {
 }
 
 // Prioritize getting tx by msg-hash as it's deterministic offline.  Fallback to using chain-calculated tx hash.
-func (client *Client) FetchTonTxByHash(ctx context.Context, txHash xc_types.TxHash) (*tonapi.Transaction, error) {
-	transaction, err := client.client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
+func (client *Client) FetchTonTxByHash(ctx context.Context, txHash xc_types.TxHash) (_ *tonapi.Transaction, err error) {
+	transaction, _ := client.client.GetBlockchainTransactionByMessageHash(ctx, tonapi.GetBlockchainTransactionByMessageHashParams{
 		MsgID: string(txHash),
 	})
 
@@ -536,7 +560,7 @@ func (client *Client) ParseJetton(ctx context.Context, c *cell.Cell, tokenWallet
 func (client *Client) LookupTransferForTokenWallet(ctx context.Context, tokenWallet *address.Address) (*tonapi.JettonTransferAction, error) {
 	resp, err := client.client.GetAccountJettonsHistory(ctx, tonapi.GetAccountJettonsHistoryParams{
 		AccountID: tokenWallet.String(),
-		Limit:     1,
+		Limit:     10,
 	})
 
 	if err != nil {

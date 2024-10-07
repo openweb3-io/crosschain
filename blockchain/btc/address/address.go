@@ -11,7 +11,7 @@ import (
 // AddressBuilder for Bitcoin
 type AddressBuilder struct {
 	params *chaincfg.Params
-	asset  xc.IAsset
+	cfg    *xc.ChainConfig
 }
 
 var _ xc.AddressBuilder = &AddressBuilder{}
@@ -37,13 +37,13 @@ func NewAddressDecoder() *BtcAddressDecoder {
 }
 
 // NewAddressBuilder creates a new Bitcoin AddressBuilder
-func NewAddressBuilder(asset xc.IAsset) (xc.AddressBuilder, error) {
-	params, err := params.GetParams(asset.GetChain())
+func NewAddressBuilder(cfg *xc.ChainConfig) (xc.AddressBuilder, error) {
+	params, err := params.GetParams(cfg)
 	if err != nil {
 		return AddressBuilder{}, err
 	}
 	return AddressBuilder{
-		asset:  asset,
+		cfg:    cfg,
 		params: params,
 	}, nil
 }
@@ -87,7 +87,7 @@ func (ab AddressBuilder) GetAddressFromPublicKey(publicKeyBytes []byte) (xc.Addr
 	}
 	// force compressed format, BTC wallets should use uncompressed.
 	publicKeyBytes = pubkey.SerializeCompressed()
-	if ab.asset.GetChain().Blockchain == xc.BlockchainBtcLegacy {
+	if ab.cfg.Blockchain == xc.BlockchainBtcLegacy {
 		return ab.GetLegacyAddress(publicKeyBytes)
 	} else {
 		return ab.GetSegWitAddress(publicKeyBytes)

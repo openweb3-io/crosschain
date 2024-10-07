@@ -16,14 +16,14 @@ const DefaultWalletVersion = wallet.V3
 
 // AddressBuilder for Template
 type AddressBuilder struct {
-	Asset xc_types.IAsset
+	cfg *xc_types.ChainConfig
 }
 
 var _ xc_types.AddressBuilder = AddressBuilder{}
 
 // NewAddressBuilder creates a new Template AddressBuilder
-func NewAddressBuilder(cfgI xc_types.IAsset) (xc_types.AddressBuilder, error) {
-	return AddressBuilder{cfgI}, nil
+func NewAddressBuilder(cfg *xc_types.ChainConfig) (xc_types.AddressBuilder, error) {
+	return AddressBuilder{cfg}, nil
 }
 
 // GetAddressFromPublicKey returns an Address given a public key
@@ -32,7 +32,7 @@ func (ab AddressBuilder) GetAddressFromPublicKey(publicKeyBytes []byte) (xc_type
 	if err != nil {
 		return "", err
 	}
-	if ab.Asset.GetChain().Network == "testnet" {
+	if ab.cfg.Network == "testnet" {
 		addr.SetTestnetOnly(true)
 	}
 	return xc_types.Address(addr.String()), nil

@@ -21,7 +21,7 @@ const TxVersion int32 = 2
 
 // TxBuilder for Bitcoin
 type TxBuilder struct {
-	Asset          xc.IAsset
+	Chain          *xc.ChainConfig
 	Params         *chaincfg.Params
 	AddressDecoder address.AddressDecoder
 	// isBch  bool
@@ -30,14 +30,13 @@ type TxBuilder struct {
 var _ xcbuilder.TxBuilder = &TxBuilder{}
 
 // NewTxBuilder creates a new Bitcoin TxBuilder
-func NewTxBuilder(cfgI xc.IAsset) (TxBuilder, error) {
-	native := cfgI.GetChain()
-	params, err := params.GetParams(native)
+func NewTxBuilder(cfg *xc.ChainConfig) (TxBuilder, error) {
+	params, err := params.GetParams(cfg)
 	if err != nil {
 		return TxBuilder{}, err
 	}
 	return TxBuilder{
-		Asset:          cfgI,
+		Chain:          cfg,
 		Params:         params,
 		AddressDecoder: &address.BtcAddressDecoder{},
 		// isBch:  native.Chain == xc.BCH,
@@ -51,7 +50,12 @@ func (txBuilder TxBuilder) WithAddressDecoder(decoder address.AddressDecoder) Tx
 
 // Old transfer interface
 func (txBuilder TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
-	switch asset := txBuilder.Asset.(type) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
+
+	switch asset := asset.(type) {
 	case *xc.ChainConfig:
 		return txBuilder.NewNativeTransfer(args, input)
 	case *xc.TokenAssetConfig:
@@ -63,6 +67,10 @@ func (txBuilder TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc.Tx
 
 // NewNativeTransfer creates a new transfer for a native asset
 func (txBuilder TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input xc.TxInput) (xc.Tx, error) {
+	asset, _ := args.GetAsset()
+	if asset == nil {
+		asset = txBuilder.Chain
+	}
 
 	var local_input *tx_input.TxInput
 	var ok bool
@@ -75,7 +83,7 @@ func (txBuilder TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input
 	gasPrice := local_input.GasPricePerByte
 	// 255 for bitcoin, 300 for bch
 	estimatedTxBytesLength := xc.NewBigIntFromUint64(uint64(255 * len(local_input.UnspentOutputs)))
-	if xc.NativeAsset(txBuilder.Asset.GetChain().Chain) == xc.BCH {
+	if xc.NativeAsset(txBuilder.Chain.Chain) == xc.BCH {
 		estimatedTxBytesLength = xc.NewBigIntFromUint64(uint64(300 * len(local_input.UnspentOutputs)))
 	}
 	fee := gasPrice.Mul(&estimatedTxBytesLength)
@@ -117,7 +125,7 @@ func (txBuilder TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input
 		if value < 0 {
 			diff := local_input.SumUtxo().Sub(&amount)
 			return nil, fmt.Errorf("not enough funds for fees, estimated fee is %s but only %s is left after transfer",
-				fee.ToHuman(txBuilder.Asset.GetDecimals()).String(), diff.ToHuman(txBuilder.Asset.GetDecimals()).String(),
+				fee.ToHuman(asset.GetDecimals()).String(), diff.ToHuman(asset.GetDecimals()).String(),
 			)
 		}
 		msgTx.AddTxOut(wire.NewTxOut(value, script))

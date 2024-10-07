@@ -11,6 +11,7 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/btc/address"
 	"github.com/openweb3-io/crosschain/blockchain/btc/tx"
 	"github.com/openweb3-io/crosschain/blockchain/btc/tx_input"
+	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -169,7 +170,11 @@ func (s *CrosschainTestSuite) TestNewNativeTransfer() {
 					}},
 					GasPricePerByte: xc.NewBigIntFromUint64(1),
 				}
-				tf, err := builder.NewNativeTransfer(from, to, amount, input)
+
+				args, err := xcbuilder.NewTransferArgs(from, to, amount)
+				require.NoError(err)
+
+				tf, err := builder.NewNativeTransfer(args, input)
 				require.NoError(err)
 				require.NotNil(tf)
 				hash := tf.Hash()
@@ -182,7 +187,7 @@ func (s *CrosschainTestSuite) TestNewNativeTransfer() {
 					}},
 					GasPricePerByte: xc.NewBigIntFromUint64(1),
 				}
-				_, err = builder.NewNativeTransfer(from, to, amount, input_small)
+				_, err = builder.NewNativeTransfer(args, input_small)
 				require.Error(err)
 
 				// add signature
@@ -208,13 +213,17 @@ func (s *CrosschainTestSuite) TestNewTokenTransfer() {
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.NewBigIntFromUint64(1)
+
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(1000),
 		}},
 		GasPricePerByte: xc.NewBigIntFromUint64(1),
 	}
-	tf, err := builder.NewTokenTransfer(from, to, amount, input)
+	tf, err := builder.NewTokenTransfer(args, input)
 	require.Nil(tf)
 	require.EqualError(err, "not implemented")
 }
@@ -226,26 +235,39 @@ func (s *CrosschainTestSuite) TestNewTransfer() {
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.NewBigIntFromUint64(1)
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(1000),
 		}},
 		GasPricePerByte: xc.NewBigIntFromUint64(1),
 	}
-	tf, err := builder.NewTransfer(from, to, amount, input)
+	tf, err := builder.NewTransfer(args, input)
 	require.NotNil(tf)
 	require.NoError(err)
 }
 
 func (s *CrosschainTestSuite) TestNewTransfer_Token() {
 	require := s.Require()
-	asset := &xc.TokenAssetConfig{Asset: string(xc.BTC), ChainConfig: &xc.ChainConfig{Network: "testnet"}}
-	builder, _ := NewTxBuilder(asset)
+	builder, _ := NewTxBuilder(&xc.ChainConfig{Network: "testnet"})
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.BigInt{}
+
+	args, err := xcbuilder.NewTransferArgs(
+		from,
+		to,
+		amount,
+		xcbuilder.WithAsset(
+			&xc.TokenAssetConfig{Asset: string(xc.BTC)},
+		),
+	)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{}
-	tf, err := builder.NewTransfer(from, to, amount, input)
+	tf, err := builder.NewTransfer(args, input)
 	require.Nil(tf)
 	require.ErrorContains(err, "not implemented")
 }
@@ -260,13 +282,16 @@ func (s *CrosschainTestSuite) TestTxHash() {
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.NewBigIntFromUint64(1)
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(1000),
 		}},
 		GasPricePerByte: xc.NewBigIntFromUint64(1),
 	}
-	tf, err := builder.NewNativeTransfer(from, to, amount, input)
+	tf, err := builder.NewNativeTransfer(args, input)
 	require.NoError(err)
 
 	tx := tf.(*tx.Tx)
@@ -290,14 +315,17 @@ func (s *CrosschainTestSuite) TestTxAddSignature() {
 	from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
 	to := xc.Address("tb1qtpqqpgadjr2q3f4wrgd6ndclqtfg7cz5evtvs0")
 	amount := xc.NewBigIntFromUint64(10)
+	args, err := xcbuilder.NewTransferArgs(from, to, amount)
+	require.NoError(err)
+
 	input := &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(1000),
 		}},
 	}
-	err := input.SetPublicKey([]byte{})
+	err = input.SetPublicKey([]byte{})
 	require.NoError(err)
-	tf, err := builder.NewNativeTransfer(from, to, amount, input)
+	tf, err := builder.NewNativeTransfer(args, input)
 	require.NoError(err)
 
 	txObject := tf.(*tx.Tx)
@@ -321,14 +349,14 @@ func (s *CrosschainTestSuite) TestTxAddSignature() {
 	require.ErrorContains(err, "already signed")
 
 	// must have a signature for each input needed
-	tf, _ = builder.NewNativeTransfer(from, to, amount, input)
+	tf, _ = builder.NewNativeTransfer(args, input)
 	err = tf.(*tx.Tx).AddSignatures([]xc.TxSignature{
 		sig, sig,
 	}...)
 	require.ErrorContains(err, "expected 1 signatures, got 2 signatures")
 
 	// 2 inputs = 2 sigs
-	amount = xc.NewBigIntFromUint64(15000)
+	args.SetAmount(xc.NewBigIntFromUint64(15000))
 	input = &tx_input.TxInput{
 		UnspentOutputs: []tx_input.Output{{
 			Value: xc.NewBigIntFromUint64(10000),
@@ -338,7 +366,7 @@ func (s *CrosschainTestSuite) TestTxAddSignature() {
 			},
 		},
 	}
-	tf, _ = builder.NewNativeTransfer(from, to, amount, input)
+	tf, _ = builder.NewNativeTransfer(args, input)
 	require.Len(tf.(*tx.Tx).Input.UnspentOutputs, 2)
 	err = tf.(*tx.Tx).AddSignatures([]xc.TxSignature{
 		sig, sig,

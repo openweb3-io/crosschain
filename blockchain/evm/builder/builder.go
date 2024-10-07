@@ -90,7 +90,7 @@ func (txBuilder TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc.Tx
 		// TODO this should return error
 		contract := asset.GetContract()
 		zap.S().Warn("new transfer for unknown asset type",
-			zap.String("chain", string(asset.GetChain().Chain)),
+			zap.String("chain", string(txBuilder.Chain.Chain)),
 			zap.String("contract", string(contract)),
 			zap.String("asset_type", fmt.Sprintf("%T", asset)),
 		)
@@ -120,7 +120,7 @@ func (txBuilder TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input 
 	if err != nil {
 		return nil, err
 	}
-	return txBuilder.gethTxBuilder.BuildTxWithPayload(asset.GetChain(), xc.Address(contract), zero, payload, input)
+	return txBuilder.gethTxBuilder.BuildTxWithPayload(txBuilder.Chain, xc.Address(contract), zero, payload, input)
 }
 
 func BuildERC20Payload(to xc.Address, amount xc.BigInt) ([]byte, error) {
