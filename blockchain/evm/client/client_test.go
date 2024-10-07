@@ -165,3 +165,19 @@ func (s *ClientTestSuite) TestFetchBalance() {
 	fmt.Printf("[EVM] contract %v, address: %v, balance: %v\n", contractAddress, addr, balance)
 
 }
+
+func (s *ClientTestSuite) TestFetchTxByHash() {
+	txHash := "0x8300c15f3374176df8096aef9e9cac5a6a01a23dba64b1d88d7e07326dfd7acb"
+	ctx := context.Background()
+
+	client, err := client.NewClient(&xc_types.ChainConfig{
+		ChainID:     int64(chainId),
+		ExplorerURL: "https://sepolia.etherscan.io",
+		URL:         endpoint,
+	})
+	s.Require().NoError(err)
+
+	txInfo, err := client.FetchLegacyTxInfo(ctx, xc_types.TxHash(txHash))
+	s.Require().NoError(err)
+	fmt.Printf("txInfo: %+v\n", txInfo)
+}
