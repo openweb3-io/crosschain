@@ -84,7 +84,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("tx hash: %x\n", tx.Hash())
+	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) aTestTranfserERC20() {
@@ -140,7 +140,7 @@ func (suite *ClientTestSuite) aTestTranfserERC20() {
 	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("tx hash: %x\n", tx.Hash())
+	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) TestFetchBalance() {

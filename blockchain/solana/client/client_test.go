@@ -194,13 +194,14 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
-	contractAddress := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
+	contract := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
+	contractAddress := types.ContractAddress(contract)
 
-	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), nil)
+	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s SOL balance: %v", senderPrivateKey.PublicKey().String(), out)
 
-	out, err = suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()), (*types.Address)(&contractAddress))
+	out, err = suite.client.FetchBalanceForAsset(ctx, types.Address(senderPrivateKey.PublicKey().String()), contractAddress)
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s SPL token balance: %v", senderPrivateKey.PublicKey().String(), out)

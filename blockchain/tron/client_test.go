@@ -143,7 +143,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("trx hash: %x\n", tx.Hash())
+	fmt.Printf("trx hash: %v\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) TestFetchBalance() {
