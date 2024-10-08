@@ -14,6 +14,7 @@ import (
 type IFactory interface {
 	NewClient(cfg *types.ChainConfig) (xc_client.IClient, error)
 	NewTxBuilder(cfg *types.ChainConfig) (builder.TxBuilder, error)
+	NewSigner(cfg *types.ChainConfig, secret string) (*signer.Signer, error)
 }
 
 type Factory struct {
