@@ -3,11 +3,19 @@ package ton
 import (
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/shopspring/decimal"
-	"github.com/tonkeeper/tonapi-go"
+)
+
+type AccountStatus string
+
+const (
+	AccountStatusNonexist AccountStatus = "nonexist"
+	AccountStatusUninit   AccountStatus = "uninit"
+	AccountStatusActive   AccountStatus = "active"
+	AccountStatusFrozen   AccountStatus = "frozen"
 )
 
 type TxInput struct {
-	AccountStatus   tonapi.AccountStatus
+	AccountStatus   AccountStatus
 	Seq             uint32
 	PublicKey       []byte `json:"public_key,omitempty"`
 	Timestamp       int64

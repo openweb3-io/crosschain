@@ -16,6 +16,7 @@ import (
 	evmbuilder "github.com/openweb3-io/crosschain/blockchain/evm/builder"
 	evmclient "github.com/openweb3-io/crosschain/blockchain/evm/client"
 	solanaclient "github.com/openweb3-io/crosschain/blockchain/solana/client"
+	tonclient "github.com/openweb3-io/crosschain/blockchain/ton/client"
 	tronclient "github.com/openweb3-io/crosschain/blockchain/tron"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 
@@ -70,7 +71,7 @@ func init() {
 	})
 
 	RegisterClient(types.BlockchainTon, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
-		return ton.NewClient(cfg)
+		return tonclient.NewClient(cfg)
 	})
 
 	RegisterClient(types.BlockchainTron, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
