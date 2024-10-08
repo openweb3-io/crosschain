@@ -13,6 +13,7 @@ import (
 
 type IFactory interface {
 	NewClient(cfg *types.ChainConfig) (xc_client.IClient, error)
+	NewTxBuilder(cfg *types.ChainConfig) (builder.TxBuilder, error)
 }
 
 type Factory struct {
