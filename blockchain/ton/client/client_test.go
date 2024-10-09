@@ -281,7 +281,7 @@ func (suite *ClientTestSuite) Test_TransferJetton() {
 	amount := readableAmount.ToBlockchain(6)
 	suite.Require().NoError(err)
 
-	jettonBalance, err := suite.client.FetchBalanceForAsset(ctx, xc_types.Address(from.String()), &xc_types.TokenAssetConfig{Contract: contractAddress})
+	jettonBalance, err := suite.client.FetchBalanceForAsset(ctx, xc_types.Address(from.String()), contractAddress)
 	suite.Require().NoError(err, "error FetchBalanceForAsset")
 
 	if jettonBalance.Cmp(&amount) < 0 {
@@ -335,7 +335,7 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s TON balance: %v\n", suite.account1Address.String(), balance)
 
-	balance, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), &xc_types.TokenAssetConfig{Contract: contractAddress})
+	balance, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), contractAddress)
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s jetton balance: %v\n", suite.account1Address.String(), balance)
 }

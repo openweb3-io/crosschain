@@ -360,8 +360,8 @@ func (client *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc
 	return bal, err
 }
 
-func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
-	bal, _, err := client.fetchBalanceAndType(ctx, address, asset.GetContract())
+func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+	bal, _, err := client.fetchBalanceAndType(ctx, address, contractAddress)
 	return bal, err
 }
 

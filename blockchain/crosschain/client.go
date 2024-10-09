@@ -303,9 +303,9 @@ func (client *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc
 }
 
 // FetchBalance fetches token balance from a Crosschain endpoint
-func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
+func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contarctAddress xc.ContractAddress) (*xc.BigInt, error) {
 	res, err := client.legacyApiCall(ctx, "/balance", &types.BalanceReq{
-		AssetReq: client.apiAsset(asset),
+		AssetReq: client.apiAsset(&xc.TokenAssetConfig{Contract: contarctAddress}),
 		Address:  string(address),
 	})
 	if err != nil {

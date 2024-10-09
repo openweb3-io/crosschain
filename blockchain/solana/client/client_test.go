@@ -200,7 +200,7 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s SOL balance: %v", senderPrivateKey.PublicKey().String(), out)
 
-	out, err = suite.client.FetchBalanceForAsset(ctx, types.Address(senderPrivateKey.PublicKey().String()), &types.TokenAssetConfig{Contract: types.ContractAddress(contractAddress)})
+	out, err = suite.client.FetchBalanceForAsset(ctx, types.Address(senderPrivateKey.PublicKey().String()), types.ContractAddress(contractAddress))
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s SPL token balance: %v", senderPrivateKey.PublicKey().String(), out)

@@ -20,7 +20,7 @@ type IClient interface {
 	 */
 	FetchBalance(ctx context.Context, address xc_types.Address) (*xc_types.BigInt, error)
 
-	FetchBalanceForAsset(ctx context.Context, address xc_types.Address, asset xc_types.IAsset) (*xc_types.BigInt, error)
+	FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error)
 
 	/**
 	 * estimate gas

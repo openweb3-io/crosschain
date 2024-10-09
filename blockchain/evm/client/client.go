@@ -327,10 +327,10 @@ func (client *Client) FetchBalance(ctx context.Context, addr xc.Address) (*xc.Bi
 }
 
 // Fetch the balance of the asset that this client is configured for
-func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
+func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
 	// token
 	zero := xc.NewBigIntFromUint64(0)
-	tokenAddress, _ := address.FromHex(xc.Address(asset.GetContract()))
+	tokenAddress, _ := address.FromHex(xc.Address(contractAddress))
 	instance, err := erc20.NewErc20(tokenAddress, client.EthClient)
 	if err != nil {
 		return &zero, err

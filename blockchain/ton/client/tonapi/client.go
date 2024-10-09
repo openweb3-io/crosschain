@@ -219,10 +219,10 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 	return &gas, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_types.Address, asset xc_types.IAsset) (*xc_types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
 	jettonBalance, err := a.Client.GetAccountJettonBalance(ctx, _tonapi.GetAccountJettonBalanceParams{
 		AccountID: string(ownerAddress),
-		JettonID:  string(asset.GetContract()),
+		JettonID:  string(contractAddress),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "GetJettonWallet failed")
