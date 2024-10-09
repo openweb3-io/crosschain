@@ -220,6 +220,9 @@ func (client *Client) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, er
 	return nil, errors.New("need refactored")
 }
 
+/**
+ * @Deprecated
+ */
 func (client *Client) EstimateGas1(ctx context.Context, args *xcbuilder.TransferArgs) (*xc.BigInt, error) {
 	asset, _ := args.GetAsset()
 	if asset == nil {

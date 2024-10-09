@@ -123,8 +123,8 @@ func (client *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc
 	return client.evmClient.FetchBalance(ctx, address)
 }
 
-func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
-	return client.evmClient.FetchBalanceForAsset(ctx, address, asset)
+func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+	return client.evmClient.FetchBalanceForAsset(ctx, address, contractAddress)
 }
 
 func (client *Client) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
