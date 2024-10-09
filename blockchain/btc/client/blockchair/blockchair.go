@@ -141,7 +141,7 @@ func (client *BlockchairClient) FetchBalance(ctx context.Context, address xc.Add
 	return nil, nil
 }
 
-func (client *BlockchairClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+func (client *BlockchairClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
 	return nil, errors.New("not implemented")
 }
 

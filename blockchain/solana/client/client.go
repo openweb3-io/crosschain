@@ -209,10 +209,10 @@ func (a *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc.BigI
 	return &balance, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*types.BigInt, error) {
 	addr := solana.MustPublicKeyFromBase58(string(address))
 
-	mint := solana.MustPublicKeyFromBase58(string(contractAddress))
+	mint := solana.MustPublicKeyFromBase58(string(asset.GetContract()))
 	associated, _, err := solana.FindAssociatedTokenAddress(addr, mint)
 	if err != nil {
 		return nil, err

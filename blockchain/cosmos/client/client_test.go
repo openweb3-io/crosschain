@@ -587,7 +587,7 @@ func TestFetchBalance(t *testing.T) {
 		}
 
 		from := xc.Address(v.address)
-		balance, err := client.FetchBalanceForAsset(context.Background(), from, asset.GetContract())
+		balance, err := client.FetchBalanceForAsset(context.Background(), from, asset)
 
 		if v.err != "" {
 			require.Equal(t, "0", balance.String())

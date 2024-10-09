@@ -85,8 +85,8 @@ func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*x
 	return &balance, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
-	balance, err := a.client.TRC20ContractBalance(string(address), string(contractAddress))
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Address, asset xc_types.IAsset) (*xc_types.BigInt, error) {
+	balance, err := a.client.TRC20ContractBalance(string(address), string(asset.GetContract()))
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type TxInput interface {
 	GetBlockchain() Blockchain
 	TxInputConflicts
@@ -60,4 +62,15 @@ func SameTxInputTypes[T TxInput](as T, inputs ...TxInput) bool {
 		}
 	}
 	return true
+}
+
+type TxInputEnvelope struct {
+	Type    Blockchain      `json:"type"`
+	TxInput json.RawMessage `json:"tx_input"`
+}
+
+func NewTxInputEnvelope(envType Blockchain) *TxInputEnvelope {
+	return &TxInputEnvelope{
+		Type: envType,
+	}
 }

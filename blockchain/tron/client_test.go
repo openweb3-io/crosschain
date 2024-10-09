@@ -159,7 +159,7 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
 
 	contractAddr := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
-	out, err = client.FetchBalanceForAsset(ctx, xc_types.Address(senderPubk), contractAddr)
+	out, err = client.FetchBalanceForAsset(ctx, xc_types.Address(senderPubk), &xc_types.TokenAssetConfig{Contract: contractAddr})
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)

@@ -210,13 +210,13 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 	return &gas, nil
 }
 
-func (client *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
+func (client *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_types.Address, asset xc_types.IAsset) (*xc_types.BigInt, error) {
 	ownerAddr, err := address.ParseAddr(string(ownerAddress))
 	if err != nil {
 		return nil, err
 	}
 
-	jettonAddr, err := address.ParseAddr(string(contractAddress))
+	jettonAddr, err := address.ParseAddr(string(asset.GetContract()))
 	if err != nil {
 		return nil, err
 	}

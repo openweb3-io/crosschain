@@ -290,7 +290,7 @@ func (client *BlockbookClient) FetchBalance(ctx context.Context, address xc.Addr
 	return &amount, nil
 }
 
-func (client *BlockbookClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
+func (client *BlockbookClient) FetchBalanceForAsset(ctx context.Context, address xc.Address, asset xc.IAsset) (*xc.BigInt, error) {
 	return nil, errors.New("not implemented")
 }
 
