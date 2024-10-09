@@ -57,11 +57,15 @@ func NewClient(
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
 	input := new(TxInput)
 
-	// Getting blockhash details from the CreateTransfer endpoint as TRON uses an unusual hashing algorithm (SHA2256SM3), so we can't do a minimal
-	// retrieval and just get the blockheaders
+	asset, _ := args.GetAsset()
+	var err error
+	var tx *tronApi.TransactionExtention
+	if asset != nil {
+		tx, err = client.client.TRC20Send(string(args.GetFrom()), string(args.GetTo()), string(asset.GetContract()), args.GetAmount().Int(), 0)
+	} else {
+		tx, err = client.client.Transfer(string(args.GetFrom()), string(args.GetTo()), args.GetAmount().Int().Int64())
+	}
 
-	tx, err := client.client.Transfer(string(args.GetFrom()), string(args.GetTo()), args.GetAmount().Int().Int64())
-	// dummyTx, err := client.client.CreateTransaction(string(args.GetFrom()), string(args.GetTo()), 5)
 	if err != nil {
 		return nil, err
 	}
