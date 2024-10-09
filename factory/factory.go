@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	remoteclient "github.com/openweb3-io/crosschain/blockchain/crosschain"
 	"github.com/openweb3-io/crosschain/builder"
 	xc_client "github.com/openweb3-io/crosschain/client"
 	"github.com/openweb3-io/crosschain/factory/blockchains"
 	"github.com/openweb3-io/crosschain/factory/signer"
 	"github.com/openweb3-io/crosschain/types"
+	xc "github.com/openweb3-io/crosschain/types"
 )
 
 type IFactory interface {
@@ -32,7 +34,14 @@ func NewDefaultFactory() *Factory {
 }
 
 func (f *Factory) NewClient(cfg *types.ChainConfig) (xc_client.IClient, error) {
-	return blockchains.NewClient(cfg)
+	client := cfg.Client
+
+	switch xc.Blockchain(client.Blockchain) {
+	case xc.BlockchainCrosschain:
+		return remoteclient.NewClient(cfg, client.Auth)
+	default:
+		return blockchains.NewClient(cfg, xc.Blockchain(client.Blockchain))
+	}
 }
 
 func (f *Factory) GetAssetConfig(asset string, nativeAsset types.NativeAsset) (types.IAsset, error) {

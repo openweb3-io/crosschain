@@ -96,6 +96,14 @@ var NativeAssetList []NativeAsset = []NativeAsset{
 	SEI,
 }
 
+type ClientConfig struct {
+	Blockchain Blockchain `yaml:"blockchain"`
+	URL        string     `yaml:"url,omitempty"`
+	Auth       string     `yaml:"auth,omitempty"`
+	Provider   string     `yaml:"provider,omitempty"`
+	Network    string     `yaml:"network,omitempty"`
+}
+
 type StakingConfig struct {
 	// the contract used for staking, if relevant
 	StakeContract string `yaml:"stake_contract,omitempty"`
@@ -110,12 +118,13 @@ func (staking *StakingConfig) Enabled() bool {
 }
 
 type ChainConfig struct {
-	Blockchain       Blockchain  `yaml:"blockchain,omitempty"` // chain
-	Chain            NativeAsset `yaml:"chain,omitempty"`      // chainId
-	ChainCoin        string      `yaml:"chain_coin,omitempty"`
-	ChainPrefix      string      `yaml:"chain_prefix,omitempty"`
-	ChainTransferTax float64     `yaml:"chain_transfer_tax,omitempty"`
-	GasCoin          string      `yaml:"gas_coin,omitempty"`
+	Blockchain       Blockchain    `yaml:"blockchain,omitempty"` // chain
+	Chain            NativeAsset   `yaml:"chain,omitempty"`      // chainId
+	ChainCoin        string        `yaml:"chain_coin,omitempty"`
+	ChainPrefix      string        `yaml:"chain_prefix,omitempty"`
+	ChainTransferTax float64       `yaml:"chain_transfer_tax,omitempty"`
+	GasCoin          string        `yaml:"gas_coin,omitempty"`
+	Client           *ClientConfig `yaml:"client,omitempty"`
 
 	Network              string // network
 	URL                  string

@@ -28,7 +28,7 @@ func (s *BlockchainTestSuite) TestAllNewClient() {
 			continue
 		}
 
-		res, err := blockchains.NewClient(createChainFor(blockchain))
+		res, err := blockchains.NewClient(createChainFor(blockchain), blockchain)
 		require.NoError(err, "Missing blockchain for NewClient: "+blockchain)
 		require.NotNil(res)
 	}

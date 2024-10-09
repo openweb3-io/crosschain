@@ -36,63 +36,63 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/ton"
 	"github.com/openweb3-io/crosschain/blockchain/tron"
 	xc_client "github.com/openweb3-io/crosschain/client"
-	"github.com/openweb3-io/crosschain/types"
+	xc "github.com/openweb3-io/crosschain/types"
 )
 
-type ClientCreator func(cfg *types.ChainConfig) (xc_client.IClient, error)
+type ClientCreator func(cfg *xc.ChainConfig) (xc_client.IClient, error)
 
 var (
-	creatorMap = make(map[types.Blockchain]ClientCreator)
+	creatorMap = make(map[xc.Blockchain]ClientCreator)
 )
 
-func RegisterClient(cfg types.Blockchain, creator ClientCreator) {
+func RegisterClient(cfg xc.Blockchain, creator ClientCreator) {
 	creatorMap[cfg] = creator
 }
 
 func init() {
-	RegisterClient(types.BlockchainBtc, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainBtc, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return btcclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainBtcLegacy, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainBtcLegacy, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return btcclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainBtcCash, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainBtcCash, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return btc_cash.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainCosmos, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainCosmos, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return cosmosclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainCosmosEvmos, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainCosmosEvmos, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return cosmosclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainTon, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainTon, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return tonclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainTron, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainTron, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return tronclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainSolana, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainSolana, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return solanaclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainEVM, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainEVM, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return evmclient.NewClient(cfg)
 	})
 
-	RegisterClient(types.BlockchainEVMLegacy, func(cfg *types.ChainConfig) (xc_client.IClient, error) {
+	RegisterClient(xc.BlockchainEVMLegacy, func(cfg *xc.ChainConfig) (xc_client.IClient, error) {
 		return evm_legacy.NewClient(cfg)
 	})
 }
 
-func NewClient(cfg *types.ChainConfig) (xc_client.IClient, error) {
-	creator, ok := creatorMap[cfg.Blockchain]
+func NewClient(cfg *xc.ChainConfig, blockchain xc.Blockchain) (xc_client.IClient, error) {
+	creator, ok := creatorMap[blockchain]
 	if !ok {
 		return nil, fmt.Errorf("creator %s not found", cfg.Blockchain)
 	}
@@ -100,61 +100,61 @@ func NewClient(cfg *types.ChainConfig) (xc_client.IClient, error) {
 	return creator(cfg)
 }
 
-func NewAddressBuilder(cfg *types.ChainConfig) (types.AddressBuilder, error) {
-	switch types.Blockchain(cfg.Blockchain) {
-	case types.BlockchainEVM:
+func NewAddressBuilder(cfg *xc.ChainConfig) (xc.AddressBuilder, error) {
+	switch xc.Blockchain(cfg.Blockchain) {
+	case xc.BlockchainEVM:
 		return evmaddress.NewAddressBuilder(cfg)
 	//case types.BlockchainEVMLegacy:
 	//	return evm_legacy.NewAddressBuilder(cfg)
-	case types.BlockchainCosmos, types.BlockchainCosmosEvmos:
+	case xc.BlockchainCosmos, xc.BlockchainCosmosEvmos:
 		return cosmosaddress.NewAddressBuilder(cfg)
-	case types.BlockchainSolana:
+	case xc.BlockchainSolana:
 		return solanaaddress.NewAddressBuilder(cfg)
 	//case types.BlockchainAptos:
 	//	return aptos.NewAddressBuilder(cfg)
-	case types.BlockchainBtc, types.BlockchainBtcLegacy:
+	case xc.BlockchainBtc, xc.BlockchainBtcLegacy:
 		return btcaddress.NewAddressBuilder(cfg)
-	case types.BlockchainBtcCash:
+	case xc.BlockchainBtcCash:
 		return btc_cash.NewAddressBuilder(cfg)
 	// case types.BlockchainSui:
 	// 	return sui.NewAddressBuilder(cfg)
 	//case types.BlockchainSubstrate:
 	//	return substrate.NewAddressBuilder(cfg)
-	case types.BlockchainTron:
+	case xc.BlockchainTron:
 		return tron.NewAddressBuilder(cfg)
-	case types.BlockchainTon:
+	case xc.BlockchainTon:
 		return tonaddress.NewAddressBuilder(cfg)
 	}
 	return nil, errors.New("no address builder defined for: " + string(cfg.ID()))
 }
 
-func NewSigner(cfg *types.ChainConfig, secret string) (*signer.Signer, error) {
+func NewSigner(cfg *xc.ChainConfig, secret string) (*signer.Signer, error) {
 	return signer.New(cfg.Blockchain, secret, cfg)
 }
 
-func NewTxBuilder(cfg *types.ChainConfig) (xcbuilder.TxBuilder, error) {
-	switch types.Blockchain(cfg.Blockchain) {
-	case types.BlockchainEVM:
+func NewTxBuilder(cfg *xc.ChainConfig) (xcbuilder.TxBuilder, error) {
+	switch xc.Blockchain(cfg.Blockchain) {
+	case xc.BlockchainEVM:
 		return evmbuilder.NewTxBuilder(cfg)
 	//case BlockchainEVMLegacy:
 	//	return evm_legacy.NewTxBuilder(cfg)
-	case types.BlockchainCosmos, types.BlockchainCosmosEvmos:
+	case xc.BlockchainCosmos, xc.BlockchainCosmosEvmos:
 		return cosmosbuilder.NewTxBuilder(cfg)
-	case types.BlockchainSolana:
+	case xc.BlockchainSolana:
 		return solanabuilder.NewTxBuilder(cfg)
 	//case BlockchainAptos:
 	//	return aptos.NewTxBuilder(cfg)
 	//case BlockchainSui:
 	//	return sui.NewTxBuilder(cfg)
-	case types.BlockchainBtc, types.BlockchainBtcLegacy:
+	case xc.BlockchainBtc, xc.BlockchainBtcLegacy:
 		return btc.NewTxBuilder(cfg)
-	case types.BlockchainBtcCash:
+	case xc.BlockchainBtcCash:
 		return btc_cash.NewTxBuilder(cfg)
 	// case BlockchainSubstrate:
 	//	return substrate.NewTxBuilder(cfg)
-	case types.BlockchainTron:
+	case xc.BlockchainTron:
 		return tron.NewTxBuilder(cfg)
-	case types.BlockchainTon:
+	case xc.BlockchainTon:
 		return ton.NewTxBuilder(cfg)
 	}
 	return nil, errors.New("no tx-builder defined for: " + string(cfg.ID()))
