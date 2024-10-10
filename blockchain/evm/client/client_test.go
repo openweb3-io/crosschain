@@ -41,7 +41,7 @@ func (suite *ClientTestSuite) SetupTest() {
 
 }
 
-func (suite *ClientTestSuite) TestTranfser() {
+func (suite *ClientTestSuite) Test_Tranfser() {
 	ctx := context.Background()
 
 	//testnet Holesky 17000
@@ -87,7 +87,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	fmt.Printf("tx hash: %x\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) aTestTranfserERC20() {
+func (suite *ClientTestSuite) Test_TranfserERC20() {
 	ctx := context.Background()
 	contractAddress := xc_types.ContractAddress("0x779877A7B0D9E8603169DdbD7836e478b4624789")
 
