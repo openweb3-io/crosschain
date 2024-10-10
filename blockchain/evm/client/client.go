@@ -358,7 +358,7 @@ func (client *Client) EstimateGas(ctx context.Context, _tx xc.Tx) (*xc.BigInt, e
 		msg = ethereum.CallMsg{
 			From:  from,
 			To:    tx.EthTx.To(),
-			Value: big.NewInt(tx.Amount().Int().Int64()), // wei
+			Value: tx.Amount().Int(), // wei
 			Data:  nil,
 		}
 	} else {
