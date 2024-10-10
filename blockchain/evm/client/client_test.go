@@ -12,7 +12,6 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/evm/client"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	"github.com/openweb3-io/crosschain/signer"
-	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -54,7 +53,7 @@ func (suite *ClientTestSuite) Test_Tranfser() {
 	})
 	suite.Require().NoError(err)
 
-	// gas := types.NewBigIntFromInt64(21000)
+	// gas := xc_types.NewBigIntFromInt64(21000)
 	args, err := xcbuilder.NewTransferArgs(
 		"0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
 		"0x388C818CA8B9251b393131C08a736A67ccB19297",
@@ -114,7 +113,7 @@ func (suite *ClientTestSuite) Test_TranfserERC20() {
 		"0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8",
 		"0x388C818CA8B9251b393131C08a736A67ccB19297",
 		xc_types.NewBigIntFromInt64(6000),
-		xcbuilder.WithAsset(&types.TokenAssetConfig{
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract: contractAddress,
 			Decimals: 18,
 		}),
@@ -146,14 +145,14 @@ func (suite *ClientTestSuite) Test_TranfserERC20() {
 func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
-	client, err := client.NewClient(&types.ChainConfig{
+	client, err := client.NewClient(&xc_types.ChainConfig{
 		ChainID: int64(chainId),
 		URL:     endpoint,
 	})
 	suite.Require().NoError(err)
 
-	addr := types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
-	contractAddress := types.ContractAddress("0x779877A7B0D9E8603169DdbD7836e478b4624789")
+	addr := xc_types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
+	contractAddress := xc_types.ContractAddress("0x779877A7B0D9E8603169DdbD7836e478b4624789")
 
 	balance, err := client.FetchBalance(ctx, addr)
 	suite.Require().NoError(err)
