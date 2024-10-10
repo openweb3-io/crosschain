@@ -171,7 +171,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	return txInput, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, _tx xc.Tx) (*xc.BigInt, error) {
+func (a *Client) EstimateGasFee(ctx context.Context, _tx xc.Tx) (*xc.BigInt, error) {
 	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 

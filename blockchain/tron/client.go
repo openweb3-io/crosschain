@@ -97,7 +97,7 @@ func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Addr
 	return (*xc_types.BigInt)(balance), nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
+func (a *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
 	_tx := tx.(*Tx)
 
 	bandwithUsage := xc_types.NewBigIntFromInt64(200)

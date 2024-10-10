@@ -227,9 +227,6 @@ func (client *Client) FetchBalanceForAsset(ctx context.Context, ownerAddress xc_
 	}
 
 	jettonCli := jetton.NewJettonMasterClient(client.Client, jettonAddr)
-	if err != nil {
-		return nil, err
-	}
 
 	jettonWallet, err := jettonCli.GetJettonWalletAtBlock(ctx, ownerAddr, b)
 	if err != nil {
@@ -265,7 +262,7 @@ func (client *Client) FetchBalance(ctx context.Context, ownerAddress xc_types.Ad
 	return (*xc_types.BigInt)(balance), nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
+func (a *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
 	if len(tx.GetSignatures()) == 0 {
 		// add a mock sig
 		sighashes, err := tx.Sighashes()

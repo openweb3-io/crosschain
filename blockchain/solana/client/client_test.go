@@ -74,7 +74,7 @@ func (suite *ClientTestSuite) TestTranfser() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	fee, err := suite.client.EstimateGas(ctx, tx)
+	fee, err := suite.client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("estimate SOL gas: %v\n", fee)
 
@@ -120,7 +120,7 @@ func (suite *ClientTestSuite) TestSPLTranfser() {
 	tx, err := builder.NewTokenTransfer(args, input)
 	suite.Require().NoError(err)
 
-	fee, err := suite.client.EstimateGas(ctx, tx)
+	fee, err := suite.client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("estimate SOL gas: %v\n", fee)
 
@@ -168,7 +168,7 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 	tx, err := builder.NewTokenTransfer(args, input)
 	suite.Require().NoError(err)
 
-	fee, err := suite.client.EstimateGas(ctx, tx)
+	fee, err := suite.client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("estimate SOL gas: %v\n", fee)
 

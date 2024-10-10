@@ -216,7 +216,7 @@ func (client *Client) BroadcastTx(ctx context.Context, txInput xc.Tx) error {
 	return err
 }
 
-func (client *Client) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
+func (client *Client) EstimateGasFee(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
 	return nil, errors.New("need refactored")
 }
 

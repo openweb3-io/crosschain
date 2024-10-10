@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -344,7 +343,7 @@ func (client *Client) FetchBalanceForAsset(ctx context.Context, addr xc.Address,
 	return (*xc.BigInt)(balance), nil
 }
 
-func (client *Client) EstimateGas(ctx context.Context, _tx xc.Tx) (*xc.BigInt, error) {
+func (client *Client) EstimateGasFee(ctx context.Context, _tx xc.Tx) (*xc.BigInt, error) {
 	tx := _tx.(*tx.Tx)
 
 	from, err := types.Sender(tx.Signer, tx.EthTx)
@@ -352,34 +351,21 @@ func (client *Client) EstimateGas(ctx context.Context, _tx xc.Tx) (*xc.BigInt, e
 		return nil, err
 	}
 
-	var msg ethereum.CallMsg
-
-	if !tx.IsContract() {
-		msg = ethereum.CallMsg{
-			From:  from,
-			To:    tx.EthTx.To(),
-			Value: tx.Amount().Int(), // wei
-			Data:  nil,
-		}
-	} else {
-		data, err := tx.Serialize()
-		if err != nil {
-			return nil, err
-		}
-
-		msg = ethereum.CallMsg{
-			From:  from,
-			To:    tx.EthTx.To(),
-			Value: big.NewInt(0), // wei
-			Data:  data,
-		}
-	}
-
-	gas, err := client.EthClient.EstimateGas(ctx, msg)
+	gasLimit, err := client.SimulateGasWithLimit(ctx, xc.Address(from.Hex()), tx, &xc.TokenAssetConfig{
+		Contract: tx.ContractAddress(),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	ret := xc.NewBigIntFromUint64(gas)
-	return &ret, nil
+	gasPrice, err := client.EthClient.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	gasCost := new(big.Int).Mul(big.NewInt(int64(gasLimit)), gasPrice)
+
+	retCost := xc.NewBigIntFromStr(gasCost.String())
+
+	return &retCost, nil
 }

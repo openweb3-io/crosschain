@@ -244,7 +244,7 @@ func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*x
 	return &balance, nil
 }
 
-func (a *Client) EstimateGas(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
+func (a *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
 	if len(tx.GetSignatures()) == 0 {
 		// add a mock sig
 		sighashes, err := tx.Sighashes()

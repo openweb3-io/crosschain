@@ -43,7 +43,7 @@ func (tx *Tx) Hash() xc_types.TxHash {
 }
 
 // Sighashes returns the tx payload to sign, aka sighash
-func (tx Tx) Sighashes() ([]xc_types.TxDataToSign, error) {
+func (tx *Tx) Sighashes() ([]xc_types.TxDataToSign, error) {
 	if tx.EthTx == nil {
 		return []xc_types.TxDataToSign{}, errors.New("transaction not initialized")
 	}
@@ -66,12 +66,12 @@ func (tx *Tx) AddSignatures(signatures ...xc_types.TxSignature) error {
 	return nil
 }
 
-func (tx Tx) GetSignatures() []xc_types.TxSignature {
+func (tx *Tx) GetSignatures() []xc_types.TxSignature {
 	return tx.Signatures
 }
 
 // Serialize returns the serialized tx
-func (tx Tx) Serialize() ([]byte, error) {
+func (tx *Tx) Serialize() ([]byte, error) {
 	if tx.EthTx == nil {
 		return []byte{}, errors.New("transaction not initialized")
 	}
@@ -116,7 +116,7 @@ func (tx *Tx) ParseTokenLogs(receipt *types.Receipt, nativeAsset xc_types.Native
 }
 
 // IsContract returns whether a tx is a contract or native transfer
-func (tx Tx) IsContract() bool {
+func (tx *Tx) IsContract() bool {
 	if tx.EthTx == nil {
 		return false
 	}
@@ -128,7 +128,7 @@ func (tx Tx) IsContract() bool {
 }
 
 // From is the sender of a transfer
-func (tx Tx) From() xc_types.Address {
+func (tx *Tx) From() xc_types.Address {
 	if tx.EthTx == nil || tx.Signer == nil {
 		return xc_types.Address("")
 	}
@@ -141,7 +141,7 @@ func (tx Tx) From() xc_types.Address {
 }
 
 // To is the account receiving a transfer
-func (tx Tx) To() xc_types.Address {
+func (tx *Tx) To() xc_types.Address {
 	if tx.EthTx == nil {
 		return xc_types.Address("")
 	}
@@ -162,7 +162,7 @@ func (tx Tx) To() xc_types.Address {
 }
 
 // Amount returns the tx amount
-func (tx Tx) Amount() xc_types.BigInt {
+func (tx *Tx) Amount() xc_types.BigInt {
 	if tx.EthTx == nil {
 		return xc_types.NewBigIntFromUint64(0)
 	}
@@ -177,7 +177,7 @@ func (tx Tx) Amount() xc_types.BigInt {
 }
 
 // ContractAddress returns the contract address for a token transfer
-func (tx Tx) ContractAddress() xc_types.ContractAddress {
+func (tx *Tx) ContractAddress() xc_types.ContractAddress {
 	if tx.IsContract() && tx.EthTx.To() != nil {
 		return xc_types.ContractAddress(tx.EthTx.To().String())
 	}
@@ -185,7 +185,7 @@ func (tx Tx) ContractAddress() xc_types.ContractAddress {
 }
 
 // Fee returns the fee associated to the tx
-func (tx Tx) Fee(baseFeeUint uint64, gasUsedUint uint64) xc_types.BigInt {
+func (tx *Tx) Fee(baseFeeUint uint64, gasUsedUint uint64) xc_types.BigInt {
 	// from Etherscan: (BaseFee + MaxPriority)*GasUsed
 	maxPriority := xc_types.BigInt(*tx.EthTx.GasTipCap())
 	gasUsed := xc_types.NewBigIntFromUint64(gasUsedUint)
@@ -211,7 +211,7 @@ func ensure0x(address string) string {
 }
 
 // ParseERC20TransferTx parses the tx payload as ERC20 transfer
-func (tx Tx) ParseERC20TransferTx(nativeAsset xc_types.NativeAsset) (SourcesAndDests, error) {
+func (tx *Tx) ParseERC20TransferTx(nativeAsset xc_types.NativeAsset) (SourcesAndDests, error) {
 	payload := tx.EthTx.Data()
 	if len(payload) != 4+32*2 || hex.EncodeToString(payload[:4]) != "a9059cbb" {
 		return SourcesAndDests{}, errors.New("payload is not ERC20.transfer(address,uint256)")

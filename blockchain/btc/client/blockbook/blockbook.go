@@ -319,7 +319,7 @@ func (client *BlockbookClient) FetchLegacyTxInput(ctx context.Context, from xc.A
 	return client.FetchTransferInput(ctx, args)
 }
 
-func (client *BlockbookClient) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
+func (client *BlockbookClient) EstimateGasFee(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
 	return nil, nil
 }
 

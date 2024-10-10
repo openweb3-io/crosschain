@@ -61,7 +61,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	gas, err := client.EstimateGas(ctx, tx)
+	gas, err := client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("gas: %v\n", gas)
 
@@ -96,13 +96,12 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	})
 	suite.Require().NoError(err)
 
-	contractAddress := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
-	// gas := types.NewBigIntFromInt64(1)
+	contractAddress := xc_types.ContractAddress("TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3")
 
 	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
 		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
-		xc_types.NewBigIntFromInt64(3),
+		xc_types.NewBigIntFromInt64(1),
 		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract: contractAddress,
 			Decimals: 18,
@@ -119,7 +118,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	calculatedGas, err := client.EstimateGas(ctx, tx)
+	calculatedGas, err := client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("gas: %v\n", calculatedGas)
 
@@ -141,7 +140,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
-	fmt.Printf("trx hash: %x\n", tx.Hash())
+	fmt.Printf("trx hash: %s\n", tx.Hash())
 }
 
 func (suite *ClientTestSuite) TestFetchBalance() {
@@ -163,4 +162,72 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s token balance: %v", senderPubk, out)
+}
+
+func (suite *ClientTestSuite) TestEstimateGasTransfer() {
+	ctx := context.Background()
+
+	client, err := tron.NewClient(&xc_types.ChainConfig{
+		URL:     endpoint,
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(3)
+
+	args, err := xcbuilder.NewTransferArgs(
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
+		amount,
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.NewTransfer(args, input)
+	suite.Require().NoError(err)
+
+	gas, err := client.EstimateGasFee(ctx, tx)
+	suite.Require().NoError(err)
+	fmt.Printf("gas: %v\n", gas)
+}
+
+func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
+	ctx := context.Background()
+
+	client, err := tron.NewClient(&xc_types.ChainConfig{
+		URL:     endpoint,
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	contractAddress := xc_types.ContractAddress("TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3")
+	args, err := xcbuilder.NewTransferArgs(
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
+		xc_types.NewBigIntFromInt64(1),
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
+			Contract: contractAddress,
+			Decimals: 18,
+		}),
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchTransferInput(ctx, args)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.NewTransfer(args, input)
+	suite.Require().NoError(err)
+
+	calculatedGas, err := client.EstimateGasFee(ctx, tx)
+	suite.Require().NoError(err)
+	fmt.Printf("gas: %v\n", calculatedGas)
+
 }

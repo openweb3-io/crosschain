@@ -23,9 +23,9 @@ type IClient interface {
 	FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error)
 
 	/**
-	 * estimate gas
+	 * estimate gas fee
 	 */
-	EstimateGas(ctx context.Context, input xc_types.Tx) (*xc_types.BigInt, error)
+	EstimateGasFee(ctx context.Context, input xc_types.Tx) (*xc_types.BigInt, error)
 
 	/**
 	 * send signed tx

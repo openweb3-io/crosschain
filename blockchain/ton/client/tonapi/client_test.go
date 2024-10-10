@@ -176,7 +176,7 @@ func (suite *ClientTestSuite) Test_EstimateGas() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	amount, err := suite.client.EstimateGas(ctx, tx)
+	amount, err := suite.client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("amount: %v\n", amount)

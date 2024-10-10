@@ -149,7 +149,7 @@ func (client *BlockchairClient) FetchNativeBalance(ctx context.Context, address 
 	return client.FetchBalance(ctx, address)
 }
 
-func (client *BlockchairClient) EstimateGasFee(ctx context.Context, numBlocks int64) (float64, error) {
+func (client *BlockchairClient) EstimateGasFee1(ctx context.Context, numBlocks int64) (float64, error) {
 	var stats blockchairStats
 
 	_, err := client.send(ctx, &stats, "/stats")
@@ -357,11 +357,16 @@ func (client *BlockchairClient) FetchTxInfo(ctx context.Context, txHashStr xc.Tx
 	return xclient.TxInfoFromLegacy(chain, legacyTx, xclient.Utxo), nil
 }
 
+func (client *BlockchairClient) EstimateGasFee(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
+	// TODO
+	return nil, nil
+}
+
 func (client *BlockchairClient) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
 	// estimate using last 1 blocks
 	numBlocks := 1
 	fallbackGasPerByte := xc.NewBigIntFromUint64(10)
-	satsPerByteFloat, err := client.EstimateGasFee(ctx, int64(numBlocks))
+	satsPerByteFloat, err := client.EstimateGasFee1(ctx, int64(numBlocks))
 
 	if err != nil {
 		return &fallbackGasPerByte, err

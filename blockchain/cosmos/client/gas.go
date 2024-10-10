@@ -18,7 +18,7 @@ import (
 	xc "github.com/openweb3-io/crosschain/types"
 )
 
-// EstimateGas estimates gas price for a Cosmos chain
+// EstimateGasPrice estimates gas price for a Cosmos chain
 func (client *Client) EstimateGasPrice(ctx context.Context) (float64, error) {
 	zero := float64(0)
 
@@ -113,7 +113,7 @@ func (client *Client) BuildReferenceTransfer(gasLimit uint64) (*tx.Tx, error) {
 	return tx1.(*tx.Tx), nil
 }
 
-func (client *Client) EstimateGas(ctx context.Context, input xc.Tx) (*xc.BigInt, error) {
+func (client *Client) EstimateGasFee(ctx context.Context, input xc.Tx) (*xc.BigInt, error) {
 	// TODO
 	return nil, nil
 }

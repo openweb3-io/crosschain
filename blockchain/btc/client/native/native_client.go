@@ -464,6 +464,11 @@ func (client *NativeClient) Output(ctx context.Context, outpoint tx_input.Outpoi
 	return output, resp.Confirmations, nil
 }
 
+func (client *NativeClient) EstimateGasFee(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
+	// TODO
+	return nil, nil
+}
+
 func (client *NativeClient) EstimateGas(ctx context.Context, tx xc.Tx) (*xc.BigInt, error) {
 	// estimate using last 1 blocks
 	numBlocks := 1
