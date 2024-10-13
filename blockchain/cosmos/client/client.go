@@ -63,9 +63,11 @@ func ReplaceIncompatiableCosmosResponses(body []byte) []byte {
 func NewClientFrom(chain xc.NativeAsset, chainId string, chainPrefix string, rpcUrl string) (*Client, error) {
 
 	nativeAsset := &xc.ChainConfig{
+		Client: &xc.ClientConfig{
+			URL: rpcUrl,
+		},
 		Chain:       chain,
 		Blockchain:  xc.BlockchainCosmos,
-		URL:         rpcUrl,
 		ChainPrefix: chainPrefix,
 		ChainIDStr:  chainId,
 	}
@@ -74,7 +76,7 @@ func NewClientFrom(chain xc.NativeAsset, chainId string, chainPrefix string, rpc
 
 // NewClient returns a new Client
 func NewClient(cfg *xc.ChainConfig) (*Client, error) {
-	host := cfg.URL
+	host := cfg.Client.URL
 	interceptor := utils.NewHttpInterceptor(ReplaceIncompatiableCosmosResponses)
 	interceptor.Enable()
 
@@ -323,10 +325,10 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (
 	return result, nil
 }
 
-func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {
+func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xclient.TxInfo, error) {
 	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
 	if err != nil {
-		return xclient.TxInfo{}, err
+		return nil, err
 	}
 	chain := client.Chain.Chain
 

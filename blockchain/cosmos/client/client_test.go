@@ -30,7 +30,7 @@ func ignoreError(val []byte, err error) []byte {
 func TestFetchTxInput(t *testing.T) {
 
 	vectors := []struct {
-		asset     xc.ChainConfig
+		cfg       xc.ChainConfig
 		from      string
 		pubKeyStr string
 		to        string
@@ -199,8 +199,10 @@ func TestFetchTxInput(t *testing.T) {
 		server, close := testtypes.MockJSONRPC(t, v.resp)
 		defer close()
 
-		v.asset.URL = server.URL
-		client, _ := client.NewClient(&v.asset)
+		v.cfg.Client = &xc.ClientConfig{
+			URL: server.URL,
+		}
+		client, _ := client.NewClient(&v.cfg)
 		from := xc.Address(v.from)
 		to := xc.Address(v.to)
 		input, err := client.FetchLegacyTxInput(context.Background(), from, to, nil)
@@ -222,7 +224,9 @@ func TestFetchTxInput(t *testing.T) {
 
 func TestSubmitTxErr(t *testing.T) {
 	client, _ := client.NewClient(&xc.ChainConfig{
-		URL: "",
+		Client: &xc.ClientConfig{
+			URL: "",
+		},
 	})
 	tx := &tx.Tx{}
 	err := client.BroadcastTx(context.Background(), tx)
@@ -452,7 +456,10 @@ func TestFetchTxInfo(t *testing.T) {
 			defer close()
 
 			chain := v.chain
-			chain.URL = server.URL
+			chain.Client = &xc.ClientConfig{
+				URL: server.URL,
+			}
+
 			client, _ := client.NewClient(chain)
 			txInfo, err := client.FetchLegacyTxInfo(context.Background(), xc.TxHash(v.tx))
 
@@ -576,7 +583,9 @@ func TestFetchBalance(t *testing.T) {
 		defer close()
 
 		chain := v.chain
-		chain.URL = server.URL
+		chain.Client = &xc.ClientConfig{
+			URL: server.URL,
+		}
 		client, _ := client.NewClient(chain)
 
 		var asset xc.IAsset

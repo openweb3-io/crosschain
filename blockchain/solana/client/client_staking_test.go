@@ -95,7 +95,9 @@ func TestFetchStakingInput(t *testing.T) {
 			server, close := testtypes.MockJSONRPC(t, v.resp)
 			defer close()
 			chainCfg := &xc_types.ChainConfig{
-				URL:      server.URL,
+				Client: &xc_types.ClientConfig{
+					URL: server.URL,
+				},
 				Chain:    "SOL",
 				Decimals: 9,
 			}
@@ -209,7 +211,9 @@ func TestFetchUnstakingInput(t *testing.T) {
 			server, close := testtypes.MockJSONRPC(t, v.resp)
 			defer close()
 			chainCfg := &xc_types.ChainConfig{
-				URL:      server.URL,
+				Client: &xc_types.ClientConfig{
+					URL: server.URL,
+				},
 				Chain:    "SOL",
 				Decimals: 9,
 			}
@@ -300,7 +304,9 @@ func TestFetchWithdrawInput(t *testing.T) {
 			server, close := testtypes.MockJSONRPC(t, v.resp)
 			defer close()
 			chainCfg := &xc_types.ChainConfig{
-				URL:      server.URL,
+				Client: &xc_types.ClientConfig{
+					URL: server.URL,
+				},
 				Chain:    "SOL",
 				Decimals: 9,
 			}

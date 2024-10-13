@@ -31,7 +31,7 @@ var _ xcclient.IClient = &Client{}
 var _ xcclient.StakingClient = &Client{}
 
 func NewClient(cfg *xc.ChainConfig) (*Client, error) {
-	endpoint := cfg.URL
+	endpoint := cfg.Client.URL
 	if endpoint == "" {
 		endpoint = rpc.MainNetBeta_RPC
 	}

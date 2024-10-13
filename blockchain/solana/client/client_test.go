@@ -37,7 +37,9 @@ type ClientTestSuite struct {
 func (suite *ClientTestSuite) SetupTest() {
 	//testnet
 	client, err := client.NewClient(&types.ChainConfig{
-		URL: rpc.TestNet_RPC,
+		Client: &types.ClientConfig{
+			URL: rpc.TestNet_RPC,
+		},
 	})
 	suite.Require().NoError(err)
 	suite.client = client

@@ -88,7 +88,15 @@ func (s *ClientTestSuite) TestFetchTxInput() {
 			`{"result": "0.00007998"}`,
 		}, 200)
 		defer close()
-		cfg := &xc.ChainConfig{Chain: xc.BTC, URL: server.URL, Network: "testnet", Provider: string(client.Blockbook), ChainMinGasPrice: 15}
+		cfg := &xc.ChainConfig{
+			Chain:            xc.BTC,
+			Network:          "testnet",
+			ChainMinGasPrice: 15,
+			Client: &xc.ClientConfig{
+				URL:      server.URL,
+				Provider: string(client.Blockbook),
+			},
+		}
 		client, _ := client.NewClient(cfg)
 
 		from := xc.Address("mpjwFvP88ZwAt3wEHY6irKkGhxcsv22BP6")
@@ -134,7 +142,14 @@ func (s *ClientTestSuite) TestFetchTxInfo() {
 		`{"blockbook":{"coin":"Bitcoin","host":"2387762225de","version":"unknown","gitCommit":"unknown","buildTime":"unknown","syncMode":true,"initialSync":false,"inSync":true,"bestHeight":850578,"lastBlockTime":"2024-07-03T20:18:50.835054532Z","inSyncMempool":true,"lastMempoolTime":"2024-07-03T20:25:42.687082833Z","mempoolSize":55449,"decimals":8,"dbSize":499462256929,"about":"Blockbook - blockchain indexer for Trezor wallet https://trezor.io/. Do not use for any other purpose."},"backend":{"chain":"main","blocks":850578,"headers":850578,"bestBlockHash":"00000000000000000001e3bc7fc4fdf42af1968aa9f1c9d95a3089b0943efa12","difficulty":"83675262295059.91","sizeOnDisk":662338961933,"version":"270100","subversion":"/Satoshi:27.1.0/","protocolVersion":"70016"}}`,
 	}, 200)
 	defer close()
-	asset := &xc.ChainConfig{Chain: xc.BTC, URL: server.URL, Network: "testnet", Provider: string(client.Blockbook)}
+	asset := &xc.ChainConfig{
+		Chain:   xc.BTC,
+		Network: "testnet",
+		Client: &xc.ClientConfig{
+			URL:      server.URL,
+			Provider: string(client.Blockbook),
+		},
+	}
 	client, err := client.NewClient(asset)
 	require.NoError(err)
 	info, err := client.FetchLegacyTxInfo(s.Ctx, xc.TxHash("227178d784150211e8ea5a586ee75bc97655e61f02bc8c07557e475cfecea3cd"))

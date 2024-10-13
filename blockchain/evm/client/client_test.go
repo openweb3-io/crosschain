@@ -48,7 +48,9 @@ func (suite *ClientTestSuite) Test_Tranfser() {
 	client, err := client.NewClient(&xc_types.ChainConfig{
 		// URL: "https://eth-mainnet.public.blastapi.io",
 		ChainID: int64(chainId),
-		URL:     endpoint,
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		// URL: "http://chainproto-admin.chainproto.dev/rpc/ethereum/11155111/testnet",
 	})
 	suite.Require().NoError(err)
@@ -94,7 +96,9 @@ func (suite *ClientTestSuite) Test_TranfserERC20() {
 	//testnet sepolia 11155111
 	client, err := client.NewClient(&xc_types.ChainConfig{
 		ChainID: int64(chainId),
-		URL:     "https://sepolia.infura.io/v3/4538f2b2d74c4f48b1a74de742293c51",
+		Client: &xc_types.ClientConfig{
+			URL: "https://sepolia.infura.io/v3/4538f2b2d74c4f48b1a74de742293c51",
+		},
 	})
 	suite.Require().NoError(err)
 
@@ -147,7 +151,9 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 
 	client, err := client.NewClient(&xc_types.ChainConfig{
 		ChainID: int64(chainId),
-		URL:     endpoint,
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 	})
 	suite.Require().NoError(err)
 

@@ -111,7 +111,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxHash) (
 	return client.evmClient.FetchLegacyTxInfo(ctx, txHash)
 }
 
-func (client *Client) FetchTxInfo(ctx context.Context, txHash xc.TxHash) (xclient.TxInfo, error) {
+func (client *Client) FetchTxInfo(ctx context.Context, txHash xc.TxHash) (*xclient.TxInfo, error) {
 	return client.evmClient.FetchTxInfo(ctx, txHash)
 }
 

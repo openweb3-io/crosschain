@@ -63,14 +63,14 @@ type Client struct {
 var _ xcclient.IClient = &Client{}
 
 func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
-	var url = cfg.URL
+	var url = cfg.Client.URL
 	if url == "" {
 		url = _tonapi.TonApiURL
 	}
 
 	tonApi, err := _tonapi.NewClient(
 		url,
-		_tonapi.WithToken(cfg.AuthSecret),
+		_tonapi.WithToken(cfg.Client.Auth),
 	)
 	if err != nil {
 		return nil, err

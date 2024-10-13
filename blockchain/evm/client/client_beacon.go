@@ -106,7 +106,7 @@ func (cli *Client) Post(path string, requestBody any, response any) error {
 }
 func (cli *Client) Send(method string, path string, requestBody any, response any) error {
 	path = strings.TrimPrefix(path, "/")
-	baseUrl := cli.Chain.URL
+	baseUrl := cli.Chain.Client.URL
 	baseUrl = strings.TrimSuffix(baseUrl, "/")
 
 	url := fmt.Sprintf("%s/%s", baseUrl, path)

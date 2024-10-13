@@ -95,9 +95,9 @@ func NewClient(cfg *xc.ChainConfig) (*Client, error) {
 	httpClient := &http.Client{
 		Transport: interceptor,
 	}
-	c, err := rpc.DialHTTPWithClient(cfg.URL, httpClient)
+	c, err := rpc.DialHTTPWithClient(cfg.Client.URL, httpClient)
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("dialing url: %v", cfg.URL))
+		return nil, fmt.Errorf(fmt.Sprintf("dialing url: %v", cfg.Client.URL))
 	}
 
 	client := ethclient.NewClient(c)
@@ -293,10 +293,10 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHashStr xc.TxHash
 	return result, nil
 }
 
-func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {
+func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xclient.TxInfo, error) {
 	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
 	if err != nil {
-		return xclient.TxInfo{}, err
+		return nil, err
 	}
 	chain := client.Chain.Chain
 

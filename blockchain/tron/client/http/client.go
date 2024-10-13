@@ -1,26 +1,21 @@
-package tron
+package http
 
 import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 	"strings"
 	"time"
 
+	"github.com/openweb3-io/crosschain/blockchain/tron"
+	httpclient "github.com/openweb3-io/crosschain/blockchain/tron/http_client"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 
 	"github.com/btcsuite/btcutil/base58"
-	tronClient "github.com/fbsobreira/gotron-sdk/pkg/client"
-	tronApi "github.com/fbsobreira/gotron-sdk/pkg/proto/api"
-	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	xcclient "github.com/openweb3-io/crosschain/client"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/proto"
 )
 
 var _ xcclient.IClient = &Client{}
@@ -30,22 +25,17 @@ const TX_TIMEOUT = 2 * time.Hour
 
 type Client struct {
 	cfg    *xc_types.ChainConfig
-	client *tronClient.GrpcClient
+	client *httpclient.Client
 }
 
 func NewClient(
 	cfg *xc_types.ChainConfig,
 ) (*Client, error) {
-	endpoint := cfg.URL
+	endpoint := cfg.Client.URL
 
-	if endpoint == "" {
-		endpoint = "grpc.trongrid.io:50051"
-	}
-
-	client := tronClient.NewGrpcClient(endpoint)
-
-	if err := client.Start(grpc.WithTransportCredentials(insecure.NewCredentials())); err != nil {
-		log.Fatalf("error dial rpc, err %v", err)
+	client, err := httpclient.NewHttpClient(endpoint)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Client{
@@ -55,24 +45,16 @@ func NewClient(
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
-	input := new(TxInput)
+	input := new(tron.TxInput)
 
-	asset, _ := args.GetAsset()
-	var err error
-	var tx *tronApi.TransactionExtention
-	if asset != nil {
-		tx, err = client.client.TRC20Send(string(args.GetFrom()), string(args.GetTo()), string(asset.GetContract()), args.GetAmount().Int(), 0)
-	} else {
-		tx, err = client.client.Transfer(string(args.GetFrom()), string(args.GetTo()), args.GetAmount().Int().Int64())
-	}
+	dummyTx, err := client.client.CreateTransaction(ctx, string(args.GetFrom()), string(args.GetTo()), int(args.GetAmount().Int().Int64()))
 
 	if err != nil {
 		return nil, err
 	}
-	dummyTx := tx.Transaction
 
 	input.RefBlockBytes = dummyTx.RawData.RefBlockBytes
-	input.RefBlockHash = dummyTx.RawData.RefBlockHash
+	input.RefBlockHash = dummyTx.RawData.RefBlockHashBytes
 	// set timeout period
 	input.Timestamp = time.Now().Unix()
 	input.Expiration = time.Now().Add(TX_TIMEOUT).Unix()
@@ -80,80 +62,20 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	return input, nil
 }
 
-func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*xc_types.BigInt, error) {
-	account, err := a.client.GetAccount(string(address))
-	if err != nil {
-		return nil, err
-	}
-	balance := xc_types.NewBigIntFromInt64(account.Balance)
-	return &balance, nil
+func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address, asset xc_types.IAsset) (xc_types.TxInput, error) {
+	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
+	args, _ := xcbuilder.NewTransferArgs(from, to, xc_types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
+	return client.FetchTransferInput(ctx, args)
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
-	balance, err := a.client.TRC20ContractBalance(string(address), string(contractAddress))
+func (client *Client) BroadcastTx(ctx context.Context, _tx xc_types.Tx) error {
+	tx := _tx.(*tron.Tx)
+	bz, err := tx.Serialize()
 	if err != nil {
-		return nil, err
-	}
-	return (*xc_types.BigInt)(balance), nil
-}
-
-func (a *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
-	_tx := tx.(*Tx)
-
-	bandwithUsage := xc_types.NewBigIntFromInt64(200)
-	/*
-		if txInput.Gas != nil {
-			bandwithUsage = *txInput.Gas
-		}
-	*/
-
-	params, err := a.client.Client.GetChainParameters(ctx, &tronApi.EmptyMessage{})
-	if err != nil {
-		return nil, errors.Wrap(err, "get chain params")
+		return err
 	}
 
-	var transactionFee xc_types.BigInt
-	var energyFee xc_types.BigInt
-
-	for _, v := range params.ChainParameter {
-		if v.Key == "getTransactionFee" {
-			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
-		}
-		if v.Key == "getEnergyFee" {
-			energyFee = xc_types.NewBigIntFromInt64(v.Value)
-		}
-	}
-
-	asset, _ := _tx.args.GetAsset()
-	if asset == nil || asset.GetContract() == "" {
-		//普通trx转账只需要带宽
-		totalCost := (&transactionFee).Mul(&bandwithUsage)
-		return &totalCost, nil
-	} else {
-		estimate, err := a.client.EstimateEnergy(
-			string(_tx.args.GetFrom()),
-			string(asset.GetContract()),
-			"transfer(address,uint256)",
-			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, _tx.args.GetTo(), _tx.args.GetAmount()),
-			0, "", 0,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
-		bandwidthCost := transactionFee.Mul(&bandwithUsage)
-		energyCost := energyFee.Add(&energyUsage)
-		totalCost := bandwidthCost.Add(&energyCost)
-
-		return &totalCost, nil
-	}
-
-}
-
-func (a *Client) BroadcastTx(ctx context.Context, _tx xc_types.Tx) error {
-	tx := _tx.(*Tx)
-	if _, err := a.client.Broadcast(tx.tronTx); err != nil {
+	if _, err := client.client.BroadcastHex(ctx, hex.EncodeToString(bz)); err != nil {
 		return err
 	}
 
@@ -161,17 +83,17 @@ func (a *Client) BroadcastTx(ctx context.Context, _tx xc_types.Tx) error {
 }
 
 func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxHash) (*xc_types.LegacyTxInfo, error) {
-	tx, err := client.client.GetTransactionByID(string(txHash))
+	tx, err := client.client.GetTransactionByID(ctx, string(txHash))
 	if err != nil {
 		return nil, err
 	}
 
-	info, err := client.client.GetTransactionInfoByID(string(txHash))
+	info, err := client.client.GetTransactionInfoByID(ctx, string(txHash))
 	if err != nil {
 		return nil, err
 	}
 
-	block, err := client.client.GetBlockByNum(info.BlockNumber)
+	block, err := client.client.GetBlockByNum(ctx, info.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +101,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 	var from xc_types.Address
 	var to xc_types.Address
 	var amount xc_types.BigInt
-	sources, destinations := deserialiseTransactionEvents(info.Log)
+	sources, destinations := deserialiseTransactionEvents(info.Logs)
 	// If we cannot retrieve transaction events, we can infer that the TX is a native transfer
 	if len(sources) == 0 && len(destinations) == 0 {
 		from, to, amount, err = deserialiseNativeTransfer(tx)
@@ -203,8 +125,8 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 		destinations = append(destinations, destination)
 	}
 
-	return &xc_types.LegacyTxInfo{
-		BlockHash:       string(block.Blockid),
+	txInfo := &xc_types.LegacyTxInfo{
+		BlockHash:       block.BlockId,
 		TxID:            string(txHash),
 		ExplorerURL:     client.cfg.ExplorerURL + fmt.Sprintf("/transaction/%s", string(txHash)),
 		From:            from,
@@ -221,10 +143,93 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 		Time:            int64(info.BlockTimeStamp),
 		TimeReceived:    0,
 		Error:           "",
-	}, nil
+	}
+
+	return txInfo, nil
 }
 
-func deserialiseTransactionEvents(log []*core.TransactionInfo_Log) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint) {
+func (client *Client) FetchTxInfo(ctx context.Context, txHashStr xc_types.TxHash) (*xcclient.TxInfo, error) {
+	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// remap to new tx
+	return xcclient.TxInfoFromLegacy(client.cfg.Chain, legacyTx, xcclient.Account), nil
+}
+
+func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*xc_types.BigInt, error) {
+	account, err := a.client.GetAccount(ctx, string(address))
+	if err != nil {
+		return nil, err
+	}
+	balance := xc_types.NewBigIntFromUint64(account.Balance)
+	return &balance, nil
+}
+
+func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc_types.Address, contractAddress xc_types.ContractAddress) (*xc_types.BigInt, error) {
+	a, err := client.client.ReadTrc20Balance(ctx, string(address), string(contractAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	return (*xc_types.BigInt)(a), nil
+}
+
+func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
+	_tx := tx.(*tron.Tx)
+
+	bandwithUsage := xc_types.NewBigIntFromInt64(200)
+
+	asset, _ := _tx.Args.GetAsset()
+
+	params, err := client.client.GetChainParameters(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get chain params")
+	}
+
+	var transactionFee xc_types.BigInt
+	// var energyFee xc_types.BigInt
+
+	for _, v := range params.ChainParameter {
+		if v.Key == "getTransactionFee" {
+			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
+		} else if v.Key == "getEnergyFee" {
+			// energyFee = xc_types.NewBigIntFromInt64(v.Value)
+		}
+	}
+
+	if asset == nil || asset.GetContract() == "" {
+		totalCost := (&transactionFee).Mul(&bandwithUsage)
+		return &totalCost, nil
+	} else {
+		estimate, err := client.client.TriggerConstantContracts(
+			ctx,
+			string(_tx.Args.GetFrom()),
+			string(asset.GetContract()),
+			"transfer(address,uint256)",
+			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, _tx.Args.GetTo(), _tx.Args.GetAmount()),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range estimate.ConstantResult {
+			fmt.Printf("a: %s\n", string([]byte(r)))
+		}
+
+		/*
+			energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
+			bandwidthCost := transactionFee.Mul(&bandwithUsage)
+			energyCost := energyFee.Add(&energyUsage)
+			totalCost := bandwidthCost.Add(&energyCost)
+			return &totalCost, nil
+		*/
+		return nil, nil
+	}
+}
+
+func deserialiseTransactionEvents(log []*httpclient.Log) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint) {
 	sources := make([]*xc_types.LegacyTxInfoEndpoint, 0)
 	destinations := make([]*xc_types.LegacyTxInfoEndpoint, 0)
 
@@ -262,32 +267,24 @@ func deserialiseTransactionEvents(log []*core.TransactionInfo_Log) ([]*xc_types.
 	return sources, destinations
 }
 
-func deserialiseNativeTransfer(tx *core.Transaction) (xc_types.Address, xc_types.Address, xc_types.BigInt, error) {
+func deserialiseNativeTransfer(tx *httpclient.GetTransactionIDResponse) (xc_types.Address, xc_types.Address, xc_types.BigInt, error) {
 	if len(tx.RawData.Contract) != 1 {
 		return "", "", xc_types.BigInt{}, fmt.Errorf("unsupported transaction")
 	}
 
 	contract := tx.RawData.Contract[0]
 
-	if contract.Type != core.Transaction_Contract_TransferContract {
+	if contract.Type != "TransferContract" {
 		return "", "", xc_types.BigInt{}, fmt.Errorf("unsupported transaction")
 	}
-
-	transferContract := &core.TransferContract{}
-	err := proto.Unmarshal(contract.Parameter.Value, transferContract)
+	transferContract, err := contract.AsTransferContract()
 	if err != nil {
 		return "", "", xc_types.BigInt{}, fmt.Errorf("invalid transfer-contract: %v", err)
 	}
 
-	from := xc_types.Address(transferContract.OwnerAddress)
-	to := xc_types.Address(transferContract.ToAddress)
+	from := xc_types.Address(transferContract.Owner)
+	to := xc_types.Address(transferContract.To)
 	amount := transferContract.Amount
 
 	return from, to, xc_types.NewBigIntFromUint64(uint64(amount)), nil
-}
-
-func (client *Client) FetchLegacyTxInput(ctx context.Context, from xc_types.Address, to xc_types.Address, asset xc_types.IAsset) (xc_types.TxInput, error) {
-	// No way to pass the amount in the input using legacy interface, so we estimate using min amount.
-	args, _ := xcbuilder.NewTransferArgs(from, to, xc_types.NewBigIntFromUint64(1), xcbuilder.WithAsset(asset))
-	return client.FetchTransferInput(ctx, args)
 }

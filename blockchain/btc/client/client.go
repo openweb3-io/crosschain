@@ -30,11 +30,11 @@ func NewClient(cfg *xc.ChainConfig) (BtcClient, error) {
 	return cli.WithAddressDecoder(&address.BtcAddressDecoder{}).(BtcClient), nil
 }
 func NewBitcoinClient(cfg *xc.ChainConfig) (BtcClient, error) {
-	if strings.Contains(cfg.URL, "api.blockchair.com") {
+	if strings.Contains(cfg.Client.URL, "api.blockchair.com") {
 		return blockchair.NewBlockchairClient(cfg)
 	}
 
-	switch BitcoinClient(cfg.Provider) {
+	switch BitcoinClient(cfg.Client.Provider) {
 	case Native:
 		return native.NewNativeClient(cfg)
 	case Blockchair:

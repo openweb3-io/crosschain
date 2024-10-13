@@ -20,7 +20,7 @@ type Blockchain string
 
 // List of supported Blockchain
 const (
-	BlockchainAptos       = Blockchain("aptos")
+	// BlockchainAptos       = Blockchain("aptos")
 	BlockchainBtc         = Blockchain("btc")
 	BlockchainBtcCash     = Blockchain("btc-cash")
 	BlockchainBtcLegacy   = Blockchain("btc-legacy")
@@ -28,17 +28,17 @@ const (
 	BlockchainCosmosEvmos = Blockchain("evmos")
 	BlockchainEVM         = Blockchain("evm")
 	BlockchainEVMLegacy   = Blockchain("evm-legacy")
-	BlockchainSubstrate   = Blockchain("substrate")
-	BlockchainSolana      = Blockchain("solana")
-	BlockchainSui         = Blockchain("sui")
-	BlockchainTron        = Blockchain("tron")
-	BlockchainTon         = Blockchain("ton")
+	// BlockchainSubstrate   = Blockchain("substrate")
+	BlockchainSolana = Blockchain("solana")
+	// BlockchainSui         = Blockchain("sui")
+	BlockchainTron = Blockchain("tron")
+	BlockchainTon  = Blockchain("ton")
 	// Crosschain is a client-only blockchain
 	BlockchainCrosschain = Blockchain("crosschain")
 )
 
 var SupportedBlockchains = []Blockchain{
-	BlockchainAptos,
+	// BlockchainAptos,
 	BlockchainBtc,
 	BlockchainBtc,
 	BlockchainBtcLegacy,
@@ -46,9 +46,9 @@ var SupportedBlockchains = []Blockchain{
 	BlockchainCosmosEvmos,
 	BlockchainEVM,
 	BlockchainEVMLegacy,
-	BlockchainSubstrate,
+	// BlockchainSubstrate,
 	BlockchainSolana,
-	BlockchainSui,
+	// BlockchainSui,
 	BlockchainTron,
 	BlockchainTon,
 }
@@ -115,16 +115,16 @@ func (native NativeAsset) Blockchain() Blockchain {
 		return BlockchainEVM
 	case BNB, FTM, ETC, EmROSE, AurETH, ACA, KAR, KLAY, OAS, CHZ, XDC, CHZ2:
 		return BlockchainEVMLegacy
-	case APTOS:
-		return BlockchainAptos
+	// case APTOS:
+	//		return BlockchainAptos
 	case ATOM, XPLA, INJ, HASH, LUNC, LUNA, SEI, TIA:
 		return BlockchainCosmos
-	case SUI:
-		return BlockchainSui
+	//case SUI:
+	//	return BlockchainSui
 	case SOL:
 		return BlockchainSolana
-	case DOT, TAO, KSM:
-		return BlockchainSubstrate
+	// case DOT, TAO, KSM:
+	//	return BlockchainSubstrate
 	case TRX:
 		return BlockchainTron
 	case TON:
@@ -139,7 +139,7 @@ func (blockchain Blockchain) SignatureAlgorithm() SignatureType {
 		return K256Sha256
 	case BlockchainEVM, BlockchainEVMLegacy, BlockchainCosmos, BlockchainCosmosEvmos, BlockchainTron:
 		return K256Keccak
-	case BlockchainAptos, BlockchainSolana, BlockchainSui, BlockchainTon, BlockchainSubstrate:
+	case /*BlockchainAptos,*/ BlockchainSolana /*BlockchainSui,*/, BlockchainTon /*, BlockchainSubstrate*/ :
 		return Ed255
 	}
 	return ""
@@ -159,7 +159,7 @@ func (blockchain Blockchain) PublicKeyFormat() PublicKeyFormat {
 		return Compressed
 	case BlockchainEVM, BlockchainEVMLegacy, BlockchainTron:
 		return Uncompressed
-	case BlockchainAptos, BlockchainSolana, BlockchainSui, BlockchainTon, BlockchainSubstrate:
+	case /*BlockchainAptos, */ BlockchainSolana /*BlockchainSui, */, BlockchainTon /*, BlockchainSubstrate*/ :
 		return Raw
 	}
 	return ""

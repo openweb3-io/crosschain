@@ -1,4 +1,4 @@
-package tron_test
+package http_test
 
 import (
 	"context"
@@ -9,13 +9,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/openweb3-io/crosschain/blockchain/tron"
+	tron_http "github.com/openweb3-io/crosschain/blockchain/tron/client/http"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	endpoint = "grpc.nile.trongrid.io:50051"
+	// endpoint = "grpc.nile.trongrid.io:50051"
+	endpoint = "https://go.getblock.io/4e19dacf44974a3d8e40031ef8aca8b8"
 	chainId  = big.NewInt(1001)
 
 	// senderPubk  = "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
@@ -37,8 +39,10 @@ func (suite *ClientTestSuite) TestTransfer() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&xc_types.ChainConfig{
-		URL:     endpoint,
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
@@ -90,8 +94,10 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	ctx := context.Background()
 
 	//testnet
-	client, err := tron.NewClient(&xc_types.ChainConfig{
-		URL:     endpoint,
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
@@ -143,32 +149,37 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	fmt.Printf("trx hash: %s\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) TestFetchBalance() {
+func (suite *ClientTestSuite) Test_FetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
-	client, err := tron.NewClient(&xc_types.ChainConfig{
-		URL:     endpoint,
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
 
 	out, err := client.FetchBalance(ctx, xc_types.Address(senderPubk))
 	suite.Require().NoError(err)
-	fmt.Printf("\n %s TRX balance: %v", senderPubk, out)
+	fmt.Printf("sender: %s TRX balance: %v\n", senderPubk, out)
 
-	contractAddr := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	// contractAddr := xc_types.ContractAddress("TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn")
+	contractAddr := xc_types.ContractAddress("TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj")
 	out, err = client.FetchBalanceForAsset(ctx, xc_types.Address(senderPubk), contractAddr)
 	suite.Require().NoError(err)
 
-	fmt.Printf("\n %s token balance: %v", senderPubk, out)
+	fmt.Printf("sender: %s token balance: %v\n", senderPubk, out)
 }
 
-func (suite *ClientTestSuite) TestEstimateGasTransfer() {
+func (suite *ClientTestSuite) Test_EstimateGasTransfer() {
 	ctx := context.Background()
 
-	client, err := tron.NewClient(&xc_types.ChainConfig{
-		URL:     endpoint,
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
@@ -199,8 +210,10 @@ func (suite *ClientTestSuite) TestEstimateGasTransfer() {
 func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
 	ctx := context.Background()
 
-	client, err := tron.NewClient(&xc_types.ChainConfig{
-		URL:     endpoint,
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
 		ChainID: chainId.Int64(),
 	})
 	suite.Require().NoError(err)
@@ -229,5 +242,4 @@ func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
 	calculatedGas, err := client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("gas: %v\n", calculatedGas)
-
 }

@@ -75,8 +75,8 @@ func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.
 	}
 
 	return &Tx{
-		tronTx: tx,
-		args:   args,
+		TronTx: tx,
+		Args:   args,
 	}, nil
 }
 
@@ -167,8 +167,8 @@ func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.T
 	}
 
 	return &Tx{
-		tronTx: tx,
-		args:   args,
+		TronTx: tx,
+		Args:   args,
 	}, nil
 }
 

@@ -281,7 +281,7 @@ type LegacyTxInfoMappingType string
 var Utxo LegacyTxInfoMappingType = "utxo"
 var Account LegacyTxInfoMappingType = "account"
 
-func TxInfoFromLegacy(chain xc_types.NativeAsset, legacyTx *xc_types.LegacyTxInfo, mappingType LegacyTxInfoMappingType) TxInfo {
+func TxInfoFromLegacy(chain xc_types.NativeAsset, legacyTx *xc_types.LegacyTxInfo, mappingType LegacyTxInfoMappingType) *TxInfo {
 	var errMsg *string
 	if legacyTx.Status == xc_types.TxStatusFailure {
 		msg := "transaction failed"
@@ -338,5 +338,5 @@ func TxInfoFromLegacy(chain xc_types.NativeAsset, legacyTx *xc_types.LegacyTxInf
 			zap.S().Warn("unknown stake event type: " + fmt.Sprintf("%T", ev))
 		}
 	}
-	return *txInfo
+	return txInfo
 }

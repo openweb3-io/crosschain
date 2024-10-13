@@ -12,22 +12,22 @@ import (
 )
 
 type Tx struct {
-	tronTx *core.Transaction
-	args   *xcbuilder.TransferArgs
+	TronTx *core.Transaction
+	Args   *xcbuilder.TransferArgs
 }
 
 func (tx *Tx) Serialize() ([]byte, error) {
-	return proto.Marshal(tx.tronTx)
+	return proto.Marshal(tx.TronTx)
 }
 
 func (tx *Tx) Hash() types.TxHash {
-	hashBase, _ := proto.Marshal(tx.tronTx.RawData)
+	hashBase, _ := proto.Marshal(tx.TronTx.RawData)
 	digest := sha256.Sum256(hashBase)
 	return types.TxHash(hex.EncodeToString(digest[:]))
 }
 
 func (tx Tx) Sighashes() ([]types.TxDataToSign, error) {
-	rawData, err := proto.Marshal(tx.tronTx.GetRawData())
+	rawData, err := proto.Marshal(tx.TronTx.GetRawData())
 	if err != nil {
 		return nil, errors.New("unable to get raw data")
 	}
@@ -39,15 +39,15 @@ func (tx Tx) Sighashes() ([]types.TxDataToSign, error) {
 
 func (tx *Tx) AddSignatures(sigs ...types.TxSignature) error {
 	for _, sig := range sigs {
-		tx.tronTx.Signature = append(tx.tronTx.Signature, sig)
+		tx.TronTx.Signature = append(tx.TronTx.Signature, sig)
 	}
 	return nil
 }
 
 func (tx *Tx) GetSignatures() []types.TxSignature {
 	sigs := []types.TxSignature{}
-	if tx.tronTx != nil {
-		for _, sig := range tx.tronTx.Signature {
+	if tx.TronTx != nil {
+		for _, sig := range tx.TronTx.Signature {
 			sigs = append(sigs, sig)
 		}
 	}

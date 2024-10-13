@@ -98,7 +98,9 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.account2Signer = ton.NewLocalSigner(account2PrivKey)
 
 	suite.client, err = client.NewClient(&xc_types.ChainConfig{
-		AuthSecret: AuthSecret,
+		Client: &xc_types.ClientConfig{
+			Auth: AuthSecret,
+		},
 	})
 	suite.Require().NoError(err)
 }

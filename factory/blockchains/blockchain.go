@@ -17,7 +17,7 @@ import (
 	evmclient "github.com/openweb3-io/crosschain/blockchain/evm/client"
 	solanaclient "github.com/openweb3-io/crosschain/blockchain/solana/client"
 	tonclient "github.com/openweb3-io/crosschain/blockchain/ton/client"
-	tronclient "github.com/openweb3-io/crosschain/blockchain/tron"
+	tronclient "github.com/openweb3-io/crosschain/blockchain/tron/client"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 
 	btcaddress "github.com/openweb3-io/crosschain/blockchain/btc/address"

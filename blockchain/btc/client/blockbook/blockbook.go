@@ -44,7 +44,7 @@ func NewClient(cfg *xc.ChainConfig) (*BlockbookClient, error) {
 	if err != nil {
 		return &BlockbookClient{}, err
 	}
-	url := cfg.URL
+	url := cfg.Client.URL
 	url = strings.TrimSuffix(url, "/")
 	decoder := address.NewAddressDecoder()
 
@@ -260,10 +260,10 @@ func (client *BlockbookClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.
 	return txWithInfo, nil
 }
 
-func (client *BlockbookClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {
+func (client *BlockbookClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xclient.TxInfo, error) {
 	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
 	if err != nil {
-		return xclient.TxInfo{}, err
+		return nil, err
 	}
 	chain := client.cfg.Chain
 

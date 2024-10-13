@@ -39,7 +39,7 @@ const ServiceApiKeyHeader = "x-service-api-key"
 
 // NewClient returns a new Crosschain Client
 func NewClient(cfg *xc.ChainConfig, apiKey string) (*Client, error) {
-	url := cfg.URL
+	url := cfg.Client.URL
 	url = strings.TrimSuffix(url, "/")
 	network := cfg.Network
 

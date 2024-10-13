@@ -97,7 +97,9 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.account2Signer = ton.NewLocalSigner(account2PrivKey)
 
 	client, err := tonapi_client.NewClient(&xc_types.ChainConfig{
-		AuthSecret: AuthSecret,
+		Client: &xc_types.ClientConfig{
+			Auth: AuthSecret,
+		},
 	})
 	suite.Require().NoError(err)
 	suite.client = client

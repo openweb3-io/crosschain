@@ -110,11 +110,13 @@ func Normalize(address string, nativeAsset xc_types.NativeAsset) string {
 		if strings.Contains(address, ":") {
 			address = strings.Split(address, ":")[1]
 		}
-	case xc_types.BlockchainAptos, xc_types.BlockchainSui:
-		address = NormalizeMoveAddress(address)
-		if options.NoPrefix {
-			address = strings.TrimPrefix(address, "0x")
-		}
+	/*
+		case xc_types.BlockchainAptos, xc_types.BlockchainSui:
+			address = NormalizeMoveAddress(address)
+			if options.NoPrefix {
+				address = strings.TrimPrefix(address, "0x")
+			}
+	*/
 	case xc_types.BlockchainCosmos:
 		// nothing to do, bech32
 
@@ -156,14 +158,14 @@ func TransactionHash(hash string, nativeAsset xc_types.NativeAsset) string {
 	case xc_types.BlockchainBtcCash, xc_types.BlockchainBtc:
 		hash = strings.TrimPrefix(hash, "0x")
 		hash = strings.ToLower(hash)
-
-	case xc_types.BlockchainAptos, xc_types.BlockchainSui:
-		if blockchain == xc_types.BlockchainSui {
-			// Sui transaction hashes are not hex
-			return hash
-		}
-		hash = NormalizeMoveAddress(hash)
-
+	/*
+		case xc_types.BlockchainAptos, xc_types.BlockchainSui:
+			if blockchain == xc_types.BlockchainSui {
+				// Sui transaction hashes are not hex
+				return hash
+			}
+			hash = NormalizeMoveAddress(hash)
+	*/
 	case xc_types.BlockchainCosmos:
 		// cosmos hash tx do not prefix 0x, so we always remove.
 		hash = strings.TrimPrefix(hash, "0x")

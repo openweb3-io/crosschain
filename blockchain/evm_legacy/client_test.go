@@ -68,7 +68,14 @@ func TestFetchTxInput(t *testing.T) {
 		fmt.Println("testing ", v.name)
 		server, close := testtypes.MockJSONRPC(t, v.resp)
 		defer close()
-		cfg := &xc.ChainConfig{Chain: xc.ETH, Blockchain: xc.BlockchainEVMLegacy, URL: server.URL, ChainGasMultiplier: v.multiplier}
+		cfg := &xc.ChainConfig{
+			Client: &xc.ClientConfig{
+				URL: server.URL,
+			},
+			Chain:              xc.ETH,
+			Blockchain:         xc.BlockchainEVMLegacy,
+			ChainGasMultiplier: v.multiplier,
+		}
 		client, err := evm_legacy.NewClient(cfg)
 		require.NoError(t, err)
 		input, err := client.FetchLegacyTxInput(context.Background(), xc.Address(""), xc.Address(""), nil)

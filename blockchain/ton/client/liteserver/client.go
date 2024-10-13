@@ -38,7 +38,7 @@ type Client struct {
 var _ xcclient.IClient = &Client{}
 
 func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
-	var url = cfg.URL
+	var url = cfg.Client.URL
 	if url == "" {
 		url = "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
 	}

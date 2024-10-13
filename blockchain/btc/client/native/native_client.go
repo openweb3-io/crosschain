@@ -84,7 +84,7 @@ func NewNativeClient(cfg *xc.ChainConfig) (*NativeClient, error) {
 	opts := DefaultClientOptions()
 	httpClient := http.Client{}
 	httpClient.Timeout = opts.Timeout
-	opts.Host = native.URL
+	opts.Host = native.Client.URL
 	params, err := params.GetParams(native)
 	if err != nil {
 		return &NativeClient{}, err
@@ -257,10 +257,10 @@ func (client *NativeClient) FetchLegacyTxInfo(ctx context.Context, txHash xc.TxH
 	}, nil
 }
 
-func (client *NativeClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {
+func (client *NativeClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xclient.TxInfo, error) {
 	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
 	if err != nil {
-		return xclient.TxInfo{}, err
+		return nil, err
 	}
 	chain := client.Chain.Chain
 	// delete the fee to avoid double counting.

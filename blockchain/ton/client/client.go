@@ -17,7 +17,7 @@ type TonClient interface {
 }
 
 func NewClient(cfg *xc.ChainConfig) (TonClient, error) {
-	switch TonApiProvider(cfg.Provider) {
+	switch TonApiProvider(cfg.Client.Provider) {
 	case TonApi:
 		return tonapi.NewClient(cfg)
 	case LiteServer:

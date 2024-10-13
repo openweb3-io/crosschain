@@ -46,12 +46,12 @@ func NewBlockchairClient(cfg *xc.ChainConfig) (*BlockchairClient, error) {
 		return &BlockchairClient{}, err
 	}
 
-	if strings.TrimSpace(cfg.AuthSecret) == "" {
+	if strings.TrimSpace(cfg.Client.Auth) == "" {
 		return &BlockchairClient{}, fmt.Errorf("api token required for blockchair blockchain client (set .auth reference)")
 	}
 	return &BlockchairClient{
-		ApiKey:         cfg.AuthSecret,
-		Url:            cfg.URL,
+		ApiKey:         cfg.Client.Auth,
+		Url:            cfg.Client.URL,
 		Chaincfg:       params,
 		httpClient:     httpClient,
 		Chain:          cfg,
@@ -339,10 +339,10 @@ func (client *BlockchairClient) FetchLegacyTxInfo(ctx context.Context, txHash xc
 	return txWithInfo, nil
 }
 
-func (client *BlockchairClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (xclient.TxInfo, error) {
+func (client *BlockchairClient) FetchTxInfo(ctx context.Context, txHashStr xc.TxHash) (*xclient.TxInfo, error) {
 	legacyTx, err := client.FetchLegacyTxInfo(ctx, txHashStr)
 	if err != nil {
-		return xclient.TxInfo{}, err
+		return nil, err
 	}
 	chain := client.Chain.Chain
 

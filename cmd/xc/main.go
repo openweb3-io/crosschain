@@ -32,7 +32,7 @@ func main() {
 
 			ctx := setup.CreateContext(xcFactory, chainConfig)
 			logrus.WithFields(logrus.Fields{
-				"rpc": chainConfig.URL,
+				"rpc": chainConfig.Client.URL,
 				// "network": chainConfig.Network,
 				"chain": chainConfig.Chain,
 			}).Info("chain")
