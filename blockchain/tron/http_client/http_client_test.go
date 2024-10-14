@@ -49,23 +49,55 @@ func (suite *HttpClientTestSuite) TestInvokeContract() {
 
 	toAddrB, _ := common.DecodeCheck(to)
 	toAddrHex := hex.EncodeToString(toAddrB)
-	_ = toAddrHex
 
-	params := fmt.Sprintf(`[{"address":"%s"},{"uint256":"%v"}]`, toAddrHex, big.NewInt(1))
-	paramsB, _ := json.Marshal(params)
+	param := map[string]any{
+		"address": toAddrHex,
+		"uint256": big.NewInt(1).String(),
+	}
 
-	param := hex.EncodeToString(paramsB)
+	p, _ := json.Marshal(param)
 
 	estimate, err := suite.client.TriggerConstantContracts(
 		context.Background(),
 		from,
 		contractAddress,
 		"transfer(address,uint256)",
-		param,
+		string(p),
 	)
 	require.NoError(err)
 
 	for _, r := range estimate.ConstantResult {
 		fmt.Printf("a: %s\n", string([]byte(r)))
 	}
+}
+
+func (suite *HttpClientTestSuite) Test_Estimateenergy() {
+	require := suite.Require()
+
+	contractAddress := "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj" // "TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3"
+	from := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"            // "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
+	to := "TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA"
+
+	amount := big.NewInt(1)
+	params := []map[string]any{
+		{
+			"address": to,
+		},
+		{
+			"uint256": amount.String(),
+		},
+	}
+	b, _ := json.Marshal(params)
+
+	estimate, err := suite.client.EstimateEnergy(
+		context.Background(),
+		from,
+		contractAddress,
+		"transfer(address,uint256)",
+		string(b),
+		0,
+	)
+	require.NoError(err)
+
+	fmt.Printf("EnergyRequired: %v\n", estimate.EnergyRequired)
 }

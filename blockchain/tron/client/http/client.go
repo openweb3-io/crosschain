@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -189,7 +190,7 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 	}
 
 	var transactionFee xc_types.BigInt
-	// var energyFee xc_types.BigInt
+	var energyFee xc_types.BigInt
 
 	for _, v := range params.ChainParameter {
 		if v.Key == "getTransactionFee" {
@@ -203,29 +204,33 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		totalCost := (&transactionFee).Mul(&bandwithUsage)
 		return &totalCost, nil
 	} else {
-		estimate, err := client.client.TriggerConstantContracts(
-			ctx,
+		params := []map[string]any{
+			{
+				"address": _tx.Args.GetTo(),
+			},
+			{
+				"uint256": amount.String(),
+			},
+		}
+		b, _ := json.Marshal(params)
+
+		estimate, err := client.client.EstimateEnergy(
+			context.Background(),
 			string(_tx.Args.GetFrom()),
 			string(asset.GetContract()),
 			"transfer(address,uint256)",
-			fmt.Sprintf(`[{"address": "%s"},{"uint256": "%v"}]`, _tx.Args.GetTo(), _tx.Args.GetAmount()),
+			string(b),
+			0,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, r := range estimate.ConstantResult {
-			fmt.Printf("a: %s\n", string([]byte(r)))
-		}
-
-		/*
-			energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
-			bandwidthCost := transactionFee.Mul(&bandwithUsage)
-			energyCost := energyFee.Add(&energyUsage)
-			totalCost := bandwidthCost.Add(&energyCost)
-			return &totalCost, nil
-		*/
-		return nil, nil
+		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
+		bandwidthCost := transactionFee.Mul(&bandwithUsage)
+		energyCost := energyFee.Add(&energyUsage)
+		totalCost := bandwidthCost.Add(&energyCost)
+		return &totalCost, nil
 	}
 }
 

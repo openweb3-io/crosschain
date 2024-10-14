@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/fbsobreira/gotron-sdk/pkg/abi"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 )
 
@@ -122,6 +123,12 @@ type TriggerConstantContractResponse struct {
 	ConstantResult []Bytes `json:"constant_result"`
 }
 
+type EstimateEnergyResponse struct {
+	Error `json:"result"`
+	// "result: {"result: true},\
+	EnergyRequired int64 `json:"energy_required"`
+}
+
 type GetAccountResponse struct {
 	Error
 	Balance uint64 `json:"balance"`
@@ -160,6 +167,10 @@ func parseResponse[T any](res *http.Response, dest T) (T, error) {
 		return dest, err
 	}
 	err = json.Unmarshal(bz, dest)
+
+	b, _ := json.MarshalIndent(bz, "", "\t")
+	fmt.Println(string(b))
+
 	// decoder := json.NewDecoder(res.Body)
 	// err := decoder.Decode(dest)
 	return dest, err
@@ -337,6 +348,55 @@ func (c *Client) GetBlockByNum(ctx context.Context, num uint64) (*BlockResponse,
 	}
 	if len(parsed.BlockId) == 0 {
 		return parsed, fmt.Errorf("could not find block by num: %d", num)
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) EstimateEnergy(
+	ctx context.Context,
+	ownerAddress string,
+	contract string,
+	funcSelector string,
+	jsonString string,
+	amount int64,
+) (*EstimateEnergyResponse, error) {
+	param, err := abi.LoadFromJSON(jsonString)
+	if err != nil {
+		return nil, err
+	}
+
+	dataBytes, err := abi.Pack(funcSelector, param)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := postRequest(ctx, c.Url("wallet/estimateenergy"), map[string]any{
+		"owner_address":    ownerAddress,
+		"contract_address": contract,
+		// "function_selector": funcSelector,
+		// "parameter":  jsonString,
+		"data":       hex.EncodeToString(dataBytes),
+		"call_value": amount,
+		"visible":    true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed, err := parseResponse(resp, &EstimateEnergyResponse{})
+	if err != nil {
+		return nil, err
+	}
+	err = checkError(parsed.Error)
+	if err != nil {
+		return parsed, err
 	}
 
 	return parsed, nil
