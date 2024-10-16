@@ -40,7 +40,7 @@ const (
 var SupportedBlockchains = []Blockchain{
 	// BlockchainAptos,
 	BlockchainBtc,
-	BlockchainBtc,
+	BlockchainBtcCash,
 	BlockchainBtcLegacy,
 	BlockchainCosmos,
 	BlockchainCosmosEvmos,
