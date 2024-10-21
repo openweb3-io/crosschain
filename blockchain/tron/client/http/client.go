@@ -209,7 +209,7 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 				"address": _tx.Args.GetTo(),
 			},
 			{
-				"uint256": amount.String(),
+				"uint256": _tx.Args.GetAmount().String(),
 			},
 		}
 		b, _ := json.Marshal(params)
