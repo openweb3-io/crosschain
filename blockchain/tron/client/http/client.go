@@ -48,7 +48,7 @@ func NewClient(
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
 	input := new(tron.TxInput)
 
-	dummyTx, err := client.client.CreateTransaction(ctx, string(args.GetFrom()), string(args.GetTo()), int(args.GetAmount().Int().Int64()))
+	dummyTx, err := client.client.CreateTransaction(ctx, string(args.GetFrom()), string(args.GetTo()), 5)
 
 	if err != nil {
 		return nil, err

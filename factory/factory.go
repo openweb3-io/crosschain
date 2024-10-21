@@ -138,7 +138,7 @@ func (f *Factory) NewAddressBuilder(cfg *types.ChainConfig) (types.AddressBuilde
 }
 
 // NewTxBuilder creates a new TxBuilder
-func (f *Factory) NewTxBuilder(cfg *types.ChainConfig) (builder.FullBuilder, error) {
+func (f *Factory) NewTxBuilder(cfg *types.ChainConfig) (builder.TxBuilder, error) {
 	return blockchains.NewTxBuilder(cfg)
 }
 
