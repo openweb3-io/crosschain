@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/xssnick/tonutils-go/liteclient"
 
 	"github.com/openweb3-io/crosschain/blockchain/ton"
@@ -38,7 +39,11 @@ type Client struct {
 var _ xcclient.IClient = &Client{}
 
 func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
-	var url = cfg.Client.URL
+	var url string
+	if cfg.Client != nil {
+		url = cfg.Client.URL
+	}
+
 	if url == "" {
 		url = "https://api.tontech.io/ton/wallet-mainnet.autoconf.json"
 	}
@@ -106,33 +111,35 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		input.EstimatedMaxFee = *maxFee
 	}
 
-	/* TODO
-	err = client.Client.RunGetMethod(&api.GetMethodRequest{
-		Address: string(args.GetFrom()),
-		Method:  api.GetPublicKeyMethod,
-		Stack:   []api.StackItem{},
-	}, getAddrResponse)
+	addr, err := address.ParseAddr(string(args.GetFrom()))
+	if err != nil {
+		return nil, err
+	}
+
+	getPublicKeyRsp, err := client.Client.RunGetMethod(ctx, b, addr, "get_public_key", nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not get address public-key: %v", err)
 	}
 
-	if getAddrResponse.ExitCode == 0 && len(getAddrResponse.Stack) > 0 {
+	tuple := getPublicKeyRsp.AsTuple()
+	if len(tuple) == 2 {
 		// Set the public key if the account is present on chain.
 		// If not, the public key will need to be set by caller.
-		err = input.SetPublicKeyFromStr(getAddrResponse.Stack[0].Value)
+		pk, err := getPublicKeyRsp.Int(1)
+		if err != nil {
+			return nil, err
+		}
+
+		err = input.SetPublicKeyFromStr(pk.String())
 		if err != nil {
 			logrus.WithError(err).Warn("could not set public key from remote")
 		}
 	}
-	*/
 
 	return input, nil
 }
 
 func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address, contract xc_types.ContractAddress) (xc_types.Address, error) {
-	// fromAddr, _ := address.ParseAddr(string(from))
-	// contractAddr, _ := address.ParseAddr(string(contract))
-
 	addr, err := address.ParseAddr(string(from))
 	if err != nil {
 		return "", err
@@ -144,12 +151,8 @@ func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address
 	}
 
 	jettonCli := jetton.NewJettonMasterClient(client.Client, jettonAddr)
-	if err != nil {
-		return "", err
-	}
 
 	result, err := jettonCli.GetJettonWallet(ctx, addr)
-
 	if err != nil {
 		return "", err
 	}
