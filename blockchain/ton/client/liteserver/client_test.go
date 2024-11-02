@@ -30,7 +30,8 @@ func (suite *ClientTestSuite) Test_GetPublicKey() {
 	ctx := context.Background()
 	require := suite.Require()
 
-	addr, err := address.ParseAddr("EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x")
+	addr, err := address.ParseAddr("UQAAPs-fYmdebzSwCd76x4oL8g80O8pubf0FiiO6EdX6MX3Z")
+	// addr, err := address.ParseAddr("EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x")
 	// addr, err := address.ParseAddr("EQAAlNYul6D4UrJpv7nYmYZ2beusTT-687rI0joN9O4TdMNm") // not inited
 	require.NoError(err)
 

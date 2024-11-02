@@ -347,7 +347,9 @@ func (suite *ClientTestSuite) Test_GetPublicKey() {
 	rsp, err := suite.client.Client.GetAccountPublicKey(context.Background(), tonapi.GetAccountPublicKeyParams{
 		// AccountID: "EQBgcIkB3wFk-WwKoQG3xnxAqsnWowX7ftuoKjtg-NjLIi7f",
 		// AccountID: "EQAAlNYul6D4UrJpv7nYmYZ2beusTT-687rI0joN9O4TdMNm",
-		AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
+		// AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
+		// AccountID: "EQAAzvWdCcvUUN6gb4E8J05s4btM3uFrOVgDSf2MCzHOWE0H",
+		AccountID: "UQAAPs-fYmdebzSwCd76x4oL8g80O8pubf0FiiO6EdX6MX3Z",
 	})
 
 	suite.Require().NoError(err)
