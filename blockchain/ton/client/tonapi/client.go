@@ -119,8 +119,7 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 	}
 
 	rsp, err := client.Client.GetAccountPublicKey(context.Background(), _tonapi.GetAccountPublicKeyParams{
-		// AccountID: "EQBgcIkB3wFk-WwKoQG3xnxAqsnWowX7ftuoKjtg-NjLIi7f",
-		AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
+		AccountID: string(args.GetFrom()),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not get address public-key: %v", err)
