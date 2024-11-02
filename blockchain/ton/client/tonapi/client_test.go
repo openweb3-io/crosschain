@@ -349,7 +349,8 @@ func (suite *ClientTestSuite) Test_GetPublicKey() {
 		// AccountID: "EQAAlNYul6D4UrJpv7nYmYZ2beusTT-687rI0joN9O4TdMNm",
 		// AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
 		// AccountID: "EQAAzvWdCcvUUN6gb4E8J05s4btM3uFrOVgDSf2MCzHOWE0H",
-		AccountID: "UQAAPs-fYmdebzSwCd76x4oL8g80O8pubf0FiiO6EdX6MX3Z",
+		// AccountID: "UQAAPs-fYmdebzSwCd76x4oL8g80O8pubf0FiiO6EdX6MX3Z",
+		AccountID: "EQAATnGLmtT0k-SMFw3mAgUBhf2wWQ98G_O_T8saOkAA2xag",
 	})
 
 	suite.Require().NoError(err)
