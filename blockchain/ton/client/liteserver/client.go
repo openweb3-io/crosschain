@@ -116,24 +116,33 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		return nil, err
 	}
 
-	getPublicKeyRsp, err := client.Client.RunGetMethod(ctx, b, addr, "get_public_key", nil)
-	if err != nil {
-		return nil, fmt.Errorf("could not get address public-key: %v", err)
-	}
+	var publicKeyStr string
 
-	tuple := getPublicKeyRsp.AsTuple()
-	if len(tuple) == 2 {
-		// Set the public key if the account is present on chain.
-		// If not, the public key will need to be set by caller.
+	publicKeyBytes, ok := args.GetPublicKey()
+	if ok {
+		publicKeyStr = string(publicKeyBytes)
+	} else {
+		getPublicKeyRsp, err := client.Client.RunGetMethod(ctx, b, addr, "get_public_key", nil)
+		if err != nil {
+			return nil, fmt.Errorf("could not get address public-key: %v", err)
+		}
+
+		tuple := getPublicKeyRsp.AsTuple()
+		if len(tuple) != 2 {
+			return nil, fmt.Errorf("could not get address public-key, result not valid")
+		}
+
 		pk, err := getPublicKeyRsp.Int(1)
 		if err != nil {
 			return nil, err
 		}
 
-		err = input.SetPublicKeyFromStr(pk.String())
-		if err != nil {
-			logrus.WithError(err).Warn("could not set public key from remote")
-		}
+		publicKeyStr = pk.String()
+	}
+
+	err = input.SetPublicKeyFromStr(publicKeyStr)
+	if err != nil {
+		logrus.WithError(err).Warn("could not set public key from remote")
 	}
 
 	return input, nil
