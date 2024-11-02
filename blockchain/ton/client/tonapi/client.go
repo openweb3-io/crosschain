@@ -102,10 +102,6 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		EstimatedMaxFee: xc_types.NewBigIntFromInt64(0), // TODO
 	}
 
-	if pubKey, ok := args.GetPublicKey(); ok {
-		input.PublicKey = pubKey
-	}
-
 	memo, _ := args.GetMemo()
 
 	asset, _ := args.GetAsset()
@@ -120,6 +116,19 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 			return input, err
 		}
 		input.EstimatedMaxFee = *maxFee
+	}
+
+	rsp, err := client.Client.GetAccountPublicKey(context.Background(), _tonapi.GetAccountPublicKeyParams{
+		// AccountID: "EQBgcIkB3wFk-WwKoQG3xnxAqsnWowX7ftuoKjtg-NjLIi7f",
+		AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not get address public-key: %v", err)
+	}
+
+	err = input.SetPublicKeyFromStr(rsp.PublicKey)
+	if err != nil {
+		logrus.WithError(err).Warn("could not set public key from remote")
 	}
 
 	return input, nil

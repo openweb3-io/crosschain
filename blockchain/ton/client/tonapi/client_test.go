@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
+	"github.com/tonkeeper/tonapi-go"
 
 	"github.com/croutondefi/stonfi-go"
 	"github.com/openweb3-io/crosschain/blockchain/ton"
@@ -340,6 +341,17 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 	balance, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(suite.account1Address.String()), contractAddress)
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s jetton balance: %v\n", suite.account1Address.String(), balance)
+}
+
+func (suite *ClientTestSuite) Test_GetPublicKey() {
+	rsp, err := suite.client.Client.GetAccountPublicKey(context.Background(), tonapi.GetAccountPublicKeyParams{
+		// AccountID: "EQBgcIkB3wFk-WwKoQG3xnxAqsnWowX7ftuoKjtg-NjLIi7f",
+		AccountID: "EQB-U9ZcM16Sc2p-xcSyhTCU7YGK8UH5Qvq4CFnM2ejNgU_x",
+	})
+
+	suite.Require().NoError(err)
+
+	fmt.Printf("rsp: %s\n", rsp.GetPublicKey())
 }
 
 func (suite *ClientTestSuite) TestFetchTonTxByHash() {

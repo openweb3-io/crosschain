@@ -1,6 +1,11 @@
 package ton
 
 import (
+	"crypto/ed25519"
+	"encoding/hex"
+	"fmt"
+	"strings"
+
 	xc_types "github.com/openweb3-io/crosschain/types"
 	"github.com/shopspring/decimal"
 )
@@ -30,6 +35,23 @@ func NewTxInput() *TxInput {
 
 func (input *TxInput) GetBlockchain() xc_types.Blockchain {
 	return xc_types.BlockchainTon
+}
+
+func (input *TxInput) SetPublicKey(pk []byte) error {
+	if len(pk) != ed25519.PublicKeySize {
+		return fmt.Errorf("invalid ed25519 public key size: %d", len(pk))
+	}
+	input.PublicKey = pk
+	return nil
+}
+
+func (input *TxInput) SetPublicKeyFromStr(pkStr string) error {
+	pkStr = strings.TrimPrefix(pkStr, "0x")
+	pk, err := hex.DecodeString(pkStr)
+	if err != nil {
+		return fmt.Errorf("invalid hex: %v", err)
+	}
+	return input.SetPublicKey(pk)
 }
 
 func (input *TxInput) SetGasFeePriority(other xc_types.GasFeePriority) error {
