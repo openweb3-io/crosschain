@@ -2,6 +2,7 @@ package address_test
 
 import (
 	"encoding/hex"
+	"log"
 	"testing"
 
 	"github.com/openweb3-io/crosschain/blockchain/ton/address"
@@ -68,3 +69,17 @@ func TestParseTestnetAddress(t *testing.T) {
 
 // 	require.Equal(t, addr1, addr2)
 // }
+
+func TestGetAddressShard(t *testing.T) {
+	addr, err := address.ParseAddress("EQAiboDEv_qRrcEdrYdwbVLNOXBHwShFbtKGbQVJ2OKxY0to", "mainnet")
+	log.Printf("0x20 addr: %v, shard:0x%02x", addr.String(), addr.Data()[0])
+	require.NoError(t, err)
+
+	addr, err = address.ParseAddress("UQCYqk93_LQf4sDuTQk0yfmTpJARwvEv9eD2lHa5rYNmNclA", "mainnet")
+	log.Printf("addr: %v, shard:0x%02x", addr.String(), addr.Data()[0])
+	require.NoError(t, err)
+
+	addr, err = address.ParseAddress("Uf_mlXHnufWO3-vvopflR_NpIFMiidvp_xt20Qf8usMBBPEE", "mainnet")
+	log.Printf("0x80 addr: %v, shard:0x%02x", addr.String(), addr.Data()[0])
+	require.NoError(t, err)
+}

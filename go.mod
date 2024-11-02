@@ -14,8 +14,9 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
-	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/cometbft/cometbft v0.38.12
+	github.com/cordialsys/crosschain v0.0.0-20241029164833-e62d3f8251e5
 	github.com/cosmos/btcutil v1.0.5
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.10
@@ -256,7 +257,6 @@ require (
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6 // indirect

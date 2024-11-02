@@ -1,6 +1,7 @@
 package factory_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/openweb3-io/crosschain/factory"
@@ -51,6 +52,7 @@ func (s *CrosschainTestSuite) TestNewDefaultFactory() {
 func (s *CrosschainTestSuite) TestNewTxBuilder() {
 	require := s.Require()
 	for _, asset := range s.TestChainConfigs {
+		fmt.Println("asset", asset.Chain)
 		builder, _ := s.Factory.NewTxBuilder(asset)
 		require.NotNil(builder)
 	}

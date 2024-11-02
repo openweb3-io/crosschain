@@ -2,6 +2,7 @@ package ton
 
 import (
 	"context"
+	"crypto/ed25519"
 	"fmt"
 
 	tonaddress "github.com/openweb3-io/crosschain/blockchain/ton/address"
@@ -32,6 +33,21 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 	ctx := context.Background()
 
 	txInput := input.(*TxInput)
+	var stateInit *tlb.StateInit
+	var err error
+	if txInput.AccountStatus != AccountStatusActive {
+		if len(txInput.PublicKey) == 0 {
+			return nil, fmt.Errorf("did not set public-key in tx-input for new ton account %s", args.GetFrom())
+		}
+		stateInit, err = wallet.GetStateInit(
+			ed25519.PublicKey(txInput.PublicKey),
+			wallet.V4R2,
+			tonaddress.DefaultSubwalletId,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	toAddr, err := address.ParseAddr(string(args.GetTo()))
 	if err != nil {
@@ -102,7 +118,7 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 		return nil, err
 	}
 
-	return tx.NewTx(fromAddr, cellBuilder, nil), nil
+	return tx.NewTx(fromAddr, cellBuilder, stateInit), nil
 }
 
 func BuildTransfer(

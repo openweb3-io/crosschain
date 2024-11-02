@@ -89,6 +89,10 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		Seq:             uint32(seq.Uint64()),
 		EstimatedMaxFee: xc_types.NewBigIntFromInt64(0), // TODO
 	}
+	publicKey, ok := args.GetPublicKey()
+	if ok {
+		input.PublicKey = publicKey
+	}
 
 	memo, _ := args.GetMemo()
 

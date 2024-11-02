@@ -73,3 +73,7 @@ func (args *TransferArgs) GetMemo() (string, bool) {
 func (args *TransferArgs) GetAsset() (types.IAsset, bool) {
 	return args.options.GetAsset()
 }
+
+func (args *TransferArgs) GetPublicKey() ([]byte, bool) {
+	return args.options.GetPublicKey()
+}
