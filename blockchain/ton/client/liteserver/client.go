@@ -116,11 +116,12 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 		return nil, err
 	}
 
-	var publicKeyStr string
-
 	publicKeyBytes, ok := args.GetPublicKey()
 	if ok {
-		publicKeyStr = string(publicKeyBytes)
+		err = input.SetPublicKey(publicKeyBytes)
+		if err != nil {
+			logrus.WithError(err).Warn("could not set public key from args")
+		}
 	} else {
 		getPublicKeyRsp, err := client.Client.RunGetMethod(ctx, b, addr, "get_public_key", nil)
 		if err != nil {
@@ -137,12 +138,10 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 			return nil, err
 		}
 
-		publicKeyStr = pk.String()
-	}
-
-	err = input.SetPublicKeyFromStr(publicKeyStr)
-	if err != nil {
-		logrus.WithError(err).Warn("could not set public key from remote")
+		err = input.SetPublicKeyFromStr(pk.String())
+		if err != nil {
+			logrus.WithError(err).Warn("could not set public key from remote")
+		}
 	}
 
 	return input, nil
