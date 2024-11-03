@@ -13,6 +13,8 @@ type builderOptions struct {
 	gasFeePriority *xc_types.GasFeePriority
 	publicKey      *[]byte
 
+	extra map[string]any
+
 	validator    *string
 	stakeOwner   *xc_types.Address
 	stakeAccount *string
@@ -46,6 +48,10 @@ func (opts *builderOptions) GetPriority() (xc_types.GasFeePriority, bool) {
 }
 func (opts *builderOptions) GetPublicKey() ([]byte, bool) { return get(opts.publicKey) }
 
+func (opts *builderOptions) GetExtra() (map[string]any, bool) {
+	return get(&opts.extra)
+}
+
 // Other options
 func (opts *builderOptions) GetValidator() (string, bool)            { return get(opts.validator) }
 func (opts *builderOptions) GetStakeOwner() (xc_types.Address, bool) { return get(opts.stakeOwner) }
@@ -61,6 +67,14 @@ func WithMemo(memo string) BuilderOption {
 		return nil
 	}
 }
+
+func WithExtra(extra map[string]any) BuilderOption {
+	return func(opts *builderOptions) error {
+		opts.extra = extra
+		return nil
+	}
+}
+
 func WithTimestamp(ts int64) BuilderOption {
 	return func(opts *builderOptions) error {
 		opts.timestamp = &ts

@@ -77,3 +77,7 @@ func (args *TransferArgs) GetAsset() (types.IAsset, bool) {
 func (args *TransferArgs) GetPublicKey() ([]byte, bool) {
 	return args.options.GetPublicKey()
 }
+
+func (args *TransferArgs) GetExtra() (map[string]any, bool) {
+	return args.options.GetExtra()
+}

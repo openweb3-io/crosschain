@@ -32,6 +32,19 @@ func NewTxBuilder(chain *xc_types.ChainConfig) (*TxBuilder, error) {
 func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
 	ctx := context.Background()
 
+	version := wallet.V4R2
+	subwalletID := uint32(tonaddress.DefaultSubwalletId)
+	extra, ok := args.GetExtra()
+	if ok {
+		if v, ok := extra["version"].(wallet.Version); ok {
+			version = v
+		}
+
+		if v, ok := extra["subwalletID"].(uint32); ok {
+			subwalletID = v
+		}
+	}
+
 	txInput := input.(*TxInput)
 	var stateInit *tlb.StateInit
 	var err error
@@ -41,8 +54,8 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 		}
 		stateInit, err = wallet.GetStateInit(
 			ed25519.PublicKey(txInput.PublicKey),
-			wallet.V4R2,
-			tonaddress.DefaultSubwalletId,
+			version,
+			subwalletID,
 		)
 		if err != nil {
 			return nil, err
@@ -107,7 +120,7 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 		return txInput.Seq, nil
 	}
 
-	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, wallet.V4R2)
+	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, version)
 	if err != nil {
 		return nil, err
 	}
