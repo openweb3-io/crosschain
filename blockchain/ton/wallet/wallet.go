@@ -152,8 +152,11 @@ type Wallet struct {
 	seqnoFetcher SeqnoFetcher
 }
 
-func FromAddress(seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig) (*Wallet, error) {
+func FromAddress(seqnoFetcher SeqnoFetcher, addr *address.Address, version VersionConfig, pSubwallet *uint32) (*Wallet, error) {
 	var subwallet uint32 = DefaultSubwallet
+	if pSubwallet != nil {
+		subwallet = *pSubwallet
+	}
 
 	// default subwallet depends on wallet type
 	switch version.(type) {
@@ -184,8 +187,11 @@ func FromAddress(seqnoFetcher SeqnoFetcher, addr *address.Address, version Versi
 	return w, nil
 }
 
-func FromPublicKey(api TonAPI, publicKey ed25519.PublicKey, version VersionConfig) (*Wallet, error) {
+func FromPublicKey(api TonAPI, publicKey ed25519.PublicKey, version VersionConfig, pSubwallet *uint32) (*Wallet, error) {
 	var subwallet uint32 = DefaultSubwallet
+	if pSubwallet != nil {
+		subwallet = *pSubwallet
+	}
 
 	// default subwallet depends on wallet type
 	switch version.(type) {

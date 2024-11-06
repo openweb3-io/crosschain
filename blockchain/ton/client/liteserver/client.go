@@ -194,7 +194,7 @@ func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address,
 		return seq, nil
 	}
 
-	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, wallet.V4R2)
+	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, wallet.V4R2, nil)
 	if err != nil {
 		return nil, err
 	}

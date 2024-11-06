@@ -36,12 +36,12 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 	subwalletID := uint32(tonaddress.DefaultSubwalletId)
 	extra, ok := args.GetExtra()
 	if ok {
-		if v, ok := extra["version"].(wallet.Version); ok {
-			version = v
+		if v, ok := extra["version"].(float64); ok {
+			version = wallet.Version(int(v))
 		}
 
-		if v, ok := extra["subwalletID"].(uint32); ok {
-			subwalletID = v
+		if v, ok := extra["subwalletID"].(float64); ok {
+			subwalletID = uint32(v)
 		}
 	}
 
@@ -120,7 +120,7 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxI
 		return txInput.Seq, nil
 	}
 
-	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, version)
+	w, err := wallet.FromAddress(seqnoFetcher, fromAddr, version, &subwalletID)
 	if err != nil {
 		return nil, err
 	}
