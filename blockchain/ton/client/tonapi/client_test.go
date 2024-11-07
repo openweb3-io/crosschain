@@ -237,7 +237,7 @@ func (suite *ClientTestSuite) Test_SwapFromTonToUSDT() {
 	})
 	suite.Require().NoError(err)
 
-	w, err := wallet.FromAddress(nil, suite.account1Address, wallet.V4R2)
+	w, err := wallet.FromAddress(nil, suite.account1Address, wallet.V4R2, nil)
 	suite.Require().NoError(err)
 
 	cellBuilder, err := w.BuildMessages(ctx, false, []*wallet.Message{

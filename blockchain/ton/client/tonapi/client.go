@@ -111,7 +111,30 @@ func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.Tr
 			return input, err
 		}
 
-		maxFee, err := client.EstimateMaxFee(ctx, args.GetFrom(), args.GetTo(), input.TokenWallet, asset.GetDecimals(), memo, input.Seq)
+		version := wallet.V4R2
+		subwalletID := uint32(tonaddress.DefaultSubwalletId)
+		extra, ok := args.GetExtra()
+		if ok {
+			if v, ok := extra["version"].(float64); ok {
+				version = wallet.Version(int(v))
+			}
+
+			if v, ok := extra["subwalletID"].(float64); ok {
+				subwalletID = uint32(v)
+			}
+		}
+
+		maxFee, err := client.EstimateMaxFee(
+			ctx,
+			args.GetFrom(),
+			args.GetTo(),
+			input.TokenWallet,
+			asset.GetDecimals(),
+			memo,
+			input.Seq,
+			subwalletID,
+			version,
+		)
 		if err != nil {
 			return input, err
 		}
@@ -165,7 +188,17 @@ func (client *Client) GetJettonWallet(ctx context.Context, from xc_types.Address
 	return xc_types.Address(result.WalletAddress.Address), nil
 }
 
-func (client *Client) EstimateMaxFee(ctx context.Context, from xc_types.Address, to xc_types.Address, jettonWalletAddress xc_types.Address, tokenDecimals int32, memo string, seq uint32) (*xc_types.BigInt, error) {
+func (client *Client) EstimateMaxFee(
+	ctx context.Context,
+	from xc_types.Address,
+	to xc_types.Address,
+	jettonWalletAddress xc_types.Address,
+	tokenDecimals int32,
+	memo string,
+	seq uint32,
+	subwalletID uint32,
+	version wallet.Version,
+) (*xc_types.BigInt, error) {
 	fromAddr, _ := address.ParseAddr(string(from))
 	toAddr, _ := address.ParseAddr(string(to))
 	jettonWalletAddr, err := tonaddress.ParseAddress(jettonWalletAddress, "")
