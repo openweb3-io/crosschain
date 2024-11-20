@@ -16,7 +16,6 @@ import (
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xcclient "github.com/openweb3-io/crosschain/client"
-	"github.com/openweb3-io/crosschain/types"
 	xc "github.com/openweb3-io/crosschain/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -209,7 +208,7 @@ func (a *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc.BigI
 	return &balance, nil
 }
 
-func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*types.BigInt, error) {
+func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
 	addr := solana.MustPublicKeyFromBase58(string(address))
 
 	mint := solana.MustPublicKeyFromBase58(string(contractAddress))

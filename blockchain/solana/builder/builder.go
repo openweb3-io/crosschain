@@ -2,6 +2,7 @@ package builder
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gagliardetto/solana-go"
 	ata "github.com/gagliardetto/solana-go/programs/associated-token-account"
@@ -12,7 +13,6 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/tx_input"
 	solana_types "github.com/openweb3-io/crosschain/blockchain/solana/types"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
-	"github.com/openweb3-io/crosschain/types"
 	xc_types "github.com/openweb3-io/crosschain/types"
 )
 
@@ -32,21 +32,21 @@ func NewTxBuilder(chain *xc_types.ChainConfig) (*TxBuilder, error) {
 	}, nil
 }
 
-func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
 	asset, _ := args.GetAsset()
 	if asset == nil {
 		asset = b.Chain
 	}
 
 	switch asset.(type) {
-	case *types.TokenAssetConfig:
+	case *xc_types.TokenAssetConfig:
 		return b.NewTokenTransfer(args, input)
 	default:
 		return b.NewNativeTransfer(args, input)
 	}
 }
 
-func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
 	asset, _ := args.GetAsset()
@@ -135,7 +135,7 @@ func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.T
 		// Sometimes tokens can get put into any number of auxiliary accounts.
 		// So we need to spend them like UTXO. Here we'll just send a solana
 		// instruction for each one until we've reached the target balance.
-		zero := types.NewBigIntFromUint64(0)
+		zero := xc_types.NewBigIntFromUint64(0)
 		remainingBalanceToSend := args.GetAmount()
 		for _, tokenAcc := range txInput.SourceTokenAccounts {
 			amountToSend := remainingBalanceToSend
@@ -194,7 +194,7 @@ func (txBuilder TxBuilder) buildSolanaTx(instructions []solana.Instruction, acco
 	}, nil
 }
 
-func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
+func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
 	txInput := input.(*tx_input.TxInput)
 
 	accountFrom, err := solana.PublicKeyFromBase58(string(args.GetFrom()))
@@ -231,4 +231,84 @@ func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.
 	return &tx.Tx{
 		SolTx: solTx,
 	}, nil
+}
+
+func (txBuilder TxBuilder) NewTask(args *xcbuilder.TransferArgs, input xc_types.TxInput) (xc_types.Tx, error) {
+	txInput := input.(*tx_input.TxInput)
+	asset, ok := args.GetAsset()
+	if !ok {
+		return nil, errors.New("asset missing")
+	}
+
+	task := asset.(*xc_types.TaskConfig)
+
+	switch task.Code {
+	case "WrapTx":
+		return txBuilder.BuildWrapTx(args.GetFrom(), args.GetTo(), args.GetAmount(), task, txInput)
+	case "UnwrapEverythingTx":
+		return txBuilder.BuildUnwrapEverythingTx(args.GetFrom(), args.GetTo(), args.GetAmount(), task, txInput)
+	}
+	return &tx.Tx{}, fmt.Errorf("not implemented task: '%s'", task.ID())
+}
+
+func (txBuilder TxBuilder) BuildWrapTx(from xc_types.Address, to xc_types.Address, amount xc_types.BigInt, task *xc_types.TaskConfig, txInput *tx_input.TxInput) (xc_types.Tx, error) {
+	// use the dst asset
+	asset := task.DstAsset
+
+	accountFrom, err := solana.PublicKeyFromBase58(string(from))
+	if err != nil {
+		return nil, err
+	}
+
+	contract := asset.GetContract()
+	accountContract, err := solana.PublicKeyFromBase58(string(contract))
+	if err != nil {
+		return nil, err
+	}
+
+	ataFromStr, err := solana_types.FindAssociatedTokenAddress(string(from), string(contract), txInput.TokenProgram)
+	if err != nil {
+		return nil, err
+	}
+	ataFrom := solana.MustPublicKeyFromBase58(ataFromStr)
+
+	// instructions to:
+	// - transfer to the ATA (system.NewTransferInstruction())
+	// - create the ATA (associatedtokenaccount.NewCreateInstruction())
+	instructions := []solana.Instruction{
+		ata.NewCreateInstruction(
+			accountFrom,
+			accountFrom,
+			accountContract,
+		).Build(),
+		system.NewTransferInstruction(
+			amount.Uint64(),
+			accountFrom,
+			ataFrom,
+		).Build(),
+	}
+
+	return txBuilder.buildSolanaTx(instructions, accountFrom, txInput)
+}
+
+func (txBuilder TxBuilder) BuildUnwrapEverythingTx(from xc_types.Address, to xc_types.Address, amount xc_types.BigInt, asset xc_types.IAsset, txInput *tx_input.TxInput) (xc_types.Tx, error) {
+	accountFrom, err := solana.PublicKeyFromBase58(string(from))
+	if err != nil {
+		return nil, err
+	}
+
+	contract := asset.GetContract()
+	ataFromStr, err := solana_types.FindAssociatedTokenAddress(string(from), string(contract), txInput.TokenProgram)
+	if err != nil {
+		return nil, err
+	}
+	ataFrom := solana.MustPublicKeyFromBase58(ataFromStr)
+
+	// instructions to:
+	// - close the ATA (token.NewCloseAccountInstruction()) -- unwraps everything into from account
+	instructions := []solana.Instruction{
+		token.NewCloseAccountInstruction(ataFrom, accountFrom, accountFrom, nil).Build(),
+	}
+
+	return txBuilder.buildSolanaTx(instructions, accountFrom, txInput)
 }

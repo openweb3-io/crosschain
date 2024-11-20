@@ -15,8 +15,6 @@ import (
 	"github.com/openweb3-io/crosschain/blockchain/solana/client"
 	xcbuilder "github.com/openweb3-io/crosschain/builder"
 	xc_types "github.com/openweb3-io/crosschain/types"
-
-	"github.com/openweb3-io/crosschain/types"
 )
 
 var (
@@ -36,8 +34,8 @@ type ClientTestSuite struct {
 
 func (suite *ClientTestSuite) SetupTest() {
 	//testnet
-	client, err := client.NewClient(&types.ChainConfig{
-		Client: &types.ClientConfig{
+	client, err := client.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
 			URL: rpc.TestNet_RPC,
 		},
 	})
@@ -64,9 +62,9 @@ func (suite *ClientTestSuite) TestTranfser() {
 	suite.Require().NoError(err)
 
 	args, err := xcbuilder.NewTransferArgs(
-		types.Address(senderPrivateKey.PublicKey().String()),
-		types.Address(recipientPrivateKey.PublicKey().String()), // must exist
-		types.NewBigIntFromInt64(35),
+		xc_types.Address(senderPrivateKey.PublicKey().String()),
+		xc_types.Address(recipientPrivateKey.PublicKey().String()), // must exist
+		xc_types.NewBigIntFromInt64(35),
 	)
 	suite.Require().NoError(err)
 
@@ -103,10 +101,10 @@ func (suite *ClientTestSuite) TestSPLTranfser() {
 	ctx := context.Background()
 
 	args, err := xcbuilder.NewTransferArgs(
-		types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
-		types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
-		types.NewBigIntFromInt64(35),
-		xcbuilder.WithAsset(&types.TokenAssetConfig{
+		xc_types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
+		xc_types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
+		xc_types.NewBigIntFromInt64(35),
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 			Decimals: 6,
 		}),
@@ -151,10 +149,10 @@ func (suite *ClientTestSuite) TestSPLTranfserSetFeePayer() {
 	// feePayer := recipientPrivateKey.PublicKey().String()
 
 	args, err := xcbuilder.NewTransferArgs(
-		types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
-		types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
-		types.NewBigIntFromInt64(1),
-		xcbuilder.WithAsset(&types.TokenAssetConfig{
+		xc_types.Address(senderPrivateKey.PublicKey().String()),          //这里填写sol的主地址，转账时程序自动找到合约的关联账户地址
+		xc_types.Address("AyqkhCrb8gt3PqiVMCshSy4to8wQcHzXtfCKbJ42qJLp"), //这里写sol的主地址，自动会创建关联地址
+		xc_types.NewBigIntFromInt64(1),
+		xcbuilder.WithAsset(&xc_types.TokenAssetConfig{
 			Contract: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr",
 			Decimals: 6,
 		}),
@@ -198,11 +196,11 @@ func (suite *ClientTestSuite) TestFetchBalance() {
 
 	contractAddress := "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr"
 
-	out, err := suite.client.FetchBalance(ctx, types.Address(senderPrivateKey.PublicKey().String()))
+	out, err := suite.client.FetchBalance(ctx, xc_types.Address(senderPrivateKey.PublicKey().String()))
 	suite.Require().NoError(err)
 	fmt.Printf("\n %s SOL balance: %v", senderPrivateKey.PublicKey().String(), out)
 
-	out, err = suite.client.FetchBalanceForAsset(ctx, types.Address(senderPrivateKey.PublicKey().String()), types.ContractAddress(contractAddress))
+	out, err = suite.client.FetchBalanceForAsset(ctx, xc_types.Address(senderPrivateKey.PublicKey().String()), xc_types.ContractAddress(contractAddress))
 	suite.Require().NoError(err)
 
 	fmt.Printf("\n %s SPL token balance: %v", senderPrivateKey.PublicKey().String(), out)
