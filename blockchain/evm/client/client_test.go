@@ -18,15 +18,15 @@ import (
 )
 
 var (
-	// // ethereum testnet
-	// endpoint        = "https://sepolia.infura.io/v3/79f87ec10fba42d7a85aaa69406c6f96"
-	// chainId         = 11155111
-	// contractAddress = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+	// ethereum testnet
+	endpoint        = "https://sepolia.infura.io/v3/79f87ec10fba42d7a85aaa69406c6f96"
+	chainId         = 11155111
+	contractAddress = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 
-	// arb testnet sepolia
-	endpoint        = "https://sepolia-rollup.arbitrum.io/rpc"
-	chainId         = 421614
-	contractAddress = "0x7AC8519283B1bba6d683FF555A12318Ec9265229"
+	// // arb testnet sepolia
+	// endpoint        = "https://sepolia-rollup.arbitrum.io/rpc"
+	// chainId         = 421614
+	// contractAddress = "0x7AC8519283B1bba6d683FF555A12318Ec9265229"
 
 	// // bsc testnet
 	// endpoint        = "https://data-seed-prebsc-1-s1.bnbchain.org:8545"
@@ -150,7 +150,8 @@ func (suite *ClientTestSuite) Test_TranfserERC20() {
 func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
-	addr := xc_types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
+	// addr := xc_types.Address("0x50B0c2B3bcAd53Eb45B57C4e5dF8a9890d002Cc8")
+	addr := xc_types.Address("0xf24A01aE29Dec4629DFB4170647C4eD4EFc392cD")
 	contractAddress := xc_types.ContractAddress(contractAddress)
 
 	balance, err := suite.client.FetchBalance(ctx, addr)

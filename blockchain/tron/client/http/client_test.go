@@ -19,6 +19,8 @@ var (
 	// endpoint = "grpc.nile.trongrid.io:50051"
 	endpoint = "https://go.getblock.io/4e19dacf44974a3d8e40031ef8aca8b8"
 	chainId  = big.NewInt(1001)
+	// endpoint = "https://methodical-greatest-choice.tron-mainnet.quiknode.pro/265ecbce554ed6512e0c7af5d55e202e1c07374a"
+	// chainId  = big.NewInt(728126428)
 
 	// senderPubk  = "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
 	senderPrivk = "8e812436a0e3323166e1f0e8ba79e19e217b2c4a53c970d4cca0cfb1078979df"

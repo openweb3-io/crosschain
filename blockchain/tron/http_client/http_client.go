@@ -168,8 +168,8 @@ func parseResponse[T any](res *http.Response, dest T) (T, error) {
 	}
 	err = json.Unmarshal(bz, dest)
 
-	b, _ := json.MarshalIndent(bz, "", "\t")
-	fmt.Println(string(b))
+	// b, _ := json.MarshalIndent(bz, "", "\t")
+	// fmt.Println(string(b))
 
 	// decoder := json.NewDecoder(res.Body)
 	// err := decoder.Decode(dest)
