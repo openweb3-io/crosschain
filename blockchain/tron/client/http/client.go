@@ -180,7 +180,20 @@ func (client *Client) FetchBalanceForAsset(ctx context.Context, address xc_types
 func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
 	_tx := tx.(*tron.Tx)
 
-	bandwithUsage := xc_types.NewBigIntFromInt64(200)
+	txRawData, err := tx.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	txSize := int64(len(txRawData) - 1) // actual tx size is less than serialized size by 1 byte
+
+	// signatures also consume bandwidth, so we need to add them
+	signatures := len(tx.GetSignatures())
+	if signatures == 0 {
+		return nil, errors.New("transaction has no signatures")
+	}
+	signaturesSize := int64(signatures * 65) // every signature is 65 bytes
+	totalSize := txSize + signaturesSize
+	bandwidthUsage := xc_types.NewBigIntFromInt64(totalSize)
 
 	asset, _ := _tx.Args.GetAsset()
 
@@ -196,12 +209,16 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		if v.Key == "getTransactionFee" {
 			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
 		} else if v.Key == "getEnergyFee" {
-			// energyFee = xc_types.NewBigIntFromInt64(v.Value)
+			energyFee = xc_types.NewBigIntFromInt64(v.Value)
 		}
 	}
 
+	// TODO:
+	// consider using wallet/getaccountresource to get the current free bandwidth and energy balance of the from account,
+	// so we can get more accurate fee, but it will increase the number of API calls
+
 	if asset == nil || asset.GetContract() == "" {
-		totalCost := (&transactionFee).Mul(&bandwithUsage)
+		totalCost := transactionFee.Mul(&bandwidthUsage)
 		return &totalCost, nil
 	} else {
 		params := []map[string]any{
@@ -227,8 +244,8 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		}
 
 		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
-		bandwidthCost := transactionFee.Mul(&bandwithUsage)
-		energyCost := energyFee.Add(&energyUsage)
+		energyCost := energyFee.Mul(&energyUsage)
+		bandwidthCost := transactionFee.Mul(&bandwidthUsage)
 		totalCost := bandwidthCost.Add(&energyCost)
 		return &totalCost, nil
 	}
