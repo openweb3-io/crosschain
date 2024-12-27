@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
@@ -209,24 +208,20 @@ func (a *Client) FetchBalance(ctx context.Context, address xc.Address) (*xc.BigI
 }
 
 func (a *Client) FetchBalanceForAsset(ctx context.Context, address xc.Address, contractAddress xc.ContractAddress) (*xc.BigInt, error) {
-	addr := solana.MustPublicKeyFromBase58(string(address))
+	tokenAccounts, err := a.GetTokenAccountsByOwner(ctx, string(address), string(contractAddress))
+	if err != nil {
+		return nil, err
+	}
 
-	mint := solana.MustPublicKeyFromBase58(string(contractAddress))
-	associated, _, err := solana.FindAssociatedTokenAddress(addr, mint)
-	if err != nil {
-		return nil, err
+	balance := xc.NewBigIntFromInt64(0)
+	for _, tokenAccount := range tokenAccounts {
+		if tokenAccount.Info != nil && tokenAccount.Info.Parsed.Info.TokenAmount.Amount != "" {
+			b := xc.NewBigIntFromStr(tokenAccount.Info.Parsed.Info.TokenAmount.Amount)
+			balance = balance.Add(&b)
+		}
 	}
-	out, err := a.client.GetTokenAccountBalance(ctx, associated, rpc.CommitmentFinalized)
-	if err != nil {
-		return nil, err
-	}
-	amount, err := strconv.ParseInt(out.Value.Amount, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	balance := xc.NewBigIntFromInt64(amount)
+
 	return &balance, nil
-
 }
 
 type TokenAccountWithInfo struct {
