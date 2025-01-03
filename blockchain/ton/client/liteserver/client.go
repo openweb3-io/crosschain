@@ -288,9 +288,12 @@ func (client *Client) FetchBalance(ctx context.Context, ownerAddress xc_types.Ad
 		return nil, errors.Wrap(err, "get balance failed")
 	}
 
-	balance := account.State.Balance.Nano()
+	if account.State != nil {
+		balance := account.State.Balance.Nano()
+		return (*xc_types.BigInt)(balance), nil
+	}
 
-	return (*xc_types.BigInt)(balance), nil
+	return (*xc_types.BigInt)(big.NewInt(0)), nil
 }
 
 func (a *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (*xc_types.BigInt, error) {
