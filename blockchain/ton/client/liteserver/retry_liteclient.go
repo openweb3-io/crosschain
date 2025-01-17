@@ -30,8 +30,6 @@ func (w *RetryLiteClient) QueryLiteserver(ctx context.Context, payload tl.Serial
 
 	backupCtx := ctx
 	for {
-		fmt.Println("tries", tries+1, "err", err)
-
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("query liteserver timeout: %w(%w)", ctx.Err(), err)
