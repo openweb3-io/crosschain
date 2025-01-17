@@ -31,6 +31,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	DefaultTimeout = 30 * time.Second
+	DefaultRetries = 60
+)
+
 type Client struct {
 	cfg    *xc_types.ChainConfig
 	Client *_ton.APIClient
@@ -53,7 +58,12 @@ func NewClient(cfg *xc_types.ChainConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := _ton.NewAPIClient(c)
+	contractRetryClient := &RetryLiteClient{
+		LiteClient: c,
+		MaxRetries: DefaultRetries,
+		Timeout:    DefaultTimeout,
+	}
+	client := _ton.NewAPIClient(contractRetryClient)
 
 	return &Client{cfg, client}, nil
 }
