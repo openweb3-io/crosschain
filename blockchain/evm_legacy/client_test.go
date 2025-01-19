@@ -3,6 +3,7 @@ package evm_legacy_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/openweb3-io/crosschain/blockchain/evm_legacy"
@@ -89,4 +90,29 @@ func TestFetchTxInput(t *testing.T) {
 			require.Equal(t, v.val, input)
 		}
 	}
+}
+
+func TestFetchBalance_ArbETH(t *testing.T) {
+	cfg := &xc.ChainConfig{
+		Client: &xc.ClientConfig{
+			URL: "https://arbitrum.rpc.subquery.network/public",
+		},
+		Chain:      xc.ArbETH,
+		Blockchain: xc.BlockchainEVM,
+	}
+
+	client, err := evm_legacy.NewClient(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	balance, err := client.FetchBalance(context.Background(), xc.Address("0xAAB961723E77c77AF13968F89bEB80EE8c815cf4"))
+	require.NoError(t, err)
+	require.NotNil(t, balance)
+
+	log.Printf("balance: %v\n", balance)
+
+	balance, err = client.FetchBalanceForAsset(context.Background(), xc.Address("0xAAB961723E77c77AF13968F89bEB80EE8c815cf4"), xc.ContractAddress("0x58CB98A966F62aA6F2190eB3AA03132A0c3de3D5"))
+	require.NoError(t, err)
+	require.NotNil(t, balance)
+	log.Printf("OpenWorld balance: %v\n", balance)
 }

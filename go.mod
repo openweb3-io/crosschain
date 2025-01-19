@@ -120,11 +120,11 @@ require (
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/emicklei/dot v1.6.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.3 // indirect
-	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gagliardetto/treeout v0.1.4 // indirect
+	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
@@ -279,6 +279,7 @@ require (
 )
 
 replace (
+	github.com/ethereum/go-ethereum => github.com/OffchainLabs/go-ethereum v1.13.4-0.20250113203703-7ab015d994e8
 	github.com/fbsobreira/gotron-sdk => github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad
 	github.com/gagliardetto/solana-go => github.com/cordialsys/solana-go v0.0.0-20240806201447-1fef7fb8882b
 )
