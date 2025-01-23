@@ -279,7 +279,7 @@ require (
 )
 
 replace (
-	github.com/ethereum/go-ethereum => github.com/OffchainLabs/go-ethereum v1.13.4-0.20250113203703-7ab015d994e8
+	github.com/ethereum/go-ethereum => github.com/openweb3-io/go-ethereum v0.0.0-20250123180659-207b12bb1246
 	github.com/fbsobreira/gotron-sdk => github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad
 	github.com/gagliardetto/solana-go => github.com/cordialsys/solana-go v0.0.0-20240806201447-1fef7fb8882b
 )

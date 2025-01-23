@@ -244,8 +244,6 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
-github.com/OffchainLabs/go-ethereum v1.13.4-0.20250113203703-7ab015d994e8 h1:VSavNdl5m9Ehu7z+nQpmeufOfPGuzkpmWqDVHk8eRNU=
-github.com/OffchainLabs/go-ethereum v1.13.4-0.20250113203703-7ab015d994e8/go.mod h1:AGpoFJNteHpgv/Gd29ic3GeoAyRNzRmXHPKqXwLqrjk=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
@@ -1030,6 +1028,8 @@ github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go
 github.com/opentracing/basictracer-go v1.0.0/go.mod h1:QfBfYuafItcjQuMwinw9GhYKwFXS9KnPs5lxoYwgW74=
 github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
+github.com/openweb3-io/go-ethereum v0.0.0-20250123180659-207b12bb1246 h1:erNG1nMsw/dKeFuj5C8rOiBq/qEtxACwrlR8aY7M3yk=
+github.com/openweb3-io/go-ethereum v0.0.0-20250123180659-207b12bb1246/go.mod h1:2798kYC3B7CUZM1jEqyHYL7cZQR4fSiO1nCAwjC2CKo=
 github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad h1:GpVBt/TYkVRlOPVHtvEaVXv9ovyYzYAWInhpkcOWwe0=
 github.com/openweb3-io/gotron-sdk v0.0.0-20240607075808-eaeb7c6a4dad/go.mod h1:uxY3MGTmqItqUr8gJzmpo8vrBAUHKW2JrGp3yYcL8us=
 github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5/go.mod h1:/wsWhb9smxSfWAKL3wpBW7V8scJMt8N8gnaMCS9E/cA=
