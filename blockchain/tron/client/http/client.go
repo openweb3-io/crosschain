@@ -204,12 +204,25 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 
 	var transactionFee xc_types.BigInt
 	var energyFee xc_types.BigInt
+	var createAccountFee xc_types.BigInt
 
 	for _, v := range params.ChainParameter {
 		if v.Key == "getTransactionFee" {
 			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
 		} else if v.Key == "getEnergyFee" {
 			energyFee = xc_types.NewBigIntFromInt64(v.Value)
+		} else if v.Key == "getCreateAccountFee" {
+			createAccountFee = xc_types.NewBigIntFromInt64(v.Value)
+		}
+	}
+
+	newAccount := false
+	_, err = client.client.GetAccount(ctx, string(_tx.Args.GetTo()))
+	if err != nil {
+		if strings.Contains(err.Error(), "could not find account") {
+			newAccount = true
+		} else {
+			return nil, err
 		}
 	}
 
@@ -247,6 +260,9 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		energyCost := energyFee.Mul(&energyUsage)
 		bandwidthCost := transactionFee.Mul(&bandwidthUsage)
 		totalCost := bandwidthCost.Add(&energyCost)
+		if newAccount {
+			totalCost = totalCost.Add(&createAccountFee)
+		}
 		return &totalCost, nil
 	}
 }
