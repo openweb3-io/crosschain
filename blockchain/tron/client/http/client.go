@@ -213,6 +213,8 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 			energyFee = xc_types.NewBigIntFromInt64(v.Value)
 		} else if v.Key == "getCreateAccountFee" {
 			createAccountFee = xc_types.NewBigIntFromInt64(v.Value)
+			// TODO: parameter returns 0.1 trx, not correctly 1 trx, fix it in future
+			createAccountFee = xc_types.NewBigIntFromInt64(1000000)
 		}
 	}
 
@@ -227,7 +229,7 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 	}
 
 	// TODO:
-	// consider using wallet/getaccountresource to get the current free bandwidth and energy balance of the from account,
+	// consider using wallet/getaccountresource to get the current free bandwidth and energy balance of the from 	account,
 	// so we can get more accurate fee, but it will increase the number of API calls
 
 	if asset == nil || asset.GetContract() == "" {
