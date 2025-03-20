@@ -234,6 +234,9 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 
 	if asset == nil || asset.GetContract() == "" {
 		totalCost := transactionFee.Mul(&bandwidthUsage)
+		if newAccount {
+			totalCost = totalCost.Add(&createAccountFee)
+		}
 		return &totalCost, nil
 	} else {
 		params := []map[string]any{
