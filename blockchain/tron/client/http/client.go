@@ -218,22 +218,27 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		}
 	}
 
-	newAccount := false
-	_, err = client.client.GetAccount(ctx, string(_tx.Args.GetTo()))
+	newAccount, err := isNewAccount(ctx, client, _tx.Args.GetTo())
 	if err != nil {
-		if strings.Contains(err.Error(), "could not find account") {
-			newAccount = true
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
-	// TODO:
-	// consider using wallet/getaccountresource to get the current free bandwidth and energy balance of the from 	account,
-	// so we can get more accurate fee, but it will increase the number of API calls
+	accountResource, err := client.client.GetAccountResource(ctx, string(_tx.Args.GetFrom()))
+	if err != nil {
+		return nil, err
+	}
+	accountAvailableBandwidth := accountResource.FreeNetLimit - accountResource.FreeNetUsed
+	accountAvailableBandwidth += accountResource.NetLimit - accountResource.NetUsed
+	availableBandwidth := xc_types.NewBigIntFromInt64(accountAvailableBandwidth)
+
+	actualBandwidthUsage := bandwidthUsage.Sub(&availableBandwidth)
+	zero := xc_types.NewBigIntFromInt64(0)
+	if actualBandwidthUsage.Cmp(&zero) < 0 {
+		actualBandwidthUsage = xc_types.NewBigIntFromInt64(0)
+	}
 
 	if asset == nil || asset.GetContract() == "" {
-		totalCost := transactionFee.Mul(&bandwidthUsage)
+		totalCost := transactionFee.Mul(&actualBandwidthUsage)
 		if newAccount {
 			totalCost = totalCost.Add(&createAccountFee)
 		}
@@ -260,16 +265,38 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 		if err != nil {
 			return nil, err
 		}
-
 		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
-		energyCost := energyFee.Mul(&energyUsage)
-		bandwidthCost := transactionFee.Mul(&bandwidthUsage)
-		totalCost := bandwidthCost.Add(&energyCost)
 		if newAccount {
-			totalCost = totalCost.Add(&createAccountFee)
+			newAccountFee := xc_types.NewBigIntFromInt64(25000)
+			energyUsage = energyUsage.Add(&newAccountFee)
 		}
+
+		accountAvailableEnergy := accountResource.EnergyLimit - accountResource.EnergyUsed
+		availableEnergy := xc_types.NewBigIntFromInt64(accountAvailableEnergy)
+		actualEnergyUsage := energyUsage.Sub(&availableEnergy)
+		zero := xc_types.NewBigIntFromInt64(0)
+		if actualEnergyUsage.Cmp(&zero) < 0 {
+			actualEnergyUsage = xc_types.NewBigIntFromInt64(0)
+		}
+
+		energyCost := energyFee.Mul(&actualEnergyUsage)
+		bandwidthCost := transactionFee.Mul(&actualBandwidthUsage)
+		totalCost := bandwidthCost.Add(&energyCost)
 		return &totalCost, nil
 	}
+}
+
+func isNewAccount(ctx context.Context, client *Client, address xc_types.Address) (bool, error) {
+	newAccount := false
+	_, err := client.client.GetAccount(ctx, string(address))
+	if err != nil {
+		if strings.Contains(err.Error(), "could not find account") {
+			newAccount = true
+		} else {
+			return false, err
+		}
+	}
+	return newAccount, nil
 }
 
 func deserialiseTransactionEvents(log []*httpclient.Log) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint) {

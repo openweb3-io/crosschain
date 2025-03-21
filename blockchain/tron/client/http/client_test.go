@@ -17,13 +17,19 @@ import (
 
 var (
 	// endpoint = "grpc.nile.trongrid.io:50051"
-	endpoint = "https://go.getblock.io/4e19dacf44974a3d8e40031ef8aca8b8"
-	chainId  = big.NewInt(1001)
+	endpoint = "https://nile.trongrid.io"
+	//endpoint = "https://go.getblock.io/4e19dacf44974a3d8e40031ef8aca8b8"
+	chainId = big.NewInt(1001)
 	// endpoint = "https://methodical-greatest-choice.tron-mainnet.quiknode.pro/265ecbce554ed6512e0c7af5d55e202e1c07374a"
 	// chainId  = big.NewInt(728126428)
 
 	// senderPubk  = "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F"
 	senderPrivk = "8e812436a0e3323166e1f0e8ba79e19e217b2c4a53c970d4cca0cfb1078979df"
+)
+
+const (
+	contractJst = "TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3"
+	contractBtt = "TNuoKL1ni8aoshfFL1ASca1Gou9RXwAzfn"
 )
 
 type ClientTestSuite struct {
@@ -49,7 +55,7 @@ func (suite *ClientTestSuite) TestTransfer() {
 	})
 	suite.Require().NoError(err)
 
-	amount := xc_types.NewBigIntFromInt64(3)
+	amount := xc_types.NewBigIntFromInt64(1)
 
 	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
@@ -67,10 +73,6 @@ func (suite *ClientTestSuite) TestTransfer() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	gas, err := client.EstimateGasFee(ctx, tx)
-	suite.Require().NoError(err)
-	fmt.Printf("gas: %v\n", gas)
-
 	sighashes, err := tx.Sighashes()
 	suite.Require().NoError(err)
 	suite.Require().Equal(len(sighashes), 1)
@@ -86,13 +88,17 @@ func (suite *ClientTestSuite) TestTransfer() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
+	gas, err := client.EstimateGasFee(ctx, tx)
+	suite.Require().NoError(err)
+	fmt.Printf("gas: %v\n", gas)
+
 	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("tx hash: %v\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) TestTranfserTRC20() {
+func (suite *ClientTestSuite) TestTransferTRC20() {
 	ctx := context.Background()
 
 	//testnet
@@ -104,7 +110,7 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	})
 	suite.Require().NoError(err)
 
-	contractAddress := xc_types.ContractAddress("TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3")
+	contractAddress := xc_types.ContractAddress(contractBtt)
 
 	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
@@ -126,10 +132,6 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
-	calculatedGas, err := client.EstimateGasFee(ctx, tx)
-	suite.Require().NoError(err)
-	fmt.Printf("gas: %v\n", calculatedGas)
-
 	sighashes, err := tx.Sighashes()
 	suite.Require().NoError(err)
 	suite.Require().Equal(len(sighashes), 1)
@@ -145,7 +147,11 @@ func (suite *ClientTestSuite) TestTranfserTRC20() {
 	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
-	client.BroadcastTx(ctx, tx)
+	calculatedGas, err := client.EstimateGasFee(ctx, tx)
+	suite.Require().NoError(err)
+	fmt.Printf("gas: %v\n", calculatedGas)
+
+	err = client.BroadcastTx(ctx, tx)
 	suite.Require().NoError(err)
 
 	fmt.Printf("trx hash: %s\n", tx.Hash())
@@ -186,7 +192,7 @@ func (suite *ClientTestSuite) Test_EstimateGasTransfer() {
 	})
 	suite.Require().NoError(err)
 
-	amount := xc_types.NewBigIntFromInt64(3)
+	amount := xc_types.NewBigIntFromInt64(1)
 
 	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
@@ -204,12 +210,26 @@ func (suite *ClientTestSuite) Test_EstimateGasTransfer() {
 	tx, err := builder.NewTransfer(args, input)
 	suite.Require().NoError(err)
 
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
 	gas, err := client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("gas: %v\n", gas)
 }
 
-func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
+func (suite *ClientTestSuite) TestEstimateGasTransferTRC20() {
 	ctx := context.Background()
 
 	client, err := tron_http.NewClient(&xc_types.ChainConfig{
@@ -220,7 +240,7 @@ func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
 	})
 	suite.Require().NoError(err)
 
-	contractAddress := xc_types.ContractAddress("TF17BgPaZYbz8oxbjhriubPDsA7ArKoLX3")
+	contractAddress := xc_types.ContractAddress(contractBtt)
 	args, err := xcbuilder.NewTransferArgs(
 		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
 		"TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA",
@@ -239,6 +259,20 @@ func (suite *ClientTestSuite) TestEstimateGasTranfserTRC20() {
 	suite.Require().NoError(err)
 
 	tx, err := builder.NewTransfer(args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
 	suite.Require().NoError(err)
 
 	calculatedGas, err := client.EstimateGasFee(ctx, tx)

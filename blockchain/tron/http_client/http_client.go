@@ -135,6 +135,25 @@ type GetAccountResponse struct {
 	Address string `json:"address"`
 }
 
+type GetAccountResourceResponse struct {
+	Error
+	FreeNetUsed          int64             `json:"freeNetUsed,omitempty"`
+	FreeNetLimit         int64             `json:"freeNetLimit,omitempty"`
+	NetUsed              int64             `json:"NetUsed,omitempty"`
+	NetLimit             int64             `json:"NetLimit,omitempty"`
+	TotalNetLimit        int64             `json:"TotalNetLimit,omitempty"`
+	TotalNetWeight       int64             `json:"TotalNetWeight,omitempty"`
+	TotalTronPowerWeight int64             `json:"totalTronPowerWeight,omitempty"`
+	TronPowerLimit       int64             `json:"tronPowerLimit,omitempty"`
+	TronPowerUsed        int64             `json:"tronPowerUsed,omitempty"`
+	EnergyUsed           int64             `json:"EnergyUsed,omitempty"`
+	EnergyLimit          int64             `json:"EnergyLimit,omitempty"`
+	TotalEnergyLimit     int64             `json:"TotalEnergyLimit,omitempty"`
+	TotalEnergyWeight    int64             `json:"TotalEnergyWeight,omitempty"`
+	AssetNetUsed         *map[string]int64 `json:"assetNetUsed,omitempty"`
+	AssetNetLimit        *map[string]int64 `json:"assetNetLimit,omitempty"`
+}
+
 type GetChainParametersResponse struct {
 	Error
 	ChainParameter []ChainParameter
@@ -403,12 +422,22 @@ func (c *Client) EstimateEnergy(
 }
 
 func (c *Client) TriggerConstantContracts(ctx context.Context, ownerAddress string, contract string, funcSelector string, param string) (*TriggerConstantContractResponse, error) {
+	abiParam, err := abi.LoadFromJSON(param)
+	if err != nil {
+		return nil, err
+	}
+
+	dataBytes, err := abi.Pack(funcSelector, abiParam)
+	if err != nil {
+		return nil, err
+	}
+
 	req, err := postRequest(ctx, c.Url("wallet/triggerconstantcontract"), map[string]interface{}{
 		"owner_address":     ownerAddress,
 		"contract_address":  contract,
 		"constant":          true,
 		"function_selector": funcSelector,
-		"parameter":         param,
+		"parameter":         hex.EncodeToString(dataBytes),
 		"visible":           true,
 	})
 
@@ -512,9 +541,11 @@ func (c *Client) GetChainParameters(ctx context.Context) (*GetChainParametersRes
 	return parsed, nil
 }
 
-/*
-func (c *Client) GetAccountResource(ctx context.Context) (*GetAccountResourceResponse, error) {
-	req, err := getRequest(c.Url("wallet/getaccountresource"))
+func (c *Client) GetAccountResource(ctx context.Context, address string) (*GetAccountResourceResponse, error) {
+	req, err := postRequest(ctx, c.Url("wallet/getaccountresource"), map[string]interface{}{
+		"address": address,
+		"visible": true,
+	})
 
 	if err != nil {
 		return nil, err
@@ -535,4 +566,3 @@ func (c *Client) GetAccountResource(ctx context.Context) (*GetAccountResourceRes
 
 	return parsed, nil
 }
-*/
