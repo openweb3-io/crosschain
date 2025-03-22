@@ -422,22 +422,12 @@ func (c *Client) EstimateEnergy(
 }
 
 func (c *Client) TriggerConstantContracts(ctx context.Context, ownerAddress string, contract string, funcSelector string, param string) (*TriggerConstantContractResponse, error) {
-	abiParam, err := abi.LoadFromJSON(param)
-	if err != nil {
-		return nil, err
-	}
-
-	dataBytes, err := abi.Pack(funcSelector, abiParam)
-	if err != nil {
-		return nil, err
-	}
-
 	req, err := postRequest(ctx, c.Url("wallet/triggerconstantcontract"), map[string]interface{}{
 		"owner_address":     ownerAddress,
 		"contract_address":  contract,
 		"constant":          true,
 		"function_selector": funcSelector,
-		"parameter":         hex.EncodeToString(dataBytes),
+		"parameter":         param,
 		"visible":           true,
 	})
 
