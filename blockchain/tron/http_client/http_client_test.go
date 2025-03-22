@@ -40,6 +40,15 @@ func (suite *HttpClientTestSuite) TestGetChainParameters() {
 	fmt.Printf("resp: %v\n", resp)
 }
 
+func (suite *HttpClientTestSuite) TestGetAccountResource() {
+	ctx := context.Background()
+
+	nileTopAccount := "TDGSR64oU4QDpViKfdwawSiqwyqpUB6JUD"
+	resp, err := suite.client.GetAccountResource(ctx, nileTopAccount)
+	suite.Require().NoError(err)
+	fmt.Printf("resp: %v\n", resp)
+}
+
 func (suite *HttpClientTestSuite) TestInvokeContract() {
 	require := suite.Require()
 

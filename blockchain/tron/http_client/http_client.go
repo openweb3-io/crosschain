@@ -137,21 +137,21 @@ type GetAccountResponse struct {
 
 type GetAccountResourceResponse struct {
 	Error
-	FreeNetUsed          int64             `json:"freeNetUsed,omitempty"`
-	FreeNetLimit         int64             `json:"freeNetLimit,omitempty"`
-	NetUsed              int64             `json:"NetUsed,omitempty"`
-	NetLimit             int64             `json:"NetLimit,omitempty"`
-	TotalNetLimit        int64             `json:"TotalNetLimit,omitempty"`
-	TotalNetWeight       int64             `json:"TotalNetWeight,omitempty"`
-	TotalTronPowerWeight int64             `json:"totalTronPowerWeight,omitempty"`
-	TronPowerLimit       int64             `json:"tronPowerLimit,omitempty"`
-	TronPowerUsed        int64             `json:"tronPowerUsed,omitempty"`
-	EnergyUsed           int64             `json:"EnergyUsed,omitempty"`
-	EnergyLimit          int64             `json:"EnergyLimit,omitempty"`
-	TotalEnergyLimit     int64             `json:"TotalEnergyLimit,omitempty"`
-	TotalEnergyWeight    int64             `json:"TotalEnergyWeight,omitempty"`
-	AssetNetUsed         *map[string]int64 `json:"assetNetUsed,omitempty"`
-	AssetNetLimit        *map[string]int64 `json:"assetNetLimit,omitempty"`
+	FreeNetUsed          int64            `json:"freeNetUsed,omitempty"`
+	FreeNetLimit         int64            `json:"freeNetLimit,omitempty"`
+	NetUsed              int64            `json:"NetUsed,omitempty"`
+	NetLimit             int64            `json:"NetLimit,omitempty"`
+	TotalNetLimit        int64            `json:"TotalNetLimit,omitempty"`
+	TotalNetWeight       int64            `json:"TotalNetWeight,omitempty"`
+	TotalTronPowerWeight int64            `json:"totalTronPowerWeight,omitempty"`
+	TronPowerLimit       int64            `json:"tronPowerLimit,omitempty"`
+	TronPowerUsed        int64            `json:"tronPowerUsed,omitempty"`
+	EnergyUsed           int64            `json:"EnergyUsed,omitempty"`
+	EnergyLimit          int64            `json:"EnergyLimit,omitempty"`
+	TotalEnergyLimit     int64            `json:"TotalEnergyLimit,omitempty"`
+	TotalEnergyWeight    int64            `json:"TotalEnergyWeight,omitempty"`
+	AssetNetUsed         []map[string]any `json:"assetNetUsed,omitempty"`
+	AssetNetLimit        []map[string]any `json:"assetNetLimit,omitempty"`
 }
 
 type GetChainParametersResponse struct {
