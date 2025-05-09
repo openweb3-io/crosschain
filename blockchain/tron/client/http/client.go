@@ -5,6 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/fbsobreira/gotron-sdk/pkg/common"
+	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
+	"google.golang.org/protobuf/types/known/anypb"
 	"math/big"
 	"strings"
 	"time"
@@ -46,7 +50,7 @@ func NewClient(
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
-	input := new(tron.TxInput)
+	input := new(tx_input.TxInput)
 
 	dummyTx, err := client.client.CreateTransaction(ctx, string(args.GetFrom()), string(args.GetTo()), 5)
 
@@ -102,10 +106,10 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 	var from xc_types.Address
 	var to xc_types.Address
 	var amount xc_types.BigInt
-	sources, destinations := deserialiseTransactionEvents(info.Logs)
+	sources, destinations := deserializeTransactionEvents(info.Logs)
 	// If we cannot retrieve transaction events, we can infer that the TX is a native transfer
 	if len(sources) == 0 && len(destinations) == 0 {
-		from, to, amount, err = deserialiseNativeTransfer(tx)
+		from, to, amount, err = deserializeNativeTransfer(tx)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +138,7 @@ func (client *Client) FetchLegacyTxInfo(ctx context.Context, txHash xc_types.TxH
 		To:              to,
 		ContractAddress: xc_types.ContractAddress(info.ContractAddress),
 		Amount:          amount,
-		Fee:             xc_types.NewBigIntFromUint64(uint64(info.Fee)),
+		Fee:             xc_types.NewBigIntFromUint64(info.Fee),
 		BlockIndex:      int64(info.BlockNumber),
 		BlockTime:       int64(info.BlockTimeStamp / 1000),
 		Confirmations:   0,
@@ -164,7 +168,7 @@ func (a *Client) FetchBalance(ctx context.Context, address xc_types.Address) (*x
 	if err != nil {
 		return nil, err
 	}
-	balance := xc_types.NewBigIntFromUint64(account.Balance)
+	balance := xc_types.NewBigIntFromInt64(account.Balance)
 	return &balance, nil
 }
 
@@ -286,6 +290,179 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 	}
 }
 
+func (client *Client) FetchStakeInput(ctx context.Context, address xc_types.Address, resource tx_input.Resource, amount xc_types.BigInt) (xc_types.StakeTxInput, error) {
+	input := new(tx_input.StakingInput)
+
+	dummyTx, err := client.client.FreezeBalanceV2(ctx, string(address), httpclient.Resource(resource), amount.Int())
+
+	if err != nil {
+		return nil, err
+	}
+
+	input.RefBlockBytes = dummyTx.RawData.RefBlockBytes
+	input.RefBlockHash = dummyTx.RawData.RefBlockHashBytes
+	// set timeout period
+	input.Timestamp = time.Now().Unix()
+	input.Expiration = time.Now().Add(TX_TIMEOUT).Unix()
+
+	input.Resource = resource
+
+	return input, nil
+}
+
+func (client *Client) FetchUnstakeInput(ctx context.Context, address xc_types.Address, resource tx_input.Resource, amount xc_types.BigInt) (xc_types.UnstakeTxInput, error) {
+	input := new(tx_input.UnstakingInput)
+
+	dummyTx, err := client.client.UnfreezeBalanceV2(ctx, string(address), httpclient.Resource(resource), amount.Int())
+
+	if err != nil {
+		return nil, err
+	}
+
+	input.RefBlockBytes = dummyTx.RawData.RefBlockBytes
+	input.RefBlockHash = dummyTx.RawData.RefBlockHashBytes
+	// set timeout period
+	input.Timestamp = time.Now().Unix()
+	input.Expiration = time.Now().Add(TX_TIMEOUT).Unix()
+
+	input.Resource = resource
+
+	return input, nil
+}
+
+func (client *Client) FetchWithdrawInput(ctx context.Context, ownerAddress xc_types.Address) (xc_types.WithdrawTxInput, error) {
+	input := new(tx_input.WithdrawInput)
+
+	dummyTx, err := client.client.WithdrawExpireUnfreeze(ctx, string(ownerAddress))
+
+	if err != nil {
+		return nil, err
+	}
+
+	input.RefBlockBytes = dummyTx.RawData.RefBlockBytes
+	input.RefBlockHash = dummyTx.RawData.RefBlockHashBytes
+	// set timeout period
+	input.Timestamp = time.Now().Unix()
+	input.Expiration = time.Now().Add(TX_TIMEOUT).Unix()
+
+	return input, nil
+}
+
+// FetchDelegatingTx and FetchUnDelegatingTx
+// Currently lacks an abstraction layer for delegating resources,
+// so return the transaction object without going through the Input + Builder process
+func (client *Client) FetchDelegatingTx(ctx context.Context, ownerAddress, receiverAddress xc_types.Address, resource tx_input.Resource, amount xc_types.BigInt) (xc_types.Tx, error) {
+	dummyTx, err := client.client.DelegateResource(ctx, string(ownerAddress), string(receiverAddress), httpclient.Resource(resource), amount.Int())
+	if err != nil {
+		return nil, err
+	}
+
+	ownerAddressBytes, err := common.DecodeCheck(string(ownerAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	receiverAddressBytes, err := common.DecodeCheck(string(receiverAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	dummyParams := dummyTx.RawData.Contract[0].Parameter.Value
+
+	params := &core.DelegateResourceContract{
+		OwnerAddress:    ownerAddressBytes,
+		ReceiverAddress: receiverAddressBytes,
+		Balance:         dummyParams.Balance,
+	}
+
+	if dummyParams.Resource == httpclient.ResourceEnergy {
+		params.Resource = core.ResourceCode_ENERGY
+	} else {
+		params.Resource = core.ResourceCode_BANDWIDTH
+	}
+
+	if dummyParams.Lock != nil {
+		params.Lock = *dummyParams.Lock
+	}
+
+	if dummyParams.LockPeriod != nil {
+		params.LockPeriod = *dummyParams.LockPeriod
+	}
+
+	contract := &core.Transaction_Contract{}
+	contract.Type = core.Transaction_Contract_DelegateResourceContract
+	param, err := anypb.New(params)
+	if err != nil {
+		return nil, err
+	}
+	contract.Parameter = param
+
+	tx := &core.Transaction{}
+	tx.RawData = &core.TransactionRaw{
+		Contract:      []*core.Transaction_Contract{contract},
+		RefBlockBytes: dummyTx.RawData.RefBlockBytes,
+		RefBlockHash:  dummyTx.RawData.RefBlockHashBytes,
+		Expiration:    int64(dummyTx.RawData.Expiration),
+		Timestamp:     int64(dummyTx.RawData.Timestamp),
+	}
+
+	return &tron.Tx{
+		TronTx: tx,
+	}, nil
+}
+
+func (client *Client) FetchUnDelegatingTx(ctx context.Context, ownerAddress, receiverAddress xc_types.Address, resource tx_input.Resource, amount xc_types.BigInt) (xc_types.Tx, error) {
+	dummyTx, err := client.client.UnDelegateResource(ctx, string(ownerAddress), string(receiverAddress), httpclient.Resource(resource), amount.Int())
+	if err != nil {
+		return nil, err
+	}
+
+	ownerAddressBytes, err := common.DecodeCheck(string(ownerAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	receiverAddressBytes, err := common.DecodeCheck(string(receiverAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	dummyParams := dummyTx.RawData.Contract[0].Parameter.Value
+
+	params := &core.UnDelegateResourceContract{
+		OwnerAddress:    ownerAddressBytes,
+		ReceiverAddress: receiverAddressBytes,
+		Balance:         dummyParams.Balance,
+	}
+
+	if dummyParams.Resource == httpclient.ResourceEnergy {
+		params.Resource = core.ResourceCode_ENERGY
+	} else {
+		params.Resource = core.ResourceCode_BANDWIDTH
+	}
+
+	contract := &core.Transaction_Contract{}
+	contract.Type = core.Transaction_Contract_UnDelegateResourceContract
+	param, err := anypb.New(params)
+	if err != nil {
+		return nil, err
+	}
+	contract.Parameter = param
+
+	tx := &core.Transaction{}
+	tx.RawData = &core.TransactionRaw{
+		Contract:      []*core.Transaction_Contract{contract},
+		RefBlockBytes: dummyTx.RawData.RefBlockBytes,
+		RefBlockHash:  dummyTx.RawData.RefBlockHashBytes,
+		Expiration:    int64(dummyTx.RawData.Expiration),
+		Timestamp:     int64(dummyTx.RawData.Timestamp),
+	}
+
+	return &tron.Tx{
+		TronTx: tx,
+	}, nil
+}
+
 func isNewAccount(ctx context.Context, client *Client, address xc_types.Address) (bool, error) {
 	newAccount := false
 	_, err := client.client.GetAccount(ctx, string(address))
@@ -299,7 +476,7 @@ func isNewAccount(ctx context.Context, client *Client, address xc_types.Address)
 	return newAccount, nil
 }
 
-func deserialiseTransactionEvents(log []*httpclient.Log) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint) {
+func deserializeTransactionEvents(log []*httpclient.Log) ([]*xc_types.LegacyTxInfoEndpoint, []*xc_types.LegacyTxInfoEndpoint) {
 	sources := make([]*xc_types.LegacyTxInfoEndpoint, 0)
 	destinations := make([]*xc_types.LegacyTxInfoEndpoint, 0)
 
@@ -337,7 +514,7 @@ func deserialiseTransactionEvents(log []*httpclient.Log) ([]*xc_types.LegacyTxIn
 	return sources, destinations
 }
 
-func deserialiseNativeTransfer(tx *httpclient.GetTransactionIDResponse) (xc_types.Address, xc_types.Address, xc_types.BigInt, error) {
+func deserializeNativeTransfer(tx *httpclient.GetTransactionIDResponse) (xc_types.Address, xc_types.Address, xc_types.BigInt, error) {
 	if len(tx.RawData.Contract) != 1 {
 		return "", "", xc_types.BigInt{}, fmt.Errorf("unsupported transaction")
 	}
@@ -356,5 +533,5 @@ func deserialiseNativeTransfer(tx *httpclient.GetTransactionIDResponse) (xc_type
 	to := xc_types.Address(transferContract.To)
 	amount := transferContract.Amount
 
-	return from, to, xc_types.NewBigIntFromUint64(uint64(amount)), nil
+	return from, to, xc_types.NewBigIntFromUint64(amount), nil
 }

@@ -30,9 +30,16 @@ func (b *Bytes) UnmarshalJSON(inputBz []byte) error {
 	input = strings.TrimPrefix(input, "\"")
 	input = strings.TrimSuffix(input, "\"")
 	input = strings.TrimPrefix(input, "0x")
-	*b, err = hex.DecodeString(string(input))
+	*b, err = hex.DecodeString(input)
 	return err
 }
+
+type Resource string
+
+const (
+	ResourceBandwidth = Resource("BANDWIDTH")
+	ResourceEnergy    = Resource("ENERGY")
+)
 
 type Client struct {
 	baseUrl *url.URL
@@ -44,36 +51,42 @@ type Error struct {
 	Message string `json:"message"`
 	Error   string `json:"Error"`
 }
-type ContractParameter struct {
-	Value   map[string]interface{} `json:"value"`
-	TypeUrl string                 `json:"type_url"`
+
+type ContractParameter[T any] struct {
+	Value   T      `json:"value"`
+	TypeUrl string `json:"type_url"`
 }
-type ContractData struct {
-	Parameter ContractParameter `json:"parameter"`
-	Type      string            `json:"type"`
+
+type ContractData[T any] struct {
+	Parameter ContractParameter[T] `json:"parameter"`
+	Type      string               `json:"type"`
 }
+
 type Receipt struct {
 	NetFee uint64 `json:"net_fee"`
 }
-type TransactionRawData struct {
-	Contract          []ContractData `json:"contract"`
-	RefBlockBytes     Bytes          `json:"ref_block_bytes"`
-	RefBlockHashBytes Bytes          `json:"ref_block_hash"`
-	Expiration        uint64         `json:"expiration"`
-	FeeLimit          uint64         `json:"fee_limit"`
-	Timestamp         uint64         `json:"timestamp"`
+
+type TransactionRawData[T any] struct {
+	Contract          []ContractData[T] `json:"contract"`
+	RefBlockBytes     Bytes             `json:"ref_block_bytes"`
+	RefBlockHashBytes Bytes             `json:"ref_block_hash"`
+	Expiration        uint64            `json:"expiration"`
+	FeeLimit          uint64            `json:"fee_limit"`
+	Timestamp         uint64            `json:"timestamp"`
 }
+
 type CreateTransactionResponse struct {
 	Error
-	RawData    TransactionRawData `json:"raw_data"`
-	RawDataHex Bytes              `json:"raw_data_hex"`
+	RawData    TransactionRawData[map[string]any] `json:"raw_data"`
+	RawDataHex Bytes                              `json:"raw_data_hex"`
 }
+
 type GetTransactionIDResponse struct {
 	Error
-	RawData    TransactionRawData `json:"raw_data"`
-	RawDataHex Bytes              `json:"raw_data_hex"`
-	TxID       Bytes              `json:"txID"`
-	Signature  []Bytes            `json:"signature"`
+	RawData    TransactionRawData[map[string]any] `json:"raw_data"`
+	RawDataHex Bytes                              `json:"raw_data_hex"`
+	TxID       Bytes                              `json:"txID"`
+	Signature  []Bytes                            `json:"signature"`
 }
 
 type GetTransactionInfoById struct {
@@ -103,7 +116,7 @@ type InternalTransaction struct {
 }
 type BlockHeaderRawData struct {
 	Number    uint64 `json:"number"`
-	Verion    uint64 `json:"version"`
+	Version   uint64 `json:"version"`
 	Timestamp uint64 `json:"timestamp"`
 	// other fields...
 }
@@ -112,6 +125,7 @@ type BlockHeader struct {
 	RawData          BlockHeaderRawData `json:"raw_data"`
 	WitnessSignature Bytes              `json:"witness_signature"`
 }
+
 type BlockResponse struct {
 	Error
 	BlockHeader BlockHeader `json:"block_header"`
@@ -129,10 +143,84 @@ type EstimateEnergyResponse struct {
 	EnergyRequired int64 `json:"energy_required"`
 }
 
+type AccountResource struct {
+	DelegatedFrozenBalanceForEnergy           int64 `json:"delegated_frozen_balance_for_energy"`
+	AcquiredDelegatedFrozenBalanceForEnergy   int64 `json:"acquired_delegated_frozen_balance_for_energy"`
+	DelegatedFrozenV2BalanceForEnergy         int64 `json:"delegated_frozenV2_balance_for_energy"`
+	AcquiredDelegatedFrozenV2BalanceForEnergy int64 `json:"acquired_delegated_frozenV2_balance_for_energy"`
+	EnergyWindowSize                          int64 `json:"energy_window_size"`
+	EnergyWindowOptimized                     bool  `json:"energy_window_optimized"`
+	EnergyUsage                               int64 `json:"energy_usage"`
+	LatestConsumeTimeForEnergy                int64 `json:"latest_consume_time_for_energy"`
+}
+
+type FrozenV2 struct {
+	Type   string `json:"type"`
+	Amount int64  `json:"amount"`
+}
+
+type UnfrozenV2 struct {
+	Type               string `json:"type"`
+	UnfreezeAmount     int64  `json:"unfreeze_amount"`
+	UnfreezeExpireTime int64  `json:"unfreeze_expire_time"`
+}
+
+type FreeAssetNetUsageV2 struct {
+	Key   string `json:"key"`
+	Value int64  `json:"value"`
+}
+
+type Vote struct {
+	VoteAddress string `json:"vote_address"`
+	VoteCount   int64  `json:"vote_count"`
+}
+
+type PermissionKey struct {
+	Address string `json:"address"`
+	Weight  int64  `json:"weight"`
+}
+
+type Permission struct {
+	Type           string          `json:"type"`
+	Id             int64           `json:"id"`
+	PermissionName string          `json:"permission_name"`
+	Threshold      int64           `json:"threshold"`
+	Operations     string          `json:"operations"`
+	Keys           []PermissionKey `json:"keys"`
+}
+
+type AssetV2 struct {
+	Key   string `json:"key"`
+	Value int64  `json:"value"`
+}
+
 type GetAccountResponse struct {
 	Error
-	Balance uint64 `json:"balance"`
-	Address string `json:"address"`
+	Address                                      string                `json:"address"`
+	CreateTime                                   int64                 `json:"create_time"`
+	Balance                                      int64                 `json:"balance"`
+	DelegatedFrozenBalanceForBandwidth           int64                 `json:"delegated_frozen_balance_for_bandwidth"`
+	AcquiredDelegatedFrozenBalanceForBandwidth   int64                 `json:"acquired_delegated_frozen_balance_for_bandwidth"`
+	AccountResource                              AccountResource       `json:"account_resource"`
+	DelegatedFrozenV2BalanceForBandwidth         int64                 `json:"delegated_frozenV2_balance_for_bandwidth"`
+	AcquiredDelegatedFrozenV2BalanceForBandwidth int64                 `json:"acquired_delegated_frozenV2_balance_for_bandwidth"`
+	FrozenV2                                     []FrozenV2            `json:"frozenV2"`
+	UnfrozenV2                                   []UnfrozenV2          `json:"unfrozenV2"`
+	NetWindowSize                                int64                 `json:"net_window_size"`
+	NetWindowOptimized                           bool                  `json:"net_window_optimized"`
+	FreeAssetNetUsageV2                          []FreeAssetNetUsageV2 `json:"free_asset_net_usageV2"`
+	Votes                                        []Vote                `json:"votes"`
+	LatestOprationTime                           int64                 `json:"latest_opration_time"`
+	LatestConsumeTime                            int64                 `json:"latest_consume_time"`
+	LatestConsumeFreeTime                        int64                 `json:"latest_consume_free_time"`
+	IsWitness                                    bool                  `json:"is_witness"`
+	Allowance                                    int64                 `json:"allowance"`
+	LatestWithdrawTime                           int64                 `json:"latest_withdraw_time"`
+	OwnerPermission                              Permission            `json:"owner_permission"`
+	WitnessPermission                            Permission            `json:"witness_permission"`
+	ActivePermission                             []Permission          `json:"active_permission"`
+	AssetV2                                      []AssetV2             `json:"assetV2"`
+	AssetOptimized                               bool                  `json:"asset_optimized"`
 }
 
 type GetAccountResourceResponse struct {
@@ -162,6 +250,88 @@ type GetChainParametersResponse struct {
 type ChainParameter struct {
 	Key   string `json:"key"`
 	Value int64  `json:"value"`
+}
+
+type TransactionResponse[T any] struct {
+	Error
+	Visible    bool                  `json:"visible"`
+	TxID       string                `json:"txID"`
+	RawData    TransactionRawData[T] `json:"raw_data"`
+	RawDataHex string                `json:"raw_data_hex"`
+}
+
+type FreezeBalanceV2Request struct {
+	OwnerAddress  string `json:"owner_address"`
+	Resource      string `json:"resource"`
+	FrozenBalance int64  `json:"frozen_balance"`
+	PermissionId  *int32 `json:"Permission_id,omitempty"`
+	Visible       *bool  `json:"visible,omitempty"`
+}
+
+type FreezeBalanceV2ContractParameterValue struct {
+	Resource      string `json:"resource"`
+	FrozenBalance int64  `json:"frozen_balance"` // official document using 'int'
+	OwnerAddress  string `json:"owner_address"`
+}
+
+type UnfreezeBalanceV2Request struct {
+	OwnerAddress    string `json:"owner_address"`
+	Resource        string `json:"resource"`
+	UnfreezeBalance int64  `json:"unfreeze_balance"`
+	PermissionId    *int32 `json:"Permission_id,omitempty"`
+	Visible         *bool  `json:"visible,omitempty"`
+}
+
+type UnfreezeBalanceV2ContractParameterValue struct {
+	Resource      string `json:"resource"`
+	FrozenBalance int64  `json:"frozen_balance"` // official document using 'int'
+	OwnerAddress  string `json:"owner_address"`
+}
+
+type WithdrawExpireUnfreezeRequest struct {
+	OwnerAddress string `json:"owner_address"`
+	PermissionId *int32 `json:"Permission_id,omitempty"`
+	Visible      *bool  `json:"visible,omitempty"`
+}
+
+type WithdrawExpireUnfreezeContractParameterValue struct {
+	OwnerAddress string `json:"owner_address"`
+}
+
+type DelegateResourceRequest struct {
+	OwnerAddress    string   `json:"owner_address"`
+	ReceiverAddress string   `json:"receiver_address"`
+	Resource        Resource `json:"resource"`
+	Balance         int64    `json:"balance"`
+	Lock            *bool    `json:"lock,omitempty"`
+	LockPeriod      *int64   `json:"lock_period,omitempty"`
+	PermissionId    *int32   `json:"Permission_id,omitempty"`
+	Visible         *bool    `json:"visible,omitempty"`
+}
+
+type DelegateResourceContractParameterValue struct {
+	OwnerAddress    string   `json:"owner_address"`
+	ReceiverAddress string   `json:"receiver_address"`
+	Resource        Resource `json:"resource"`
+	Balance         int64    `json:"balance"`
+	Lock            *bool    `json:"lock,omitempty"`
+	LockPeriod      *int64   `json:"lock_period,omitempty"`
+}
+
+type UnDelegateResourceRequest struct {
+	OwnerAddress    string   `json:"owner_address"`
+	ReceiverAddress string   `json:"receiver_address"`
+	Resource        Resource `json:"resource"`
+	Balance         int64    `json:"balance"`
+	PermissionId    *int32   `json:"Permission_id,omitempty"`
+	Visible         *bool    `json:"visible,omitempty"`
+}
+
+type UnDelegateResourceContractParameterValue struct {
+	OwnerAddress    string   `json:"owner_address"`
+	ReceiverAddress string   `json:"receiver_address"`
+	Resource        Resource `json:"resource"`
+	Balance         int64    `json:"balance"`
 }
 
 func NewHttpClient(baseUrl string) (*Client, error) {
@@ -249,13 +419,18 @@ func (c *Client) CreateTransaction(ctx context.Context, from string, to string, 
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &CreateTransactionResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 	// if parsed.
 
@@ -275,13 +450,18 @@ func (c *Client) BroadcastHex(ctx context.Context, txHex string) (*CreateTransac
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &CreateTransactionResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 
 	return parsed, nil
@@ -301,13 +481,18 @@ func (c *Client) GetTransactionByID(ctx context.Context, txHash string) (*GetTra
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &GetTransactionIDResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 	if len(parsed.TxID) == 0 {
 		return parsed, fmt.Errorf("could not find tx: %s", txHash)
@@ -329,13 +514,18 @@ func (c *Client) GetTransactionInfoByID(ctx context.Context, txHash string) (*Ge
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &GetTransactionInfoById{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 	if len(parsed.Id) == 0 {
 		return parsed, fmt.Errorf("could not find tx info: %s", txHash)
@@ -357,13 +547,18 @@ func (c *Client) GetBlockByNum(ctx context.Context, num uint64) (*BlockResponse,
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &BlockResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 	if len(parsed.BlockId) == 0 {
 		return parsed, fmt.Errorf("could not find block by num: %d", num)
@@ -408,14 +603,18 @@ func (c *Client) EstimateEnergy(
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
 
 	parsed, err := parseResponse(resp, &EstimateEnergyResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 
 	return parsed, nil
@@ -439,14 +638,18 @@ func (c *Client) TriggerConstantContracts(ctx context.Context, ownerAddress stri
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
 
 	parsed, err := parseResponse(resp, &TriggerConstantContractResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 
 	return parsed, nil
@@ -493,13 +696,18 @@ func (c *Client) GetAccount(ctx context.Context, address string) (*GetAccountRes
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &GetAccountResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 	if len(parsed.Address) == 0 {
 		return parsed, fmt.Errorf("could not find account: %s", address)
@@ -519,13 +727,18 @@ func (c *Client) GetChainParameters(ctx context.Context) (*GetChainParametersRes
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &GetChainParametersResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
-	if err != nil {
-		return parsed, err
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 
 	return parsed, nil
@@ -545,13 +758,188 @@ func (c *Client) GetAccountResource(ctx context.Context, address string) (*GetAc
 	if err != nil {
 		return nil, err
 	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
 	parsed, err := parseResponse(resp, &GetAccountResourceResponse{})
 	if err != nil {
 		return nil, err
 	}
-	err = checkError(parsed.Error)
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) FreezeBalanceV2(ctx context.Context, address string, resource Resource, amount *big.Int) (*TransactionResponse[FreezeBalanceV2ContractParameterValue], error) {
+	visible := true
+	req, err := postRequest(ctx, c.Url("wallet/freezebalancev2"), &FreezeBalanceV2Request{
+		OwnerAddress:  address,
+		Resource:      string(resource),
+		FrozenBalance: amount.Int64(),
+		Visible:       &visible,
+	})
+
 	if err != nil {
-		return parsed, err
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &TransactionResponse[FreezeBalanceV2ContractParameterValue]{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) UnfreezeBalanceV2(ctx context.Context, address string, resource Resource, amount *big.Int) (*TransactionResponse[UnfreezeBalanceV2ContractParameterValue], error) {
+	visible := true
+	req, err := postRequest(ctx, c.Url("wallet/unfreezebalancev2"), &UnfreezeBalanceV2Request{
+		OwnerAddress:    address,
+		Resource:        string(resource),
+		UnfreezeBalance: amount.Int64(),
+		Visible:         &visible,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &TransactionResponse[UnfreezeBalanceV2ContractParameterValue]{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) WithdrawExpireUnfreeze(ctx context.Context, address string) (*TransactionResponse[WithdrawExpireUnfreezeContractParameterValue], error) {
+	visible := true
+	req, err := postRequest(ctx, c.Url("wallet/withdrawexpireunfreeze"), &WithdrawExpireUnfreezeRequest{
+		OwnerAddress: address,
+		Visible:      &visible,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &TransactionResponse[WithdrawExpireUnfreezeContractParameterValue]{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) DelegateResource(ctx context.Context, ownerAddress, receiverAddress string, resource Resource, amount *big.Int) (*TransactionResponse[DelegateResourceContractParameterValue], error) {
+	visible := true
+	req, err := postRequest(ctx, c.Url("wallet/delegateresource"), &DelegateResourceRequest{
+		OwnerAddress:    ownerAddress,
+		ReceiverAddress: receiverAddress,
+		Resource:        resource,
+		Balance:         amount.Int64(),
+		Visible:         &visible,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &TransactionResponse[DelegateResourceContractParameterValue]{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) UnDelegateResource(ctx context.Context, ownerAddress, receiverAddress string, resource Resource, amount *big.Int) (*TransactionResponse[UnDelegateResourceContractParameterValue], error) {
+	visible := true
+	req, err := postRequest(ctx, c.Url("wallet/undelegateresource"), &UnDelegateResourceRequest{
+		OwnerAddress:    ownerAddress,
+		ReceiverAddress: receiverAddress,
+		Resource:        resource,
+		Balance:         amount.Int64(),
+		Visible:         &visible,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &TransactionResponse[UnDelegateResourceContractParameterValue]{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
 	}
 
 	return parsed, nil

@@ -1,7 +1,14 @@
-package tron
+package tx_input
 
 import (
 	xc_types "github.com/openweb3-io/crosschain/types"
+)
+
+type Resource string
+
+const (
+	ResourceBandwidth = Resource("BANDWIDTH")
+	ResourceEnergy    = Resource("ENERGY")
 )
 
 type TxInput struct {
