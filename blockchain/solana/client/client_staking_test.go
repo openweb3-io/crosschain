@@ -132,7 +132,7 @@ func TestFetchStakingInput(t *testing.T) {
 }
 
 /*
-# Get Stake accounts
+# Get FreezeBalanceV2 accounts
 curl https://api.mainnet.solana.com -X POST -H "Content-Type: application/json" -d '
 {
   "jsonrpc": "2.0",
