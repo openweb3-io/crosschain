@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"math/big"
 	"testing"
 
@@ -157,7 +158,7 @@ func (suite *ClientTestSuite) TestTransferTRC20() {
 	fmt.Printf("trx hash: %s\n", tx.Hash())
 }
 
-func (suite *ClientTestSuite) Test_FetchBalance() {
+func (suite *ClientTestSuite) TestFetchBalance() {
 	ctx := context.Background()
 
 	senderPubk := "THjVQt6hpwZyWnkDm1bHfPvdgysQFoN8AL"
@@ -181,7 +182,7 @@ func (suite *ClientTestSuite) Test_FetchBalance() {
 	fmt.Printf("sender: %s token balance: %v\n", senderPubk, out)
 }
 
-func (suite *ClientTestSuite) Test_EstimateGasTransfer() {
+func (suite *ClientTestSuite) TestEstimateGasTransfer() {
 	ctx := context.Background()
 
 	client, err := tron_http.NewClient(&xc_types.ChainConfig{
@@ -278,4 +279,404 @@ func (suite *ClientTestSuite) TestEstimateGasTransferTRC20() {
 	calculatedGas, err := client.EstimateGasFee(ctx, tx)
 	suite.Require().NoError(err)
 	fmt.Printf("gas: %v\n", calculatedGas)
+}
+
+func (suite *ClientTestSuite) TestStakeBandwidth() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(10 * 1000000)
+
+	args, err := xcbuilder.NewStakeArgs(
+		xc_types.TRX,
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		amount,
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchStakeInput(ctx, "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F", tx_input.ResourceBandwidth, amount)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Stake(&args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("stake bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestStakeEnergy() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(10 * 1000000)
+
+	args, err := xcbuilder.NewStakeArgs(
+		xc_types.TRX,
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		amount,
+	)
+
+	input, err := client.FetchStakeInput(ctx, "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F", tx_input.ResourceEnergy, amount)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Stake(&args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("stake energy tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestUnstakeBandwidth() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(10 * 1000000)
+
+	args, err := xcbuilder.NewStakeArgs(
+		xc_types.TRX,
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		amount,
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchUnstakeInput(ctx, "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F", tx_input.ResourceBandwidth, amount)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Unstake(&args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("unstake bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestUnstakeEnergy() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(10 * 1000000)
+
+	args, err := xcbuilder.NewStakeArgs(
+		xc_types.TRX,
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		amount,
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchUnstakeInput(ctx, "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F", tx_input.ResourceEnergy, amount)
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Unstake(&args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("unstake bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestWithdraw() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	amount := xc_types.NewBigIntFromInt64(10 * 1000000)
+
+	args, err := xcbuilder.NewStakeArgs(
+		xc_types.TRX,
+		"THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F",
+		amount,
+	)
+	suite.Require().NoError(err)
+
+	input, err := client.FetchWithdrawInput(ctx, "THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F")
+	suite.Require().NoError(err)
+
+	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
+	suite.Require().NoError(err)
+
+	tx, err := builder.Withdraw(&args, input)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("withdraw tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestDelegatingBandwidth() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	ownerAddress := xc_types.Address("THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F")
+	receiverAddress := xc_types.Address("TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA")
+	resource := tx_input.ResourceBandwidth
+	amount := xc_types.NewBigIntFromInt64(1 * 1000000)
+
+	tx, err := client.FetchDelegatingTx(ctx, ownerAddress, receiverAddress, resource, amount)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("delegating bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestDelegatingEnergy() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	ownerAddress := xc_types.Address("THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F")
+	receiverAddress := xc_types.Address("TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA")
+	resource := tx_input.ResourceEnergy
+	amount := xc_types.NewBigIntFromInt64(1 * 1000000)
+
+	tx, err := client.FetchDelegatingTx(ctx, ownerAddress, receiverAddress, resource, amount)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("delegating bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestUnDelegatingBandwidth() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	ownerAddress := xc_types.Address("THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F")
+	receiverAddress := xc_types.Address("TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA")
+	resource := tx_input.ResourceBandwidth
+	amount := xc_types.NewBigIntFromInt64(1 * 1000000)
+
+	tx, err := client.FetchUnDelegatingTx(ctx, ownerAddress, receiverAddress, resource, amount)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("delegating bandwidth tx hash: %s\n", tx.Hash())
+}
+
+func (suite *ClientTestSuite) TestUnDelegatingEnergy() {
+	ctx := context.Background()
+
+	client, err := tron_http.NewClient(&xc_types.ChainConfig{
+		Client: &xc_types.ClientConfig{
+			URL: endpoint,
+		},
+		ChainID: chainId.Int64(),
+	})
+	suite.Require().NoError(err)
+
+	ownerAddress := xc_types.Address("THKrowiEfCe8evdbaBzDDvQjM5DGeB3s3F")
+	receiverAddress := xc_types.Address("TVjsyZ7fYF3qLF6BQgPmTEZy1xrNNyVAAA")
+	resource := tx_input.ResourceEnergy
+	amount := xc_types.NewBigIntFromInt64(1 * 1000000)
+
+	tx, err := client.FetchUnDelegatingTx(ctx, ownerAddress, receiverAddress, resource, amount)
+	suite.Require().NoError(err)
+
+	sighashes, err := tx.Sighashes()
+	suite.Require().NoError(err)
+
+	pkBytes, err := hex.DecodeString(senderPrivk)
+	suite.Require().NoError(err)
+	priv := crypto.ToECDSAUnsafe(pkBytes)
+
+	signer := tron.NewLocalSigner(priv)
+	signature, err := signer.Sign(sighashes[0])
+	suite.Require().NoError(err)
+
+	err = tx.AddSignatures(signature)
+	suite.Require().NoError(err)
+
+	err = client.BroadcastTx(ctx, tx)
+	suite.Require().NoError(err)
+
+	fmt.Printf("delegating bandwidth tx hash: %s\n", tx.Hash())
 }

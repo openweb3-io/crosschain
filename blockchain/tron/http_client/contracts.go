@@ -8,7 +8,7 @@ type transferContract struct {
 	To     string `json:"to_address"`
 }
 
-func (c *ContractData) AsTransferContract() (*transferContract, error) {
+func (c *ContractData[T]) AsTransferContract() (*transferContract, error) {
 	data := &transferContract{}
 	bz, err := json.Marshal(c.Parameter.Value)
 	if err != nil {

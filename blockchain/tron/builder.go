@@ -3,6 +3,7 @@ package tron
 import (
 	"errors"
 	"fmt"
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"time"
 
 	eABI "github.com/ethereum/go-ethereum/accounts/abi"
@@ -35,7 +36,7 @@ func (b *TxBuilder) NewTransfer(args *xcbuilder.TransferArgs, input types.TxInpu
 }
 
 func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
-	txInput := input.(*TxInput)
+	txInput := input.(*tx_input.TxInput)
 
 	from_bytes, err := common.DecodeCheck(string(args.GetFrom()))
 	if err != nil {
@@ -81,7 +82,7 @@ func (b *TxBuilder) NewNativeTransfer(args *xcbuilder.TransferArgs, input types.
 }
 
 func (b *TxBuilder) NewTokenTransfer(args *xcbuilder.TransferArgs, input types.TxInput) (types.Tx, error) {
-	txInput := input.(*TxInput)
+	txInput := input.(*tx_input.TxInput)
 	asset, _ := args.GetAsset()
 	if asset == nil {
 		return nil, errors.New("asset needed")
@@ -177,4 +178,135 @@ func Signature(method string) []byte {
 	hasher.Write([]byte(method))
 	b := hasher.Sum(nil)
 	return b[:4]
+}
+
+func (b *TxBuilder) Stake(args *xcbuilder.StakeArgs, input types.StakeTxInput) (types.Tx, error) {
+	stakeInput, ok := input.(*tx_input.StakingInput)
+	if !ok {
+		return nil, fmt.Errorf("invalid input %T, expected %T", input, stakeInput)
+	}
+
+	addressBytes, err := common.DecodeCheck(string(args.GetFrom()))
+	if err != nil {
+		return nil, err
+	}
+
+	resource := core.ResourceCode_BANDWIDTH
+	if stakeInput.Resource == tx_input.ResourceEnergy {
+		resource = core.ResourceCode_ENERGY
+	}
+
+	params := &core.FreezeBalanceV2Contract{
+		OwnerAddress:  addressBytes,
+		FrozenBalance: args.GetAmount().Int().Int64(),
+		Resource:      resource,
+	}
+
+	contract := &core.Transaction_Contract{}
+	contract.Type = core.Transaction_Contract_FreezeBalanceV2Contract
+	param, err := anypb.New(params)
+	if err != nil {
+		return nil, err
+	}
+	contract.Parameter = param
+
+	tx := &core.Transaction{}
+	tx.RawData = &core.TransactionRaw{
+		Contract:      []*core.Transaction_Contract{contract},
+		RefBlockBytes: stakeInput.RefBlockBytes,
+		RefBlockHash:  stakeInput.RefBlockHash,
+		// tron wants milliseconds
+		Expiration: time.Unix(stakeInput.Expiration, 0).UnixMilli(),
+		Timestamp:  time.Unix(stakeInput.Timestamp, 0).UnixMilli(),
+	}
+
+	return &Tx{
+		TronTx: tx,
+		Args:   nil,
+	}, nil
+}
+
+func (b *TxBuilder) Unstake(args *xcbuilder.StakeArgs, input types.UnstakeTxInput) (types.Tx, error) {
+	unstakeInput, ok := input.(*tx_input.UnstakingInput)
+	if !ok {
+		return nil, fmt.Errorf("invalid input %T, expected %T", input, unstakeInput)
+	}
+
+	addressBytes, err := common.DecodeCheck(string(args.GetFrom()))
+	if err != nil {
+		return nil, err
+	}
+
+	resource := core.ResourceCode_BANDWIDTH
+	if unstakeInput.Resource == tx_input.ResourceEnergy {
+		resource = core.ResourceCode_ENERGY
+	}
+
+	params := &core.UnfreezeBalanceV2Contract{
+		OwnerAddress:    addressBytes,
+		UnfreezeBalance: args.GetAmount().Int().Int64(),
+		Resource:        resource,
+	}
+
+	contract := &core.Transaction_Contract{}
+	contract.Type = core.Transaction_Contract_UnfreezeBalanceV2Contract
+	param, err := anypb.New(params)
+	if err != nil {
+		return nil, err
+	}
+	contract.Parameter = param
+
+	tx := &core.Transaction{}
+	tx.RawData = &core.TransactionRaw{
+		Contract:      []*core.Transaction_Contract{contract},
+		RefBlockBytes: unstakeInput.RefBlockBytes,
+		RefBlockHash:  unstakeInput.RefBlockHash,
+		// tron wants milliseconds
+		Expiration: time.Unix(unstakeInput.Expiration, 0).UnixMilli(),
+		Timestamp:  time.Unix(unstakeInput.Timestamp, 0).UnixMilli(),
+	}
+
+	return &Tx{
+		TronTx: tx,
+		Args:   nil,
+	}, nil
+}
+
+func (b *TxBuilder) Withdraw(args *xcbuilder.StakeArgs, input types.WithdrawTxInput) (types.Tx, error) {
+	withdrawInput, ok := input.(*tx_input.WithdrawInput)
+	if !ok {
+		return nil, fmt.Errorf("invalid input %T, expected %T", input, withdrawInput)
+	}
+
+	addressBytes, err := common.DecodeCheck(string(args.GetFrom()))
+	if err != nil {
+		return nil, err
+	}
+
+	params := &core.WithdrawExpireUnfreezeContract{
+		OwnerAddress: addressBytes,
+	}
+
+	contract := &core.Transaction_Contract{}
+	contract.Type = core.Transaction_Contract_WithdrawExpireUnfreezeContract
+	param, err := anypb.New(params)
+	if err != nil {
+		return nil, err
+	}
+	contract.Parameter = param
+
+	tx := &core.Transaction{}
+	tx.RawData = &core.TransactionRaw{
+		Contract:      []*core.Transaction_Contract{contract},
+		RefBlockBytes: withdrawInput.RefBlockBytes,
+		RefBlockHash:  withdrawInput.RefBlockHash,
+		// tron wants milliseconds
+		Expiration: time.Unix(withdrawInput.Expiration, 0).UnixMilli(),
+		Timestamp:  time.Unix(withdrawInput.Timestamp, 0).UnixMilli(),
+	}
+
+	return &Tx{
+		TronTx: tx,
+		Args:   nil,
+	}, nil
 }

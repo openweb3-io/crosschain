@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"log"
 	"math/big"
 	"strings"
@@ -56,7 +57,7 @@ func NewClient(
 }
 
 func (client *Client) FetchTransferInput(ctx context.Context, args *xcbuilder.TransferArgs) (xc_types.TxInput, error) {
-	input := new(tron.TxInput)
+	input := new(tx_input.TxInput)
 
 	asset, _ := args.GetAsset()
 	var err error
