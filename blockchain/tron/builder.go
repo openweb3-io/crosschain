@@ -3,8 +3,9 @@ package tron
 import (
 	"errors"
 	"fmt"
-	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"time"
+
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 
 	eABI "github.com/ethereum/go-ethereum/accounts/abi"
 	eth_common "github.com/ethereum/go-ethereum/common"
@@ -180,7 +181,7 @@ func Signature(method string) []byte {
 	return b[:4]
 }
 
-func (b *TxBuilder) Stake(args *xcbuilder.StakeArgs, input types.StakeTxInput) (types.Tx, error) {
+func (b *TxBuilder) Stake(args xcbuilder.StakeArgs, input types.StakeTxInput) (types.Tx, error) {
 	stakeInput, ok := input.(*tx_input.StakingInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, stakeInput)
@@ -226,7 +227,7 @@ func (b *TxBuilder) Stake(args *xcbuilder.StakeArgs, input types.StakeTxInput) (
 	}, nil
 }
 
-func (b *TxBuilder) Unstake(args *xcbuilder.StakeArgs, input types.UnstakeTxInput) (types.Tx, error) {
+func (b *TxBuilder) Unstake(args xcbuilder.StakeArgs, input types.UnstakeTxInput) (types.Tx, error) {
 	unstakeInput, ok := input.(*tx_input.UnstakingInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, unstakeInput)
@@ -272,7 +273,7 @@ func (b *TxBuilder) Unstake(args *xcbuilder.StakeArgs, input types.UnstakeTxInpu
 	}, nil
 }
 
-func (b *TxBuilder) Withdraw(args *xcbuilder.StakeArgs, input types.WithdrawTxInput) (types.Tx, error) {
+func (b *TxBuilder) Withdraw(args xcbuilder.StakeArgs, input types.WithdrawTxInput) (types.Tx, error) {
 	withdrawInput, ok := input.(*tx_input.WithdrawInput)
 	if !ok {
 		return nil, fmt.Errorf("invalid input %T, expected %T", input, withdrawInput)

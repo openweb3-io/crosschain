@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"math/big"
 	"testing"
+
+	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/openweb3-io/crosschain/blockchain/tron"
@@ -307,7 +308,7 @@ func (suite *ClientTestSuite) TestStakeBandwidth() {
 	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Stake(&args, input)
+	tx, err := builder.Stake(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -355,7 +356,7 @@ func (suite *ClientTestSuite) TestStakeEnergy() {
 	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Stake(&args, input)
+	tx, err := builder.Stake(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -404,7 +405,7 @@ func (suite *ClientTestSuite) TestUnstakeBandwidth() {
 	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Unstake(&args, input)
+	tx, err := builder.Unstake(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -453,7 +454,7 @@ func (suite *ClientTestSuite) TestUnstakeEnergy() {
 	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Unstake(&args, input)
+	tx, err := builder.Unstake(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
@@ -502,7 +503,7 @@ func (suite *ClientTestSuite) TestWithdraw() {
 	builder, err := tron.NewTxBuilder(&xc_types.ChainConfig{})
 	suite.Require().NoError(err)
 
-	tx, err := builder.Withdraw(&args, input)
+	tx, err := builder.Withdraw(args, input)
 	suite.Require().NoError(err)
 
 	sighashes, err := tx.Sighashes()
