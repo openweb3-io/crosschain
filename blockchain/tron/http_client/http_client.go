@@ -248,6 +248,30 @@ type GetCanWithdrawUnfreezeAmountResponse struct {
 	Amount int64 `json:"amount,omitempty"`
 }
 
+type GetCanDelegatedMaxSizeResponse struct {
+	Error
+	MaxSize int64 `json:"max_size,omitempty"`
+}
+
+type GetDelegatedResourceV2Response struct {
+	Error
+	DelegatedResource []struct {
+		From                      string `json:"from"`
+		To                        string `json:"to"`
+		FrozenBalanceForBandwidth int64  `json:"frozen_balance_for_bandwidth"`
+		FrozenBalanceForEnergy    int64  `json:"frozen_balance_for_energy"`
+		ExpireTimeForBandwidth    int64  `json:"expire_time_for_bandwidth"`
+		ExpireTimeForEnergy       int64  `json:"expire_time_for_energy"`
+	} `json:"delegatedResource"`
+}
+
+type GetDelegatedResourceAccountIndexV2Response struct {
+	Error
+	Account      string   `json:"account"`
+	FromAccounts []string `json:"fromAccounts"`
+	ToAccounts   []string `json:"toAccounts"`
+}
+
 type GetChainParametersResponse struct {
 	Error
 	ChainParameter []ChainParameter
@@ -803,6 +827,101 @@ func (c *Client) GetCanWithdrawUnfreezeAmount(ctx context.Context, address strin
 	}(resp.Body)
 
 	parsed, err := parseResponse(resp, &GetCanWithdrawUnfreezeAmountResponse{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) GetDelegatedResourceV2(ctx context.Context, ownerAddress, receiverAddress string) (*GetDelegatedResourceV2Response, error) {
+	req, err := postRequest(ctx, c.Url("wallet/getdelegatedresourcev2"), map[string]interface{}{
+		"fromAddress": ownerAddress,
+		"toAddress":   receiverAddress,
+		"visible":     true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &GetDelegatedResourceV2Response{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) GetDelegatedResourceAccountIndexV2(ctx context.Context, address string) (*GetDelegatedResourceAccountIndexV2Response, error) {
+	req, err := postRequest(ctx, c.Url("wallet/getdelegatedresourceaccountindexv2"), map[string]interface{}{
+		"value":   address,
+		"visible": true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &GetDelegatedResourceAccountIndexV2Response{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) GetCanDelegatedMaxSize(ctx context.Context, address string, resourceType int32) (*GetCanDelegatedMaxSizeResponse, error) {
+	req, err := postRequest(ctx, c.Url("wallet/getcandelegatedmaxsize"), map[string]interface{}{
+		"owner_address": address,
+		"type":          resourceType,
+		"visible":       true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &GetCanDelegatedMaxSizeResponse{})
 	if err != nil {
 		return nil, err
 	}
