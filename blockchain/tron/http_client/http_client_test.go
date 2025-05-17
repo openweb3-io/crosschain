@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	httpclient "github.com/openweb3-io/crosschain/blockchain/tron/http_client"
@@ -74,6 +75,16 @@ func (suite *HttpClientTestSuite) TestGetAccountResource() {
 	nileTopAccount := TestNetAccountTop
 
 	resp, err := suite.client.GetAccountResource(ctx, nileTopAccount)
+	suite.Require().NoError(err)
+	suite.T().Logf("resp: %v\n", resp)
+}
+
+func (suite *HttpClientTestSuite) TestGetCanWithdrawUnfreezeAmount() {
+	ctx := context.Background()
+	nileTopAccount := TestNetAccountTop
+	timestamp := time.Now()
+
+	resp, err := suite.client.GetCanWithdrawUnfreezeAmount(ctx, nileTopAccount, timestamp)
 	suite.Require().NoError(err)
 	suite.T().Logf("resp: %v\n", resp)
 }
