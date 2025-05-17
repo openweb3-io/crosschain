@@ -86,7 +86,41 @@ func (suite *HttpClientTestSuite) TestGetCanWithdrawUnfreezeAmount() {
 
 	resp, err := suite.client.GetCanWithdrawUnfreezeAmount(ctx, nileTopAccount, timestamp)
 	suite.Require().NoError(err)
-	suite.T().Logf("resp: %v\n", resp)
+	suite.T().Logf("can withdraw amount: %d", resp.Amount)
+}
+
+func (suite *HttpClientTestSuite) TestGetCanDelegatedMaxSize() {
+	ctx := context.Background()
+	nileTopAccount := TestNetAccountTop
+	bandwidthResource := int32(0)
+	energyResource := int32(1)
+
+	resp, err := suite.client.GetCanDelegatedMaxSize(ctx, nileTopAccount, bandwidthResource)
+	suite.Require().NoError(err)
+	suite.T().Logf("delegateable bandwidth: %d", resp.MaxSize)
+
+	resp, err = suite.client.GetCanDelegatedMaxSize(ctx, nileTopAccount, energyResource)
+	suite.Require().NoError(err)
+	suite.T().Logf("delegateable energy: %d", resp.MaxSize)
+}
+
+func (suite *HttpClientTestSuite) TestGetDelegatedResourceV2() {
+	ctx := context.Background()
+	ownerAccount := "TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig"
+	receiverAccount := "TFDP1vFeSYPT6FUznL7zUjhg5X7p2AA8vw"
+
+	resp, err := suite.client.GetDelegatedResourceV2(ctx, ownerAccount, receiverAccount)
+	suite.Require().NoError(err)
+	suite.T().Logf("delegated account index: %+v", resp)
+}
+
+func (suite *HttpClientTestSuite) TestGetDelegatedResourceAccountIndexV2() {
+	ctx := context.Background()
+	nileTopAccount := TestNetAccountTop
+
+	resp, err := suite.client.GetDelegatedResourceAccountIndexV2(ctx, nileTopAccount)
+	suite.Require().NoError(err)
+	suite.T().Logf("delegated account index: %+v", resp)
 }
 
 func (suite *HttpClientTestSuite) TestInvokeContract() {
