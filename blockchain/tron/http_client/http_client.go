@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/abi"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
@@ -240,6 +241,11 @@ type GetAccountResourceResponse struct {
 	TotalEnergyWeight    int64            `json:"TotalEnergyWeight,omitempty"`
 	AssetNetUsed         []map[string]any `json:"assetNetUsed,omitempty"`
 	AssetNetLimit        []map[string]any `json:"assetNetLimit,omitempty"`
+}
+
+type GetCanWithdrawUnfreezeAmountResponse struct {
+	Error
+	Amount int64 `json:"amount,omitempty"`
 }
 
 type GetChainParametersResponse struct {
@@ -765,6 +771,38 @@ func (c *Client) GetAccountResource(ctx context.Context, address string) (*GetAc
 	}(resp.Body)
 
 	parsed, err := parseResponse(resp, &GetAccountResourceResponse{})
+	if err != nil {
+		return nil, err
+	}
+	if err = checkError(parsed.Error); err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func (c *Client) GetCanWithdrawUnfreezeAmount(ctx context.Context, address string, timestamp time.Time) (*GetCanWithdrawUnfreezeAmountResponse, error) {
+	req, err := postRequest(ctx, c.Url("wallet/getcanwithdrawunfreezeamount"), map[string]interface{}{
+		"owner_address": address,
+		"timestamp":     timestamp.UnixMilli(),
+		"visible":       true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func(body io.ReadCloser) {
+		if body != nil {
+			_ = body.Close()
+		}
+	}(resp.Body)
+
+	parsed, err := parseResponse(resp, &GetCanWithdrawUnfreezeAmountResponse{})
 	if err != nil {
 		return nil, err
 	}
