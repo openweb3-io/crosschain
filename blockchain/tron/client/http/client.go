@@ -5,13 +5,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	"github.com/openweb3-io/crosschain/blockchain/tron/tx_input"
 	"google.golang.org/protobuf/types/known/anypb"
-	"math/big"
-	"strings"
-	"time"
 
 	"github.com/openweb3-io/crosschain/blockchain/tron"
 	httpclient "github.com/openweb3-io/crosschain/blockchain/tron/http_client"
@@ -211,11 +212,12 @@ func (client *Client) EstimateGasFee(ctx context.Context, tx xc_types.Tx) (amoun
 	var createAccountFee xc_types.BigInt
 
 	for _, v := range params.ChainParameter {
-		if v.Key == "getTransactionFee" {
+		switch v.Key {
+		case "getTransactionFee":
 			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
-		} else if v.Key == "getEnergyFee" {
+		case "getEnergyFee":
 			energyFee = xc_types.NewBigIntFromInt64(v.Value)
-		} else if v.Key == "getCreateAccountFee" {
+		case "getCreateAccountFee":
 			createAccountFee = xc_types.NewBigIntFromInt64(v.Value)
 			// TODO: parameter returns 0.1 trx, not correctly 1 trx, fix it in future
 			createAccountFee = xc_types.NewBigIntFromInt64(1000000)
@@ -461,6 +463,94 @@ func (client *Client) FetchUnDelegatingTx(ctx context.Context, ownerAddress, rec
 	return &tron.Tx{
 		TronTx: tx,
 	}, nil
+}
+
+func (client *Client) EstimateGasFeeIncludeResourceUsage(ctx context.Context, tx xc_types.Tx) (amount *xc_types.BigInt, err error) {
+	_tx := tx.(*tron.Tx)
+
+	txRawData, err := tx.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	txSize := int64(len(txRawData) - 1) // actual tx size is less than serialized size by 1 byte
+
+	// signatures also consume bandwidth, so we need to add them
+	signatures := len(tx.GetSignatures())
+	if signatures == 0 {
+		return nil, errors.New("transaction has no signatures")
+	}
+	signaturesSize := int64(signatures * 65) // every signature is 65 bytes
+	totalSize := txSize + signaturesSize
+	bandwidthUsage := xc_types.NewBigIntFromInt64(totalSize)
+
+	asset, _ := _tx.Args.GetAsset()
+
+	params, err := client.client.GetChainParameters(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get chain params")
+	}
+
+	var transactionFee xc_types.BigInt
+	var energyFee xc_types.BigInt
+	var createAccountFee xc_types.BigInt
+
+	for _, v := range params.ChainParameter {
+		switch v.Key {
+		case "getTransactionFee":
+			transactionFee = xc_types.NewBigIntFromInt64(v.Value)
+		case "getEnergyFee":
+			energyFee = xc_types.NewBigIntFromInt64(v.Value)
+		case "getCreateAccountFee":
+			createAccountFee = xc_types.NewBigIntFromInt64(v.Value)
+			// TODO: parameter returns 0.1 trx, not correctly 1 trx, fix it in future
+			createAccountFee = xc_types.NewBigIntFromInt64(1000000)
+		}
+	}
+
+	newAccount, err := isNewAccount(ctx, client, _tx.Args.GetTo())
+	if err != nil {
+		return nil, err
+	}
+
+	if asset == nil || asset.GetContract() == "" {
+		totalCost := transactionFee.Mul(&bandwidthUsage)
+		if newAccount {
+			totalCost = totalCost.Add(&createAccountFee)
+		}
+		return &totalCost, nil
+	} else {
+		params := []map[string]any{
+			{
+				"address": _tx.Args.GetTo(),
+			},
+			{
+				"uint256": _tx.Args.GetAmount().String(),
+			},
+		}
+		b, _ := json.Marshal(params)
+
+		estimate, err := client.client.EstimateEnergy(
+			context.Background(),
+			string(_tx.Args.GetFrom()),
+			string(asset.GetContract()),
+			"transfer(address,uint256)",
+			string(b),
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		energyUsage := xc_types.NewBigIntFromInt64(estimate.EnergyRequired)
+		if newAccount {
+			newAccountFee := xc_types.NewBigIntFromInt64(25000)
+			energyUsage = energyUsage.Add(&newAccountFee)
+		}
+
+		energyCost := energyFee.Mul(&energyUsage)
+		bandwidthCost := transactionFee.Mul(&bandwidthUsage)
+		totalCost := bandwidthCost.Add(&energyCost)
+		return &totalCost, nil
+	}
 }
 
 func isNewAccount(ctx context.Context, client *Client, address xc_types.Address) (bool, error) {
