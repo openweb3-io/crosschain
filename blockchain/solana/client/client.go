@@ -173,14 +173,45 @@ func (a *Client) EstimateGasFee(ctx context.Context, _tx xc.Tx) (*xc.BigInt, err
 	tx := _tx.(*tx.Tx)
 	solanaTx := tx.SolTx
 
-	feeCalc, err := a.client.GetFeeForMessage(ctx, solanaTx.Message.ToBase64(), rpc.CommitmentFinalized)
+	// Simulate transaction to get actual compute units consumed
+	sim, err := a.client.SimulateTransactionWithOpts(ctx, tx.SolTx, &rpc.SimulateTransactionOpts{
+		SigVerify: false,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not simulate tx: %v", err)
+	}
+	if sim.Value != nil && sim.Value.Err != nil {
+		return nil, fmt.Errorf("could not simulate tx: %v", sim.Value.Err)
 	}
 
-	value := *feeCalc.Value
+	// 1. Base fee: 5000 lamports per signature
+	numSignatures := uint64(len(solanaTx.Signatures))
+	if numSignatures == 0 {
+		numSignatures = 1 // At least one signature is required
+	}
+	baseFee := 5000 * numSignatures
 
-	fee := xc.NewBigIntFromUint64(value)
+	// 2. Priority Fee
+	priorityFee := uint64(0)
+	if sim.Value != nil && sim.Value.UnitsConsumed != nil {
+		unitsConsumed := *sim.Value.UnitsConsumed
+
+		// Extract ComputeUnitPrice from transaction (unit: micro-lamports per compute unit)
+		microLamportsPerUnit := tx.GetComputeUnitPrice()
+
+		if microLamportsPerUnit > 0 && unitsConsumed > 0 {
+			// Priority fee calculation formula:
+			// Priority Fee (lamports) = (Compute Units × MicroLamports per unit) / 1,000,000
+			//
+			// Example: 6,349 units × 3,400,000 micro-lamports/unit / 1,000,000 = 21,586 lamports
+			priorityFee = (unitsConsumed * microLamportsPerUnit) / 1_000_000
+		}
+	}
+
+	// 3. Total fee = Base fee + Priority fee
+	totalFee := baseFee + priorityFee
+
+	fee := xc.NewBigIntFromUint64(totalFee)
 	return &fee, nil
 }
 

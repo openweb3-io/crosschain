@@ -14,6 +14,8 @@ import (
 	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/openweb3-io/crosschain/types"
+
+	compute_budget "github.com/gagliardetto/solana-go/programs/compute-budget"
 )
 
 type Tx struct {
@@ -198,4 +200,38 @@ func (tx Tx) GetTokenTransfers() []*token.Transfer {
 		getall[*token.Transfer](token.DecodeInstruction, solana.TokenProgramID, tx.SolTx),
 		getall[*token.Transfer](token.DecodeInstruction, solana.Token2022ProgramID, tx.SolTx)...,
 	)
+}
+
+// GetComputeUnitPrice extracts the MicroLamports value from the SetComputeUnitPrice instruction in the transaction
+// Returns 0 if the instruction is not found
+func (tx Tx) GetComputeUnitPrice() uint64 {
+	instructions := getall[*compute_budget.SetComputeUnitPrice](
+		compute_budget.DecodeInstruction,
+		solana.ComputeBudget, // ProgramID of the ComputeBudget program
+		tx.SolTx,
+	)
+
+	if len(instructions) > 0 {
+		// Typically a transaction only has one SetComputeUnitPrice instruction
+		return instructions[0].MicroLamports
+	}
+
+	return 0
+}
+
+// GetComputeUnitLimit extracts the Units value from the SetComputeUnitLimit instruction in the transaction
+// Returns the default value (200,000) if the instruction is not found
+func (tx Tx) GetComputeUnitLimit() uint64 {
+	instructions := getall[*compute_budget.SetComputeUnitLimit](
+		compute_budget.DecodeInstruction,
+		solana.ComputeBudget,
+		tx.SolTx,
+	)
+
+	if len(instructions) > 0 {
+		return uint64(instructions[0].Units)
+	}
+
+	// Solana's default compute unit limit
+	return 200_000
 }
