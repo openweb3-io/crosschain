@@ -111,7 +111,7 @@ func (native NativeAsset) Blockchain() Blockchain {
 		return BlockchainBtcCash
 	case DOGE, LTC:
 		return BlockchainBtcLegacy
-	case AVAX, CELO, ETH, ETHW, MATIC, OptETH, ArbETH, BERA:
+	case AVAX, CELO, ETH, ETHW, MATIC, OptETH, ArbETH, BERA, BASE:
 		return BlockchainEVM
 	case BNB, FTM, ETC, EmROSE, AurETH, ACA, KAR, KLAY, OAS, CHZ, XDC, CHZ2:
 		return BlockchainEVMLegacy

@@ -17,6 +17,7 @@ const (
 	ATOM   = NativeAsset("ATOM")   // Cosmos
 	AurETH = NativeAsset("AurETH") // Aurora
 	AVAX   = NativeAsset("AVAX")   // Avalanche
+	BASE   = NativeAsset("BASE")   //Base
 	BERA   = NativeAsset("BERA")   // Berachain
 	BCH    = NativeAsset("BCH")    // Bitcoin Cash
 	BNB    = NativeAsset("BNB")    // Binance Coin
@@ -64,6 +65,7 @@ var NativeAssetList []NativeAsset = []NativeAsset{
 	ATOM,
 	AurETH,
 	AVAX,
+	BASE,
 	BERA,
 	BNB,
 	CELO,
