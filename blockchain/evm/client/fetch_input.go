@@ -176,17 +176,36 @@ func (client *Client) FetchUnsimulatedInput(ctx context.Context, from xc.Address
 			return result, err
 		}
 
+		// EIP-1559: MaxFeePerGas (GasFeeCap) should be set to baseFee * 2 + tip.
+		//
+		// Reasons:
+		// 1. baseFee can increase up to 12.5% per block. Setting MaxFeePerGas equal to the
+		//    current baseFee means if the tx is not included in the current block, it will be
+		//    dropped from the mempool with "max fee per gas less than block base fee" once
+		//    baseFee rises in the next block.
+		//
+		// 2. effectiveGasPrice = baseFee + min(MaxPriorityFeePerGas, MaxFeePerGas - baseFee)
+		//    When MaxFeePerGas = baseFee, MaxFeePerGas - baseFee = 0, so the miner receives
+		//    zero tip, giving the tx lowest priority and making it likely to stall during
+		//    network congestion.
+		//
+		// 3. baseFee * 2 is the industry standard (used by ethers.js, viem, etc.), providing
+		//    enough headroom for baseFee fluctuation. Any unused portion of MaxFeePerGas is
+		//    refunded, so this does not result in overpaying.
+		baseFee := xc.BigInt(*latestHeader.BaseFee)
+		result.GasFeeCap = xc.MultiplyByFloat(baseFee, 2.0)
+
 		gasTipCap, err := client.EthClient.SuggestGasTipCap(ctx)
 		if err != nil {
 			return result, err
 		}
-		result.GasFeeCap = xc.BigInt(*latestHeader.BaseFee)
 		// should only multiply one cap, not both.
 		result.GasTipCap = xc.BigInt(*gasTipCap).ApplyGasPriceMultiplier(client.Chain)
 
-		if result.GasFeeCap.Cmp(&result.GasTipCap) < 0 {
-			// increase max fee cap to accomodate tip if needed
-			result.GasFeeCap = result.GasTipCap
+		// Ensure MaxFeePerGas >= baseFee + tip, otherwise the tip will be truncated.
+		basePlusTip := baseFee.Add(&result.GasTipCap)
+		if result.GasFeeCap.Cmp(&basePlusTip) < 0 {
+			result.GasFeeCap = basePlusTip
 		}
 
 		fromAddr, _ := address.FromHex(from)
