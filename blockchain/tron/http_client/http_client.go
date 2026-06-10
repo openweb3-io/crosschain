@@ -65,6 +65,7 @@ type ContractData[T any] struct {
 
 type Receipt struct {
 	NetFee uint64 `json:"net_fee"`
+	Result string `json:"result"`
 }
 
 type TransactionRawData[T any] struct {
